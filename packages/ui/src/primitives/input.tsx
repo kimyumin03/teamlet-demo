@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "../lib/cn.js";
+import { cn } from "../lib/cn";
 
 /** Input (docs/05 §10) — Slate 200 border, 포커스 링 토큰. */
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;

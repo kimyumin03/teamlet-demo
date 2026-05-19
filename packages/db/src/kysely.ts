@@ -5,7 +5,7 @@
  */
 import { Kysely, PostgresDialect } from "kysely";
 import pg from "pg";
-import type { DB } from "../generated/kysely-types.js";
+import type { DB } from "../generated/kysely-types";
 
 const globalForKysely = globalThis as unknown as {
   kyselyPool?: pg.Pool;

@@ -1,3 +1,3 @@
-export * from "./primitives/index.js";
-export * from "./patterns/index.js";
-export { cn } from "./lib/cn.js";
+export * from "./primitives/index";
+export * from "./patterns/index";
+export { cn } from "./lib/cn";

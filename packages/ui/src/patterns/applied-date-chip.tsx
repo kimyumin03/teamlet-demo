@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CalendarClock, AlertTriangle, Clock } from "lucide-react";
-import { cn } from "../lib/cn.js";
+import { cn } from "../lib/cn";
 
 /**
  * AppliedDateChip (docs/05 §4-1) — 모든 인사 변경 모달 우측 상단.

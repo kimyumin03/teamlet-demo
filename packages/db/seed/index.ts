@@ -3,10 +3,10 @@
  * Phase 1 활성: 권한 카탈로그 (Permission 테이블).
  * Phase 3 대기: 공휴일 / 법정 휴가 (CompanyHoliday·LeaveType — 회사 캘린더 단위 주입).
  */
-import { prisma } from "../src/index.js";
-import { seedPermissions, PERMISSION_CATALOG } from "./permissions.js";
-import { KR_STATUTORY_HOLIDAYS } from "./holidays-kr.js";
-import { KR_STATUTORY_LEAVE_TYPES } from "./leave-types.js";
+import { prisma } from "../src/index";
+import { seedPermissions, PERMISSION_CATALOG } from "./permissions";
+import { KR_STATUTORY_HOLIDAYS } from "./holidays-kr";
+import { KR_STATUTORY_LEAVE_TYPES } from "./leave-types";
 
 async function main() {
   console.log("🌱 Teamlet 시드 시작");

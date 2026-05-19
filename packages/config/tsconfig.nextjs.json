@@ -6,6 +6,9 @@
     "lib": ["DOM", "DOM.Iterable", "ES2023"],
     "jsx": "preserve",
     "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "composite": false,
     "allowJs": true,
     "incremental": true,
     "plugins": [{ "name": "next" }]

@@ -182,7 +182,7 @@ export const PERMISSION_CATALOG: PermissionSeed[] = [
 
 /** 시드 적용 — Permission upsert (멱등) */
 export async function seedPermissions(
-  prisma: import("../src/index.js").PrismaClient,
+  prisma: import("../src/index").PrismaClient,
 ): Promise<number> {
   for (const p of PERMISSION_CATALOG) {
     await prisma.permission.upsert({

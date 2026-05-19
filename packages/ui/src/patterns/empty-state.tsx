@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Button } from "../primitives/button.js";
-import { cn } from "../lib/cn.js";
+import { Button } from "../primitives/button";
+import { cn } from "../lib/cn";
 
 /**
  * EmptyState (docs/05 §4-6) — 모든 빈 리스트/페이지 표준.

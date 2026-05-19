@@ -9,8 +9,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "../primitives/dialog.js";
-import { Button } from "../primitives/button.js";
+} from "../primitives/dialog";
+import { Button } from "../primitives/button";
 
 /**
  * DirtyGuardModal (docs/05 §4-4) — 폼 수정 중 이탈 차단.

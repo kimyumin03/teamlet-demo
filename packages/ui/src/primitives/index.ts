@@ -1,5 +1,5 @@
-export { Button, buttonVariants, type ButtonProps } from "./button.js";
-export { Input, type InputProps } from "./input.js";
+export { Button, buttonVariants, type ButtonProps } from "./button";
+export { Input, type InputProps } from "./input";
 export {
   Dialog,
   DialogTrigger,
@@ -10,4 +10,4 @@ export {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "./dialog.js";
+} from "./dialog";

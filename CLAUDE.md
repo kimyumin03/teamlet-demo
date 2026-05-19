@@ -77,6 +77,16 @@ pnpm dev              # web + worker
 - **Vertical Slice**: DB 마이그레이션 → 모듈 → Server Action → UI 를 기능 단위로
 - MVP 속도 우선 — 바이브 코딩 (TDD 사이클 생략, 핵심 도메인만 선택적 테스트)
 
+### 빌드/번들 주의
+
+- 빌드는 **Turbopack** 사용 (`next build --turbopack`, dev 도 `--turbopack`).
+  현재 개발 환경의 webpack prod 빌드는 Docker Desktop 소켓(`%LOCALAPPDATA%
+  \docker-secrets-engine`) 권한 문제로 광역 glob EACCES 발생 (코드 무관, 최소
+  설정에서도 재현). Turbopack 은 정상.
+- 워크스페이스 패키지 **상대 import 는 확장자 없이** (`./x`, `../x/index`).
+  `.js` 확장자는 Next 번들러(transpilePackages)에서 해소 실패.
+- Prisma 는 `serverExternalPackages` 로 외부화.
+
 ## 📋 Phase 로드맵
 
 P1 Foundation(인증/가입/권한) → P2 Core HR(직원/조직/이력) → P3 휴가 → P4 워크플로우+검색 → P5 채용 → P6 문서/보안 → P7 P1기능 → P8 확장
