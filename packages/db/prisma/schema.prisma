@@ -1,0 +1,474 @@
+// Teamlet Prisma 스키마
+// 단일 출처 — Kysely(prisma-kysely)도 이 스키마 참조 (docs/04 §1-3).
+// Phase 1 (Foundation): 인증 · 멀티테넌시 · 가입흐름 · 조직 · 권한 · 감사로그.
+// Phase 2~8 도메인은 하단 주석 placeholder (docs/03 참조).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+generator kysely {
+  provider = "prisma-kysely"
+  output   = "../generated"
+  fileName = "kysely-types.ts"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Enums (docs/04 §3-2: PascalCase 키 + SCREAMING_SNAKE 값)
+// ─────────────────────────────────────────────────────────────
+
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  LEFT
+}
+
+enum JoinPath {
+  APPLICATION
+  INVITE
+  COMPANY_CODE
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CompanyJoinPolicy {
+  REQUIRE_APPROVAL
+  OPEN
+  INVITE_ONLY
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  PROBATION
+  ON_LEAVE
+  SECONDED
+  RESIGNED
+  SCHEDULED
+}
+
+/// 데이터 소스 추적 (docs/03 §3 — AxHub bulk 대응)
+enum DataSource {
+  MANUAL
+  CSV_IMPORT
+  AXHUB_API
+}
+
+/// 권한 그룹 유형 (docs/03 §7)
+enum RoleType {
+  SYSTEM_SUPER_ADMIN
+  DYNAMIC_ORG_HEAD
+  DEFAULT
+  CUSTOM
+}
+
+enum PermissionAction {
+  READ
+  MANAGE
+  EXECUTE
+}
+
+enum PermissionSensitivity {
+  NORMAL
+  SENSITIVE
+  CRITICAL
+}
+
+/// 권한 범위 (docs/01 §5)
+enum ScopeType {
+  ALL
+  DEPARTMENT
+  DIRECT_REPORTS
+  SELF
+}
+
+enum AuditEventType {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  DOWNLOAD
+}
+
+// ─────────────────────────────────────────────────────────────
+// 인증 · 멀티 테넌시 (docs/03 §13)
+// ─────────────────────────────────────────────────────────────
+
+/// 인증 단위 — 회사 무관, 멀티 테넌시 루트
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  axhubUserId   String?   @unique
+  emailVerified Boolean   @default(false)
+  verifiedAt    DateTime?
+  lastLoginAt   DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  memberships        UserCompanyMembership[]
+  companyApplications CompanyApplication[]   @relation("Applicant")
+  reviewedApplications CompanyApplication[]  @relation("ApplicationReviewer")
+  joinRequests       JoinRequest[]           @relation("JoinRequester")
+  reviewedJoinReqs   JoinRequest[]           @relation("JoinReviewer")
+  sentInvites        EmployeeInvite[]        @relation("Inviter")
+  loginAttempts      LoginAttempt[]
+
+  @@map("users")
+}
+
+model Company {
+  id               String            @id @default(cuid())
+  name             String
+  businessNumber   String            @unique
+  corporateNumber  String?
+  phone            String?
+  foundedAt        DateTime?
+  addressRoad      String?
+  addressDetail    String?
+  logoUrl          String?
+  coverUrl         String?
+  companyCode      String            @unique
+  companyCodeActive Boolean          @default(true)
+  joinPolicy       CompanyJoinPolicy @default(REQUIRE_APPROVAL)
+  visionMission    String?
+  isSetupCompleted Boolean           @default(false)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  memberships   UserCompanyMembership[]
+  departments   Department[]
+  employees     Employee[]
+  roles         Role[]
+  joinRequests  JoinRequest[]
+  invites       EmployeeInvite[]
+  loginPolicy   CompanyLoginPolicy?
+  auditLogs     AuditLog[]
+  // 신청 승인 시 생성된 회사 역참조
+  fromApplication CompanyApplication? @relation("CreatedCompany")
+
+  @@map("companies")
+}
+
+/// 다대다 — 멀티 테넌시 핵심 (User ↔ Company)
+model UserCompanyMembership {
+  id              String           @id @default(cuid())
+  userId          String
+  companyId       String
+  employeeId      String?          @unique
+  status          MembershipStatus @default(PENDING)
+  joinPath        JoinPath
+  appliedAt       DateTime         @default(now())
+  activatedAt     DateTime?
+  approvedByUserId String?
+  isActive        Boolean          @default(true)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [id])
+
+  @@unique([userId, companyId])
+  @@index([companyId, status])
+  @@map("user_company_memberships")
+}
+
+/// 회사 생성 신청 — Sales-led (docs/06 §1.3)
+model CompanyApplication {
+  id                 String            @id @default(cuid())
+  applicantUserId    String
+  companyName        String
+  businessNumber     String
+  representativeName String
+  contact            String
+  companySize        String
+  industry           String
+  memo               String?
+  status             ApplicationStatus @default(PENDING)
+  reviewerUserId     String?
+  reviewedAt         DateTime?
+  reviewMemo         String?
+  createdCompanyId   String?           @unique
+  createdAt          DateTime          @default(now())
+
+  applicant User     @relation("Applicant", fields: [applicantUserId], references: [id])
+  reviewer  User?    @relation("ApplicationReviewer", fields: [reviewerUserId], references: [id])
+  createdCompany Company? @relation("CreatedCompany", fields: [createdCompanyId], references: [id])
+
+  @@index([status, createdAt])
+  @@map("company_applications")
+}
+
+/// 직원 가입 신청 — 회사코드 (docs/06 §1.2)
+model JoinRequest {
+  id             String            @id @default(cuid())
+  userId         String
+  companyId      String
+  usedCompanyCode String
+  payload        Json?
+  status         ApplicationStatus @default(PENDING)
+  reviewerUserId String?
+  reviewedAt     DateTime?
+  reviewMemo     String?
+  createdAt      DateTime          @default(now())
+
+  user      User    @relation("JoinRequester", fields: [userId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reviewer  User?   @relation("JoinReviewer", fields: [reviewerUserId], references: [id])
+
+  @@unique([userId, companyId])
+  @@index([companyId, status, createdAt])
+  @@map("join_requests")
+}
+
+/// HR 직접 초대 (docs/03 §13)
+model EmployeeInvite {
+  id            String    @id @default(cuid())
+  companyId     String
+  inviterUserId String
+  email         String
+  tokenHash     String    @unique
+  expiresAt     DateTime
+  prefilledData Json?
+  used          Boolean   @default(false)
+  usedAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  inviter User    @relation("Inviter", fields: [inviterUserId], references: [id])
+
+  @@index([companyId, used])
+  @@map("employee_invites")
+}
+
+// ─────────────────────────────────────────────────────────────
+// 조직 (docs/03 §1)
+// ─────────────────────────────────────────────────────────────
+
+model Department {
+  id        String   @id @default(cuid())
+  companyId String
+  parentId  String?
+  name      String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company  Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent   Department?  @relation("DepartmentTree", fields: [parentId], references: [id])
+  children Department[] @relation("DepartmentTree")
+
+  @@index([companyId, parentId])
+  @@map("departments")
+}
+
+/// 직원 — 회사별 신분 (Phase 1은 최소 형태. 시점 이력은 Phase 2)
+model Employee {
+  id               String           @id @default(cuid())
+  companyId        String
+  name             String
+  employeeNumber   String?
+  companyEmail     String?
+  personalEmail    String?
+  hireDate         DateTime?
+  employmentStatus EmploymentStatus @default(ACTIVE)
+  // 데이터 소스 추적 (docs/03 §3 — AxHub bulk)
+  dataSource       DataSource       @default(MANUAL)
+  axhubExternalId  String?
+  lastSyncedAt     DateTime?
+  syncLockedFields String[]         @default([])
+  bulkImportRowId  String?
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  company    Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  membership UserCompanyMembership?
+  userRoles  UserRole[]
+
+  @@unique([companyId, axhubExternalId])
+  @@index([companyId, employmentStatus])
+  @@map("employees")
+}
+
+// ─────────────────────────────────────────────────────────────
+// 권한 — RBAC + Scope (docs/03 §7)
+// ─────────────────────────────────────────────────────────────
+
+model Role {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  description String?
+  icon        String?
+  type        RoleType
+  isSystem    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@unique([companyId, name])
+  @@map("roles")
+}
+
+/// 권한 마스터 — 전역 단일 카탈로그 (~70개, 시드)
+model Permission {
+  id                  String                @id @default(cuid())
+  key                 String                @unique
+  category            String
+  domain              String
+  action              PermissionAction
+  name                String
+  description         String?
+  sensitivity         PermissionSensitivity @default(NORMAL)
+  hasScope            Boolean               @default(false)
+  dependsOnPermissionKeys String[]          @default([])
+  warningText         String?
+
+  rolePermissions RolePermission[]
+
+  @@index([category])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id                    String     @id @default(cuid())
+  roleId                String
+  permissionId          String
+  enabled               Boolean    @default(true)
+  scopeType             ScopeType?
+  departmentIds         String[]   @default([])
+  includeSubDepartments Boolean    @default(false)
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id               String   @id @default(cuid())
+  employeeId       String
+  roleId           String
+  assignedAt       DateTime @default(now())
+  assignedByUserId String?
+  isActive         Boolean  @default(true)
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  role     Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, roleId])
+  @@map("user_roles")
+}
+
+// ─────────────────────────────────────────────────────────────
+// 보안 (Phase 1 기본형 — docs/03 §8)
+// ─────────────────────────────────────────────────────────────
+
+model CompanyLoginPolicy {
+  id                      String  @id @default(cuid())
+  companyId               String  @unique
+  minLength               Int     @default(8)
+  requireAlpha            Boolean @default(true)
+  requireDigit            Boolean @default(true)
+  requireSpecial          Boolean @default(true)
+  blockWeakPasswords      Boolean @default(true)
+  blockPersonalInfo       Boolean @default(true)
+  preventReuseCount       Int     @default(3)
+  passwordExpiryDays      Int?
+  maxLoginAttempts        Int     @default(5)
+  pcSessionMaxAgeHours    Int     @default(168)
+  mobileSessionMaxAgeHours Int    @default(720)
+  allowLeaveOfAbsenceLogin Boolean @default(true)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("company_login_policies")
+}
+
+model LoginAttempt {
+  id          String   @id @default(cuid())
+  email       String
+  userId      String?
+  attemptedAt DateTime @default(now())
+  ip          String?
+  userAgent   String?
+  success     Boolean
+  failReason  String?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([email, attemptedAt])
+  @@map("login_attempts")
+}
+
+// ─────────────────────────────────────────────────────────────
+// 감사 로그 (Phase 1 기본형: actor/event/target/before-after — docs/03 §9)
+// 정보 분류 강화(InfoCategory/FieldClassification)는 Phase 6.
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id              String         @id @default(cuid())
+  companyId       String?
+  occurredAt      DateTime       @default(now())
+  actorUserId     String?
+  actorEmail      String?
+  actorName       String?
+  onBehalfOfUserId String?
+  activityType    String
+  eventType       AuditEventType
+  targetType      String
+  targetId        String?
+  targetLabel     String?
+  description     String
+  beforeSnapshot  Json?
+  afterSnapshot   Json?
+  diff            Json?
+  ipAddress       String?
+  userAgent       String?
+  sessionId       String?
+  requestId       String?
+
+  company Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, occurredAt])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 2~8 PLACEHOLDER (docs/03 — 구현 시 활성화)
+// Phase 2 Core HR : PositionHistory, EmploymentContractHistory,
+//   SalaryContractHistory, Appointment/AppointmentTarget,
+//   JobPosition/JobRole/JobTitle/JobFamily/JobGrade, DepartmentHistory
+// Phase 3 휴가     : CompanyHoliday, LeavePolicy, LeaveType, LeaveBalance,
+//   LeaveTransaction, LeaveRequest, LeavePromotionRequest
+// Phase 4 워크플로우: FormCategory, FormTemplate, FormDocument,
+//   ApprovalPolicy/Stage/RoutingRule/Reference, ApprovalLine, ApprovalAction
+// Phase 5 권한강화  : EffectivePermission(캐시), PermissionDelegation
+// Phase 6 채용/보안 : JobPosting/JobStage/Candidate, CompanySecurityPolicy,
+//   UserMFA, UserSession, PasswordHistory, InfoCategory, FieldClassification
+// Phase 7 P1       : EmployeeHRNote, LeaveOfAbsence, Award/Discipline,
+//   CareerHistory/EducationHistory, FamilyMember, EmployeeTraining
+// Phase 8 확장      : Notification/CompanyNotificationPolicy, SearchHistory/
+//   AIIntentLog, Recognition/Feedback, BulkOperation/BulkOperationRow,
+//   AxHubSyncConfig, IntegrationConfig
+// ─────────────────────────────────────────────────────────────

@@ -1,0 +1,2 @@
+# Prisma Migrate lock — 절대 수동 편집 금지
+provider = "postgresql"
