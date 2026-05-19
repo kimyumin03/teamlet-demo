@@ -1,0 +1,9 @@
+{
+  "extends": "@teamlet/config/tsconfig.node.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["src", "seed", "prisma"]
+}

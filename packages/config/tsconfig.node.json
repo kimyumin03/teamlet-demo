@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Teamlet Node (libraries / worker)",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["node"]
+  }
+}

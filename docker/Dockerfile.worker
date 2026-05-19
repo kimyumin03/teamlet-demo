@@ -1,0 +1,26 @@
+# Teamlet worker (BullMQ) — 멀티스테이지 빌드
+FROM node:22-alpine AS base
+RUN corepack enable
+WORKDIR /app
+
+FROM base AS deps
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
+COPY apps/worker/package.json apps/worker/
+COPY packages/db/package.json packages/db/
+COPY packages/modules/package.json packages/modules/
+COPY packages/shared/package.json packages/shared/
+COPY packages/config/package.json packages/config/
+RUN pnpm install --frozen-lockfile
+
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm --filter @teamlet/db generate
+RUN pnpm --filter worker build
+
+FROM base AS runner
+ENV NODE_ENV=production
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/apps/worker/dist ./apps/worker/dist
+COPY --from=build /app/packages ./packages
+CMD ["node", "apps/worker/dist/index.js"]

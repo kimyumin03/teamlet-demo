@@ -1,0 +1,11 @@
+{
+  "name": "@teamlet/config",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "tsconfig.base.json",
+    "tsconfig.nextjs.json",
+    "tsconfig.node.json",
+    "eslint.base.js"
+  ]
+}
