@@ -1,0 +1,52 @@
+/* Teamlet 전역 베이스 (docs/05 §0,2,11). tokens.css 이후 import. */
+
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  font-feature-settings: "tnum" on; /* 숫자 폭 균일 — HR 표 가독성 */
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+/* 포커스 링 명시 — a11y (docs/05 §11) */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* 모션 최소화 존중 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

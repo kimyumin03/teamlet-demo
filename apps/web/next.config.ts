@@ -10,9 +10,7 @@ const nextConfig: NextConfig = {
     "@teamlet/modules",
     "@teamlet/db",
   ],
-  experimental: {
-    typedRoutes: true,
-  },
+  // typedRoutes: 라우트 표면이 안정화되는 Phase 2 에서 재도입.
 };
 
 export default nextConfig;

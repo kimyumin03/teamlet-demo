@@ -1,0 +1,144 @@
+/* ─────────────────────────────────────────────────────────────
+ * Teamlet 디자인 토큰 — Cool Slate 팔레트 (docs/05 §1~3, §8)
+ * Tailwind v4 @theme. 코드에서는 의미 토큰만 사용:
+ *   bg-primary / text-foreground / border-border …
+ * ❌ 그라데이션, 임의 hex, bg-green-500 금지 (Anti-Pattern §5)
+ * ───────────────────────────────────────────────────────────── */
+
+@theme {
+  /* Primary Ramp — Slate (브랜드 메인) */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+
+  /* Accent Ramp — Cool Blue (포커스/링크/정보) */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-200: #bfdbfe;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-blue-800: #1e40af;
+  --color-blue-900: #1e3a8a;
+
+  /* Semantic — 의미 고정 (변경 금지) */
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-500: #22c55e; /* 의미적 success 만 — 메인 컬러 X */
+  --color-success-700: #15803d;
+  --color-success-800: #166534;
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-500: #f59e0b;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-destructive-50: #fef2f2;
+  --color-destructive-100: #fee2e2;
+  --color-destructive-500: #ef4444;
+  --color-destructive-600: #dc2626;
+  --color-destructive-700: #b91c1c;
+  --color-info-50: #eff6ff;
+  --color-info-100: #dbeafe;
+  --color-info-500: #3b82f6;
+  --color-info-700: #1d4ed8;
+
+  /* Semantic Tokens — 코드에서 실제로 쓰는 이름 (docs/05 §1-4) */
+  --color-background: var(--color-slate-50);
+  --color-background-primary: #ffffff;
+  --color-background-secondary: var(--color-slate-100);
+  --color-background-muted: var(--color-slate-50);
+
+  --color-foreground: var(--color-slate-900);
+  --color-foreground-muted: var(--color-slate-600);
+  --color-foreground-subtle: var(--color-slate-400);
+  --color-foreground-inverse: #ffffff;
+
+  --color-border: var(--color-slate-200);
+  --color-border-strong: var(--color-slate-300);
+  --color-border-focus: var(--color-blue-500);
+
+  --color-primary: var(--color-slate-900);
+  --color-primary-foreground: #ffffff;
+  --color-primary-hover: var(--color-slate-800);
+
+  --color-accent: var(--color-blue-600);
+  --color-accent-foreground: #ffffff;
+  --color-accent-hover: var(--color-blue-700);
+
+  --color-sensitive-bg: var(--color-slate-100);
+  --color-sensitive-border: var(--color-slate-300);
+
+  /* Typography (docs/05 §2) */
+  --font-sans: "Pretendard Variable", "Pretendard", -apple-system,
+    BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "D2Coding", ui-monospace, monospace;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.125rem;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.375rem;
+  --text-md: 0.9375rem;
+  --text-md--line-height: 1.5rem;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.625rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.375rem;
+
+  /* Radius (docs/05 §3-2) */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadow (docs/05 §3-3 — 절제) */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06),
+    0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 8px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 24px rgba(15, 23, 42, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.4);
+
+  /* Motion (docs/05 §8 — 절제) */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 300ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 다크 모드 — 의미 토큰만 재정의 (docs/05 §1-5) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: var(--color-slate-950);
+    --color-background-primary: var(--color-slate-900);
+    --color-background-secondary: var(--color-slate-800);
+    --color-background-muted: var(--color-slate-800);
+    --color-foreground: #f8fafc;
+    --color-foreground-muted: var(--color-slate-300);
+    --color-foreground-subtle: var(--color-slate-500);
+    --color-border: var(--color-slate-700);
+    --color-border-strong: var(--color-slate-600);
+    --color-primary: #ffffff;
+    --color-primary-foreground: var(--color-slate-900);
+    --color-primary-hover: var(--color-slate-100);
+    --color-accent: var(--color-blue-400);
+  }
+}

@@ -1,2 +1,7 @@
-/* Tailwind v4 진입점. Cool Slate 디자인 토큰은 Step 4(@teamlet/ui)에서 주입됨. */
+/* Tailwind v4 진입점 + Cool Slate 디자인 토큰 (@teamlet/ui). */
 @import "tailwindcss";
+@import "@teamlet/ui/theme/tokens.css";
+@import "@teamlet/ui/theme/globals.css";
+
+/* 워크스페이스 UI 패키지 클래스 스캔 (Tailwind v4 content 감지) */
+@source "../../../../packages/ui/src";
