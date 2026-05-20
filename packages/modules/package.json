@@ -10,7 +10,8 @@
     "./audit": "./src/audit/index.ts",
     "./permission": "./src/permission/index.ts",
     "./employee": "./src/employee/index.ts",
-    "./department": "./src/department/index.ts"
+    "./department": "./src/department/index.ts",
+    "./position": "./src/position/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

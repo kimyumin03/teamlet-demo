@@ -43,6 +43,8 @@ export type EmployeeListItem = {
   isActive: boolean;
   departmentId: string | null;
   departmentName: string | null;
+  positionId: string | null;
+  positionName: string | null;
 };
 
 export type EmployeeListFilter = {
@@ -80,6 +82,8 @@ export async function listEmployees(
       isActive: true,
       departmentId: true,
       department: { select: { name: true } },
+      positionId: true,
+      position: { select: { name: true } },
     },
     orderBy: [{ isActive: "desc" }, { name: "asc" }],
   });
@@ -95,6 +99,8 @@ export async function listEmployees(
       isActive: e.isActive,
       departmentId: e.departmentId,
       departmentName: e.department?.name ?? null,
+      positionId: e.positionId,
+      positionName: e.position?.name ?? null,
     })),
   );
 }
@@ -147,6 +153,7 @@ export async function updateEmployee(
       personalEmail: true,
       hireDate: true,
       departmentId: true,
+      positionId: true,
       companyId: true,
     },
   });
@@ -160,6 +167,7 @@ export async function updateEmployee(
   const personalEmail = d.personalEmail?.trim() || null;
   const hireDateRaw = d.hireDate?.trim() || null;
   const departmentId = d.departmentId?.trim() || null;
+  const positionId = d.positionId?.trim() || null;
 
   if (companyEmail && !EMAIL_RE.test(companyEmail)) {
     return err(errors.validation("올바른 회사 이메일 형식이 아니에요"));
@@ -185,6 +193,19 @@ export async function updateEmployee(
     }
   }
 
+  if (positionId) {
+    const pos = await prisma.position.findUnique({
+      where: { id: positionId },
+      select: { companyId: true, isActive: true },
+    });
+    if (!pos || pos.companyId !== actor.companyId) {
+      return err(errors.notFound("직책을 찾을 수 없어요"));
+    }
+    if (!pos.isActive) {
+      return err(errors.conflict("비활성 직책엔 배정할 수 없어요"));
+    }
+  }
+
   if (companyEmail && companyEmail !== current.companyEmail) {
     const dup = await prisma.employee.findFirst({
       where: {
@@ -204,6 +225,7 @@ export async function updateEmployee(
     personalEmail: current.personalEmail,
     hireDate: current.hireDate,
     departmentId: current.departmentId,
+    positionId: current.positionId,
   };
 
   const updated = await prisma.employee.update({
@@ -215,6 +237,7 @@ export async function updateEmployee(
       personalEmail,
       hireDate,
       departmentId,
+      positionId,
     },
     select: { id: true, name: true },
   });
@@ -236,6 +259,7 @@ export async function updateEmployee(
       personalEmail,
       hireDate,
       departmentId,
+      positionId,
     },
   });
 
@@ -379,8 +403,10 @@ export async function getEmployee(
       isActive: true,
       companyId: true,
       departmentId: true,
+      positionId: true,
       createdAt: true,
       department: { select: { name: true } },
+      position: { select: { name: true, isOrgHead: true } },
       userRoles: {
         where: { isActive: true },
         orderBy: { assignedAt: "desc" },
@@ -415,6 +441,8 @@ export async function getEmployee(
     isActive: emp.isActive,
     departmentId: emp.departmentId,
     departmentName: emp.department?.name ?? null,
+    positionId: emp.positionId,
+    positionName: emp.position?.name ?? null,
     createdAt: emp.createdAt,
     roles: emp.userRoles.map((ur) => ({
       userRoleId: ur.id,
@@ -456,6 +484,7 @@ export async function createEmployee(
   const companyEmail = d.companyEmail?.trim() || null;
   const hireDateRaw = d.hireDate?.trim() || null;
   const departmentId = d.departmentId?.trim() || null;
+  const positionId = d.positionId?.trim() || null;
 
   if (companyEmail && !EMAIL_RE.test(companyEmail)) {
     return err(errors.validation("올바른 이메일 형식이 아니에요"));
@@ -486,6 +515,19 @@ export async function createEmployee(
     }
   }
 
+  if (positionId) {
+    const pos = await prisma.position.findUnique({
+      where: { id: positionId },
+      select: { companyId: true, isActive: true },
+    });
+    if (!pos || pos.companyId !== actor.companyId) {
+      return err(errors.notFound("직책을 찾을 수 없어요"));
+    }
+    if (!pos.isActive) {
+      return err(errors.conflict("비활성 직책엔 배정할 수 없어요"));
+    }
+  }
+
   if (companyEmail) {
     const dup = await prisma.employee.findFirst({
       where: { companyId: actor.companyId, companyEmail },
@@ -498,6 +540,7 @@ export async function createEmployee(
     data: {
       companyId: actor.companyId,
       departmentId,
+      positionId,
       name: d.name,
       employeeNumber,
       companyEmail,
@@ -521,6 +564,7 @@ export async function createEmployee(
       companyEmail,
       hireDate,
       departmentId,
+      positionId,
     },
   });
 

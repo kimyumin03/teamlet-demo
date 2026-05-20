@@ -2,11 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { listDepartments } from "@teamlet/modules/department";
 import { listEmployees, type EmployeeListItem } from "@teamlet/modules/employee";
+import { listPositions } from "@teamlet/modules/position";
 import { EmptyState } from "@teamlet/ui";
 import { UsersRound } from "lucide-react";
 import { auth } from "@/auth";
 import { AddDepartmentButton } from "@/components/members/add-department-button";
 import { AddMemberButton } from "@/components/members/add-member-button";
+import { AddPositionButton } from "@/components/members/add-position-button";
 import { DepartmentActions } from "@/components/members/department-actions";
 import { DepartmentSidebar } from "@/components/members/department-sidebar";
 import { MemberSearchInput } from "@/components/members/search-input";
@@ -59,10 +61,12 @@ export default async function MembersPage({
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const [employeesResult, departmentsResult] = await Promise.all([
-    listEmployees(session.user.employeeId),
-    listDepartments(session.user.employeeId),
-  ]);
+  const [employeesResult, departmentsResult, positionsResult] =
+    await Promise.all([
+      listEmployees(session.user.employeeId),
+      listDepartments(session.user.employeeId),
+      listPositions(session.user.employeeId),
+    ]);
 
   if (!employeesResult.ok) {
     return (
@@ -80,6 +84,7 @@ export default async function MembersPage({
 
   const allEmployees = employeesResult.data;
   const departments = departmentsResult.ok ? departmentsResult.data : [];
+  const positions = positionsResult.ok ? positionsResult.data : [];
 
   const unassignedCount = allEmployees.filter((e) => !e.departmentId).length;
 
@@ -121,9 +126,11 @@ export default async function MembersPage({
           <div className="w-56">
             <MemberSearchInput initialValue={query} />
           </div>
+          <AddPositionButton />
           <AddDepartmentButton departments={departments} />
           <AddMemberButton
             departments={departments}
+            positions={positions}
             defaultDepartmentId={
               selected && selected !== UNASSIGNED ? selected : null
             }

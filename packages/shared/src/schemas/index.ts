@@ -74,6 +74,7 @@ export const employeeCreateSchema = z.object({
   companyEmail: z.string().trim().max(254).optional(),
   hireDate: z.string().trim().optional(),
   departmentId: z.string().optional(),
+  positionId: z.string().optional(),
 });
 export type EmployeeCreateInput = z.infer<typeof employeeCreateSchema>;
 
@@ -85,8 +86,16 @@ export const employeeUpdateSchema = z.object({
   personalEmail: z.string().trim().max(254).optional(),
   hireDate: z.string().trim().optional(),
   departmentId: z.string().optional(),
+  positionId: z.string().optional(),
 });
 export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
+
+/** 직책 추가 (docs/03 §3 Position). isOrgHead 는 DYNAMIC_ORG_HEAD 평가용. */
+export const positionCreateSchema = z.object({
+  name: z.string().trim().min(1, "직책명을 입력해 주세요").max(50),
+  isOrgHead: z.boolean().optional(),
+});
+export type PositionCreateInput = z.infer<typeof positionCreateSchema>;
 
 /** 부서 추가 (docs/02 §3, docs/03 §3 Department). parentId 없으면 최상위. */
 export const departmentCreateSchema = z.object({

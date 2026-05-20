@@ -15,6 +15,7 @@ import {
 } from "@teamlet/ui";
 import type { DepartmentNode } from "@teamlet/modules/department";
 import type { EmployeeDetail } from "@teamlet/modules/employee";
+import type { PositionItem } from "@teamlet/modules/position";
 import { updateEmployeeAction } from "@/lib/actions/employee";
 
 function toDateInput(d: Date | null): string {
@@ -25,9 +26,11 @@ function toDateInput(d: Date | null): string {
 export function EditMemberButton({
   employee,
   departments,
+  positions,
 }: {
   employee: EmployeeDetail;
   departments: DepartmentNode[];
+  positions: PositionItem[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -45,6 +48,7 @@ export function EditMemberButton({
   const [departmentId, setDepartmentId] = useState(
     employee.departmentId ?? "",
   );
+  const [positionId, setPositionId] = useState(employee.positionId ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -59,6 +63,7 @@ export function EditMemberButton({
         personalEmail: personalEmail || undefined,
         hireDate: hireDate || undefined,
         departmentId: departmentId || undefined,
+        positionId: positionId || undefined,
       });
       if (!res.ok) {
         setError(res.error.message);
@@ -168,26 +173,50 @@ export function EditMemberButton({
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="edit-dept"
-              className="text-sm text-foreground-muted"
-            >
-              부서
-            </label>
-            <select
-              id="edit-dept"
-              value={departmentId}
-              onChange={(e) => setDepartmentId(e.target.value)}
-              className="h-10 rounded-md border border-border bg-background-primary px-3 text-base text-foreground focus-visible:border-border-focus focus-visible:shadow-focus focus-visible:outline-none"
-            >
-              <option value="">미배정</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edit-dept"
+                className="text-sm text-foreground-muted"
+              >
+                부서
+              </label>
+              <select
+                id="edit-dept"
+                value={departmentId}
+                onChange={(e) => setDepartmentId(e.target.value)}
+                className="h-10 rounded-md border border-border bg-background-primary px-3 text-base text-foreground focus-visible:border-border-focus focus-visible:shadow-focus focus-visible:outline-none"
+              >
+                <option value="">미배정</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edit-pos"
+                className="text-sm text-foreground-muted"
+              >
+                직책
+              </label>
+              <select
+                id="edit-pos"
+                value={positionId}
+                onChange={(e) => setPositionId(e.target.value)}
+                className="h-10 rounded-md border border-border bg-background-primary px-3 text-base text-foreground focus-visible:border-border-focus focus-visible:shadow-focus focus-visible:outline-none"
+              >
+                <option value="">미지정</option>
+                {positions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                    {p.isOrgHead ? " (조직장)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {error && (

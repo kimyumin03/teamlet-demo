@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { listDepartments } from "@teamlet/modules/department";
 import { getEmployee, type EmployeeDetail } from "@teamlet/modules/employee";
+import { listPositions } from "@teamlet/modules/position";
 import { ChevronLeft, Shield } from "lucide-react";
 import { auth } from "@/auth";
 import { DeactivateEmployeeButton } from "@/components/members/deactivate-button";
@@ -59,9 +60,10 @@ export default async function MemberDetailPage({
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const [empResult, deptResult] = await Promise.all([
+  const [empResult, deptResult, posResult] = await Promise.all([
     getEmployee(session.user.employeeId, id),
     listDepartments(session.user.employeeId),
+    listPositions(session.user.employeeId),
   ]);
 
   if (!empResult.ok) {
@@ -80,6 +82,7 @@ export default async function MemberDetailPage({
 
   const emp = empResult.data;
   const departments = deptResult.ok ? deptResult.data : [];
+  const positions = posResult.ok ? posResult.data : [];
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
@@ -95,7 +98,11 @@ export default async function MemberDetailPage({
         <div>
           <h1 className="text-2xl font-semibold text-foreground">{emp.name}</h1>
           <p className="mt-1 text-sm text-foreground-muted">
-            {emp.departmentName ?? "미배정"} ·{" "}
+            {emp.departmentName ?? "미배정"}
+            {emp.positionName && (
+              <span> · {emp.positionName}</span>
+            )}
+            {" · "}
             {STATUS_LABEL[emp.employmentStatus]}
             {!emp.isActive && (
               <span className="ml-2 text-foreground-subtle">(비활성)</span>
@@ -104,7 +111,11 @@ export default async function MemberDetailPage({
         </div>
         {emp.isActive && (
           <div className="flex items-center gap-2">
-            <EditMemberButton employee={emp} departments={departments} />
+            <EditMemberButton
+              employee={emp}
+              departments={departments}
+              positions={positions}
+            />
             <DeactivateEmployeeButton
               employeeId={emp.id}
               employeeName={emp.name}
@@ -123,6 +134,7 @@ export default async function MemberDetailPage({
             <Field label="회사 이메일">{emp.companyEmail ?? "—"}</Field>
             <Field label="개인 이메일">{emp.personalEmail ?? "—"}</Field>
             <Field label="부서">{emp.departmentName ?? "미배정"}</Field>
+            <Field label="직책">{emp.positionName ?? "미지정"}</Field>
             <Field label="등록일">{formatDate(emp.createdAt)}</Field>
           </dl>
         </section>

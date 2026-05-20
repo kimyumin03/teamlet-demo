@@ -9,3 +9,4 @@ export * as audit from "./audit/index";
 export * as permission from "./permission/index";
 export * as employee from "./employee/index";
 export * as department from "./department/index";
+export * as position from "./position/index";
