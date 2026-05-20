@@ -7,6 +7,7 @@
  */
 
 import { prisma } from "@teamlet/db";
+import type { RoleType } from "@teamlet/db";
 import {
   DomainError,
   err,
@@ -22,6 +23,62 @@ import { recordAudit } from "../audit/index";
 import { assertPermission } from "./assert";
 
 const ROLE_MANAGE = "permission.role.manage";
+const ROLE_READ = "permission.role.read";
+
+export type RoleListItem = {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  type: RoleType;
+  isSystem: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  memberCount: number;
+};
+
+export async function listRoles(
+  actorEmployeeId: string,
+): Promise<Result<RoleListItem[]>> {
+  try {
+    await assertPermission(actorEmployeeId, ROLE_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const roles = await prisma.role.findMany({
+    where: { companyId: actor.companyId },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      icon: true,
+      type: true,
+      isSystem: true,
+      isActive: true,
+      createdAt: true,
+      _count: { select: { userRoles: { where: { isActive: true } } } },
+    },
+    orderBy: [{ isSystem: "desc" }, { createdAt: "asc" }],
+  });
+
+  return ok(
+    roles.map((r) => ({
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      icon: r.icon,
+      type: r.type,
+      isSystem: r.isSystem,
+      isActive: r.isActive,
+      createdAt: r.createdAt,
+      memberCount: r._count.userRoles,
+    })),
+  );
+}
 
 type Actor = { companyId: string; userId: string };
 
