@@ -41,6 +41,8 @@
 
 **P1 권한 핵심 완료.** `TEAMLET_DEMO_AUTO_APPROVE=true` 설정 시 회사 신청 → 즉시 활성화 → `/settings/permissions` 진입 가능. 남은 건 UI 보강 + 작은 리팩터.
 
+> **다음 세션 시작점: `_actor.ts` 헬퍼 추출** (체크리스트 두 번째 미체크 항목).
+
 체크리스트:
 - [x] 권한 카탈로그 조회 Server Action (`12c11e9`)
 - [x] 역할 CRUD Server Action (`56e308a`)
