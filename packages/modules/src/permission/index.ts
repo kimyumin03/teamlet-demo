@@ -4,6 +4,7 @@ export {
   PERMISSION_CATEGORIES,
 } from "./catalog";
 export { getEffectivePermissions } from "./effective";
+export { createRole, deleteRole, updateRole } from "./role";
 export { matchesScope } from "./scope";
 export type {
   CatalogCategory,

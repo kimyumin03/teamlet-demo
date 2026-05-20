@@ -46,6 +46,27 @@ export const joinByCodeSchema = z.object({
 export type JoinByCodeInput = z.infer<typeof joinByCodeSchema>;
 
 /** 회사 등록 신청 (docs/06 §1.2 register-company / docs/03 §13 CompanyApplication) */
+/** 역할 생성/수정 (docs/02 §11-1, docs/03 §7 Role). 시스템 역할은 시드 전용. */
+export const roleCreateSchema = z.object({
+  name: z.string().trim().min(2, "역할명은 2자 이상이어야 해요").max(50),
+  description: z.string().max(500).optional(),
+  icon: z.string().max(30).optional(),
+});
+export type RoleCreateInput = z.infer<typeof roleCreateSchema>;
+
+export const roleUpdateSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "역할명은 2자 이상이어야 해요")
+    .max(50)
+    .optional(),
+  description: z.string().max(500).optional(),
+  icon: z.string().max(30).optional(),
+  isActive: z.boolean().optional(),
+});
+export type RoleUpdateInput = z.infer<typeof roleUpdateSchema>;
+
 export const companyApplicationSchema = z.object({
   companyName: z.string().min(2, "회사명을 입력해 주세요").max(100),
   businessNumber: z
