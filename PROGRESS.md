@@ -21,10 +21,12 @@
 - **Phase**: P1 Foundation (인증/가입/권한)
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git` (로컬 = origin, 푸시 보류 없음)
-- **마지막 커밋**: `4909f4f feat(permission): RBAC + Scope 평가 모듈 (ALL/SELF, P1 범위)`
+- **마지막 커밋**: `a6b4ef5 feat(auth): session 에 currentCompanyId / employeeId 노출`
 
 ## 최근 한 일
 
+- `a6b4ef5` Session 에 `currentCompanyId` / `employeeId` 노출 — `resolveLoginContext` 추가, jwt/session 콜백에서 첫 ACTIVE membership 자동 선택 (Server Action 들이 `assertPermission(employeeId, ...)` 호출 가능해짐)
+- `81cb305` 세션 간 진행 추적용 `PROGRESS.md` 도입
 - `4909f4f` 권한 모듈 신설 — `assertPermission` / `hasPermission` / `getEffectivePermissions`, ALL/SELF 실구현, DEPT/DIRECT는 P2 stub
 - `8fdcc5b` Phase 1 인증 화면 (로그인/회원가입/회사가입)
 
@@ -55,6 +57,7 @@
 - 워크스페이스 상대 import 는 **확장자 없이** (`.js` 금지)
 - 권한 키 컨벤션: `<category>.<domain>.<action>` (예: `employee.profile.read`)
 - `UserRole`은 `employeeId` 기준 (User가 아님 — 회사별 신분)
+- **Windows 터미널**: `cmd` 기본 CP949에서 한글/이모지 잘림으로 Claude Code 대화에 lone surrogate 박힐 수 있음 → `API Error 400: no low surrogate` 로 세션 꼬임. **PowerShell 또는 `chcp 65001` 후 cmd 사용 권장**. 한 번 꼬이면 그 세션은 복구 불가, `claude` 재실행 필요.
 
 ## 자주 쓰는 명령
 
