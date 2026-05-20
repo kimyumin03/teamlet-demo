@@ -15,6 +15,9 @@ import {
 } from "@teamlet/shared";
 import { recordAudit } from "../audit/index";
 
+export { approveCompanyApplication } from "./approval";
+export type { ApprovalResult } from "./approval";
+
 /** 로그인 후 라우팅 판단용 — 사용자의 회사 멤버십 요약 */
 export async function getMembershipSummary(userId: string): Promise<{
   active: { companyId: string; employeeId: string | null }[];
