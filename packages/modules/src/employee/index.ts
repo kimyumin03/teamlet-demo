@@ -11,7 +11,7 @@
  */
 
 import { prisma } from "@teamlet/db";
-import type { EmploymentStatus } from "@teamlet/db";
+import type { EmploymentStatus, RoleType } from "@teamlet/db";
 import {
   employeeCreateSchema,
   err,
@@ -94,6 +94,99 @@ export async function listEmployees(
       departmentName: e.department?.name ?? null,
     })),
   );
+}
+
+export type EmployeeRoleAssignment = {
+  userRoleId: string;
+  roleId: string;
+  roleName: string;
+  roleType: RoleType;
+  isSystem: boolean;
+  assignedAt: Date;
+};
+
+export type EmployeeDetail = EmployeeListItem & {
+  personalEmail: string | null;
+  createdAt: Date;
+  roles: EmployeeRoleAssignment[];
+};
+
+/**
+ * 직원 상세 조회. 권한 가드: `member.directory.read`.
+ * 다른 회사 직원 id 는 NOT_FOUND 로 은닉.
+ */
+export async function getEmployee(
+  actorEmployeeId: string,
+  employeeId: string,
+): Promise<Result<EmployeeDetail>> {
+  try {
+    await assertPermission(actorEmployeeId, DIRECTORY_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const emp = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: {
+      id: true,
+      name: true,
+      employeeNumber: true,
+      companyEmail: true,
+      personalEmail: true,
+      hireDate: true,
+      employmentStatus: true,
+      isActive: true,
+      companyId: true,
+      departmentId: true,
+      createdAt: true,
+      department: { select: { name: true } },
+      userRoles: {
+        where: { isActive: true },
+        orderBy: { assignedAt: "desc" },
+        select: {
+          id: true,
+          assignedAt: true,
+          role: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              isSystem: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!emp || emp.companyId !== actor.companyId) {
+    return err(errors.notFound("구성원을 찾을 수 없어요"));
+  }
+
+  return ok({
+    id: emp.id,
+    name: emp.name,
+    employeeNumber: emp.employeeNumber,
+    companyEmail: emp.companyEmail,
+    personalEmail: emp.personalEmail,
+    hireDate: emp.hireDate,
+    employmentStatus: emp.employmentStatus,
+    isActive: emp.isActive,
+    departmentId: emp.departmentId,
+    departmentName: emp.department?.name ?? null,
+    createdAt: emp.createdAt,
+    roles: emp.userRoles.map((ur) => ({
+      userRoleId: ur.id,
+      roleId: ur.role.id,
+      roleName: ur.role.name,
+      roleType: ur.role.type,
+      isSystem: ur.role.isSystem,
+      assignedAt: ur.assignedAt,
+    })),
+  });
 }
 
 /**

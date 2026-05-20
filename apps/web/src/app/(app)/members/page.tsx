@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { listDepartments } from "@teamlet/modules/department";
 import { listEmployees, type EmployeeListItem } from "@teamlet/modules/employee";
@@ -161,34 +162,36 @@ export default async function MembersPage({
           ) : (
             <ul className="flex flex-col gap-1">
               {filtered.map((emp) => (
-                <li
-                  key={emp.id}
-                  className="grid grid-cols-[1.5fr_1fr_1fr_1fr_auto] items-center gap-4 rounded-lg border border-border bg-background-primary px-4 py-3"
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-medium text-foreground">
-                      {emp.name}
-                    </span>
-                    {emp.companyEmail && (
-                      <span className="text-sm text-foreground-muted">
-                        {emp.companyEmail}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm text-foreground-muted">
-                    {emp.departmentName ?? "—"}
-                  </div>
-                  <div className="text-sm text-foreground-muted">
-                    {emp.employeeNumber ?? "—"}
-                  </div>
-                  <div className="text-sm text-foreground-muted">
-                    {formatHireDate(emp.hireDate)}
-                  </div>
-                  <span
-                    className={`rounded-md px-2 py-0.5 text-xs ${STATUS_CLASS[emp.employmentStatus]}`}
+                <li key={emp.id}>
+                  <Link
+                    href={`/members/${emp.id}`}
+                    className="grid grid-cols-[1.5fr_1fr_1fr_1fr_auto] items-center gap-4 rounded-lg border border-border bg-background-primary px-4 py-3 transition-colors hover:bg-background-secondary"
                   >
-                    {STATUS_LABEL[emp.employmentStatus]}
-                  </span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-medium text-foreground">
+                        {emp.name}
+                      </span>
+                      {emp.companyEmail && (
+                        <span className="text-sm text-foreground-muted">
+                          {emp.companyEmail}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-foreground-muted">
+                      {emp.departmentName ?? "—"}
+                    </div>
+                    <div className="text-sm text-foreground-muted">
+                      {emp.employeeNumber ?? "—"}
+                    </div>
+                    <div className="text-sm text-foreground-muted">
+                      {formatHireDate(emp.hireDate)}
+                    </div>
+                    <span
+                      className={`rounded-md px-2 py-0.5 text-xs ${STATUS_CLASS[emp.employmentStatus]}`}
+                    >
+                      {STATUS_LABEL[emp.employmentStatus]}
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
