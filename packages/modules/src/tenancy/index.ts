@@ -14,6 +14,7 @@ import {
   errors,
 } from "@teamlet/shared";
 import { recordAudit } from "../audit/index";
+import { approveCompanyApplication } from "./approval";
 
 export { approveCompanyApplication } from "./approval";
 export type { ApprovalResult } from "./approval";
@@ -49,12 +50,25 @@ export async function resolveLoginContext(
   return { companyId: active.companyId, employeeId: active.employeeId };
 }
 
-/** 회사 등록 신청 — Sales-led (docs/06 §1.2 register-company) */
+/**
+ * 회사 등록 신청 — Sales-led (docs/06 §1.2 register-company).
+ *
+ * `TEAMLET_DEMO_AUTO_APPROVE === "true"` 이면 신청 직후 자동 승인 (P1 데모 흐름).
+ * 자동 승인이 성공하면 결과에 `autoApproved: true` + `companyId` 가 채워짐. 호출자는
+ * 이를 보고 `/home` 으로 보낼지 `/pending-approval` 로 보낼지 결정. 자동 승인 실패는
+ * 신청 자체는 PENDING 으로 살아 있으므로 사용자에겐 신청 성공으로만 알림.
+ */
 export async function submitCompanyApplication(
   userId: string,
   raw: CompanyApplicationInput,
   ctx: { ip?: string | null; userAgent?: string | null } = {},
-): Promise<Result<{ applicationId: string }>> {
+): Promise<
+  Result<{
+    applicationId: string;
+    autoApproved?: boolean;
+    companyId?: string;
+  }>
+> {
   const parsed = companyApplicationSchema.safeParse(raw);
   if (!parsed.success) {
     return err(errors.validation(parsed.error.issues[0]?.message ?? "입력 오류"));
@@ -96,6 +110,22 @@ export async function submitCompanyApplication(
     ip: ctx.ip,
     userAgent: ctx.userAgent,
   });
+
+  if (process.env.TEAMLET_DEMO_AUTO_APPROVE === "true") {
+    const approval = await approveCompanyApplication(app.id, {
+      approverUserId: userId,
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+    });
+    if (approval.ok) {
+      return ok({
+        applicationId: app.id,
+        autoApproved: true,
+        companyId: approval.data.companyId,
+      });
+    }
+    // 자동 승인 실패: 신청은 PENDING 상태로 남음. 사용자에겐 일반 신청 완료로 응답.
+  }
 
   return ok({ applicationId: app.id });
 }

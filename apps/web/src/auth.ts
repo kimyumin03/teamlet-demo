@@ -13,6 +13,28 @@ import { authConfig } from "./auth.config";
  */
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    // Node 런타임 override — Prisma 의존 가능. authConfig 의 edge-safe jwt 를 대체.
+    jwt: async ({ token, user }) => {
+      if (user) {
+        token.userId = user.id;
+        token.companyId = user.companyId ?? null;
+        token.employeeId = user.employeeId ?? null;
+      }
+      // 멤버십 미확정 사용자(가입 대기 / 자가-승인 직후) 는 매 요청 시 derive 재시도 →
+      // 활성화되는 순간 다음 요청에서 token 에 employeeId 자동 반영.
+      const userId = token.userId;
+      if (typeof userId === "string" && !token.employeeId) {
+        const ctx = await resolveLoginContext(userId);
+        if (ctx) {
+          token.companyId = ctx.companyId;
+          token.employeeId = ctx.employeeId;
+        }
+      }
+      return token;
+    },
+  },
   providers: [
     Credentials({
       credentials: {

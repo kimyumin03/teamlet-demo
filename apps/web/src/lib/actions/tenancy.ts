@@ -47,5 +47,6 @@ export async function companyApplicationAction(
     memo: String(formData.get("memo") ?? "") || undefined,
   });
   if (!result.ok) return { error: result.error.message };
-  redirect("/pending-approval");
+  // 데모 모드 자가-승인 시 홈으로. 일반 흐름은 검토 대기 페이지로.
+  redirect(result.data.autoApproved ? "/home" : "/pending-approval");
 }
