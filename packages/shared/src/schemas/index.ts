@@ -67,6 +67,15 @@ export const roleUpdateSchema = z.object({
 });
 export type RoleUpdateInput = z.infer<typeof roleUpdateSchema>;
 
+/** 직원 추가 (docs/06 §2 구성원). companyEmail / employeeNumber / hireDate 은 빈 문자열 허용 — 모듈에서 null 변환. */
+export const employeeCreateSchema = z.object({
+  name: z.string().trim().min(2, "이름은 2자 이상이어야 해요").max(50),
+  employeeNumber: z.string().trim().max(30).optional(),
+  companyEmail: z.string().trim().max(254).optional(),
+  hireDate: z.string().trim().optional(),
+});
+export type EmployeeCreateInput = z.infer<typeof employeeCreateSchema>;
+
 /** 역할-권한 매핑 일괄 설정 (docs/02 §11-1, docs/03 §7 RolePermission). 전체 교체 패턴. */
 export const setRolePermissionsSchema = z.object({
   items: z.array(

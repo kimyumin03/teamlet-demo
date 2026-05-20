@@ -12,11 +12,23 @@
 
 import { prisma } from "@teamlet/db";
 import type { EmploymentStatus } from "@teamlet/db";
-import { err, errors, ok, type Result } from "@teamlet/shared";
+import {
+  employeeCreateSchema,
+  err,
+  errors,
+  ok,
+  type EmployeeCreateInput,
+  type Result,
+} from "@teamlet/shared";
+import { recordAudit } from "../audit/index";
 import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
 
 const DIRECTORY_READ = "member.directory.read";
+const DIRECTORY_MANAGE = "member.directory.manage";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export type EmployeeListItem = {
   id: string;
@@ -55,4 +67,88 @@ export async function listEmployees(
   });
 
   return ok(employees);
+}
+
+/**
+ * 직원 추가 — Employee row 만 생성 (사용자 계정 연결 없이).
+ * 계정 연결(membership) 은 별도 초대 흐름에서 처리. 여기서는 디렉토리 풍성화가 목적.
+ */
+export async function createEmployee(
+  actorEmployeeId: string,
+  raw: EmployeeCreateInput,
+): Promise<Result<{ employeeId: string }>> {
+  const parsed = employeeCreateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return err(
+      errors.validation(parsed.error.issues[0]?.message ?? "입력 오류"),
+    );
+  }
+
+  try {
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const d = parsed.data;
+  const employeeNumber = d.employeeNumber?.trim() || null;
+  const companyEmail = d.companyEmail?.trim() || null;
+  const hireDateRaw = d.hireDate?.trim() || null;
+
+  if (companyEmail && !EMAIL_RE.test(companyEmail)) {
+    return err(errors.validation("올바른 이메일 형식이 아니에요"));
+  }
+
+  let hireDate: Date | null = null;
+  if (hireDateRaw) {
+    if (!DATE_RE.test(hireDateRaw)) {
+      return err(errors.validation("입사일은 YYYY-MM-DD 형식이어야 해요"));
+    }
+    const parsedDate = new Date(`${hireDateRaw}T00:00:00.000Z`);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return err(errors.validation("입사일을 인식할 수 없어요"));
+    }
+    hireDate = parsedDate;
+  }
+
+  if (companyEmail) {
+    const dup = await prisma.employee.findFirst({
+      where: { companyId: actor.companyId, companyEmail },
+      select: { id: true },
+    });
+    if (dup) return err(errors.conflict("이미 사용 중인 회사 이메일이에요"));
+  }
+
+  const employee = await prisma.employee.create({
+    data: {
+      companyId: actor.companyId,
+      name: d.name,
+      employeeNumber,
+      companyEmail,
+      hireDate,
+      employmentStatus: "ACTIVE",
+    },
+  });
+
+  await recordAudit({
+    companyId: actor.companyId,
+    actorUserId: actor.userId,
+    activityType: "member",
+    eventType: "CREATE",
+    targetType: "Employee",
+    targetId: employee.id,
+    targetLabel: employee.name,
+    description: `구성원 추가: ${employee.name}`,
+    afterSnapshot: {
+      name: employee.name,
+      employeeNumber,
+      companyEmail,
+      hireDate,
+    },
+  });
+
+  return ok({ employeeId: employee.id });
 }

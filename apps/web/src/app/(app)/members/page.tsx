@@ -3,6 +3,7 @@ import { listEmployees, type EmployeeListItem } from "@teamlet/modules/employee"
 import { EmptyState } from "@teamlet/ui";
 import { UsersRound } from "lucide-react";
 import { auth } from "@/auth";
+import { AddMemberButton } from "@/components/members/add-member-button";
 
 /**
  * 구성원 디렉토리 (docs/06 §2). P2 1단계 — read 전용 리스트.
@@ -69,6 +70,7 @@ export default async function MembersPage() {
             전체 {employees.length}명
           </p>
         </div>
+        <AddMemberButton />
       </header>
 
       {employees.length === 0 ? (
