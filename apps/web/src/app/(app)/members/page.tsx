@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { AddDepartmentButton } from "@/components/members/add-department-button";
 import { AddMemberButton } from "@/components/members/add-member-button";
 import { DepartmentSidebar } from "@/components/members/department-sidebar";
+import { MemberSearchInput } from "@/components/members/search-input";
 
 const UNASSIGNED = "__none__";
 
@@ -46,10 +47,11 @@ function formatHireDate(d: Date | null): string {
 export default async function MembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ department?: string }>;
+  searchParams: Promise<{ department?: string; q?: string }>;
 }) {
   const params = await searchParams;
   const selected = params.department ?? null;
+  const query = (params.q ?? "").trim().toLowerCase();
 
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -78,12 +80,19 @@ export default async function MembersPage({
   const departments = departmentsResult.ok ? departmentsResult.data : [];
 
   const unassignedCount = allEmployees.filter((e) => !e.departmentId).length;
-  const filtered =
-    selected === null
-      ? allEmployees
-      : selected === UNASSIGNED
-        ? allEmployees.filter((e) => !e.departmentId)
-        : allEmployees.filter((e) => e.departmentId === selected);
+
+  const filtered = allEmployees.filter((e) => {
+    if (selected === UNASSIGNED && e.departmentId) return false;
+    if (selected && selected !== UNASSIGNED && e.departmentId !== selected) {
+      return false;
+    }
+    if (!query) return true;
+    return (
+      e.name.toLowerCase().includes(query) ||
+      (e.employeeNumber?.toLowerCase().includes(query) ?? false) ||
+      (e.companyEmail?.toLowerCase().includes(query) ?? false)
+    );
+  });
 
   const selectedLabel =
     selected === null
@@ -94,14 +103,22 @@ export default async function MembersPage({
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
-      <header className="mb-6 flex items-baseline justify-between gap-4">
+      <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">구성원</h1>
           <p className="mt-1 text-sm text-foreground-muted">
             {selectedLabel} · {filtered.length}명
+            {query && (
+              <span className="ml-2 text-foreground-subtle">
+                "{query}" 검색 결과
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="w-56">
+            <MemberSearchInput initialValue={query} />
+          </div>
           <AddDepartmentButton departments={departments} />
           <AddMemberButton
             departments={departments}
@@ -127,14 +144,18 @@ export default async function MembersPage({
             <EmptyState
               icon={<UsersRound />}
               title={
-                selected === null
-                  ? "아직 등록된 구성원이 없어요"
-                  : "이 부서에 구성원이 없어요"
+                query
+                  ? "검색 결과가 없어요"
+                  : selected === null
+                    ? "아직 등록된 구성원이 없어요"
+                    : "이 부서에 구성원이 없어요"
               }
               description={
-                selected === null
-                  ? "회사 신청 승인 시 신청자 본인이 첫 구성원으로 등록돼요."
-                  : "사이드바에서 다른 부서를 선택하거나 구성원을 추가해 보세요."
+                query
+                  ? "다른 키워드로 검색해 보세요."
+                  : selected === null
+                    ? "회사 신청 승인 시 신청자 본인이 첫 구성원으로 등록돼요."
+                    : "사이드바에서 다른 부서를 선택하거나 구성원을 추가해 보세요."
               }
             />
           ) : (
