@@ -7,6 +7,7 @@ import { UsersRound } from "lucide-react";
 import { auth } from "@/auth";
 import { AddDepartmentButton } from "@/components/members/add-department-button";
 import { AddMemberButton } from "@/components/members/add-member-button";
+import { DepartmentActions } from "@/components/members/department-actions";
 import { DepartmentSidebar } from "@/components/members/department-sidebar";
 import { MemberSearchInput } from "@/components/members/search-input";
 
@@ -141,7 +142,15 @@ export default async function MembersPage({
         </aside>
 
         <main>
-      {filtered.length === 0 ? (
+          {selected && selected !== UNASSIGNED && (
+            <div className="mb-3 flex items-center justify-end">
+              <DepartmentActions
+                departmentId={selected}
+                departmentName={selectedLabel}
+              />
+            </div>
+          )}
+          {filtered.length === 0 ? (
             <EmptyState
               icon={<UsersRound />}
               title={

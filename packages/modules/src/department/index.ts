@@ -8,10 +8,12 @@
 import { prisma } from "@teamlet/db";
 import {
   departmentCreateSchema,
+  departmentUpdateSchema,
   err,
   errors,
   ok,
   type DepartmentCreateInput,
+  type DepartmentUpdateInput,
   type Result,
 } from "@teamlet/shared";
 import { recordAudit } from "../audit/index";
@@ -150,4 +152,152 @@ export async function createDepartment(
   });
 
   return ok({ departmentId: dept.id });
+}
+
+/** 부서 이름 변경. 같은 부모 아래 중복 차단. */
+export async function updateDepartment(
+  actorEmployeeId: string,
+  departmentId: string,
+  raw: DepartmentUpdateInput,
+): Promise<Result<{ departmentId: string }>> {
+  const parsed = departmentUpdateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return err(
+      errors.validation(parsed.error.issues[0]?.message ?? "입력 오류"),
+    );
+  }
+
+  try {
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const current = await prisma.department.findUnique({
+    where: { id: departmentId },
+    select: {
+      id: true,
+      name: true,
+      parentId: true,
+      companyId: true,
+      isActive: true,
+    },
+  });
+  if (!current || current.companyId !== actor.companyId) {
+    return err(errors.notFound("부서를 찾을 수 없어요"));
+  }
+  if (!current.isActive) {
+    return err(errors.conflict("비활성 부서는 수정할 수 없어요"));
+  }
+
+  if (parsed.data.name !== current.name) {
+    const dup = await prisma.department.findFirst({
+      where: {
+        companyId: actor.companyId,
+        parentId: current.parentId,
+        name: parsed.data.name,
+        isActive: true,
+        NOT: { id: departmentId },
+      },
+      select: { id: true },
+    });
+    if (dup) {
+      return err(
+        errors.conflict("같은 위치에 같은 이름의 부서가 이미 있어요"),
+      );
+    }
+  }
+
+  const updated = await prisma.department.update({
+    where: { id: departmentId },
+    data: { name: parsed.data.name },
+  });
+
+  await recordAudit({
+    companyId: actor.companyId,
+    actorUserId: actor.userId,
+    activityType: "department",
+    eventType: "UPDATE",
+    targetType: "Department",
+    targetId: updated.id,
+    targetLabel: updated.name,
+    description: `부서 수정: ${current.name} → ${updated.name}`,
+    beforeSnapshot: { name: current.name },
+    afterSnapshot: { name: updated.name },
+  });
+
+  return ok({ departmentId });
+}
+
+/**
+ * 부서 삭제 (soft — isActive=false). 활성 자식 부서 / 활성 직원 있으면 거절.
+ * 직원은 별도로 다른 부서로 옮긴 뒤 삭제해야 함.
+ */
+export async function deleteDepartment(
+  actorEmployeeId: string,
+  departmentId: string,
+): Promise<Result<{ departmentId: string }>> {
+  try {
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const dept = await prisma.department.findUnique({
+    where: { id: departmentId },
+    select: {
+      id: true,
+      name: true,
+      companyId: true,
+      isActive: true,
+      _count: {
+        select: {
+          children: { where: { isActive: true } },
+          employees: { where: { isActive: true } },
+        },
+      },
+    },
+  });
+  if (!dept || dept.companyId !== actor.companyId) {
+    return err(errors.notFound("부서를 찾을 수 없어요"));
+  }
+  if (!dept.isActive) {
+    return err(errors.conflict("이미 삭제된 부서예요"));
+  }
+  if (dept._count.children > 0) {
+    return err(
+      errors.conflict("하위 부서가 있어요. 먼저 정리해 주세요."),
+    );
+  }
+  if (dept._count.employees > 0) {
+    return err(
+      errors.conflict(
+        "이 부서에 배정된 구성원이 있어요. 먼저 다른 부서로 옮겨 주세요.",
+      ),
+    );
+  }
+
+  await prisma.department.update({
+    where: { id: departmentId },
+    data: { isActive: false },
+  });
+
+  await recordAudit({
+    companyId: actor.companyId,
+    actorUserId: actor.userId,
+    activityType: "department",
+    eventType: "DELETE",
+    targetType: "Department",
+    targetId: departmentId,
+    targetLabel: dept.name,
+    description: `부서 삭제: ${dept.name}`,
+  });
+
+  return ok({ departmentId });
 }
