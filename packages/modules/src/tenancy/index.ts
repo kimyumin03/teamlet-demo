@@ -32,6 +32,20 @@ export async function getMembershipSummary(userId: string): Promise<{
   };
 }
 
+/**
+ * 로그인 직후 활성 회사 컨텍스트 1개 선택 (P1: 첫 ACTIVE membership).
+ * P2 이후 회사 스위처 UI 도입 시 cookie / URL 우선 적용으로 확장 예정.
+ * 가입 대기 중 (PENDING) 또는 employeeId 미할당 사용자는 null 반환.
+ */
+export async function resolveLoginContext(
+  userId: string,
+): Promise<{ companyId: string; employeeId: string } | null> {
+  const summary = await getMembershipSummary(userId);
+  const active = summary.active.find((m) => m.employeeId !== null);
+  if (!active || !active.employeeId) return null;
+  return { companyId: active.companyId, employeeId: active.employeeId };
+}
+
 /** 회사 등록 신청 — Sales-led (docs/06 §1.2 register-company) */
 export async function submitCompanyApplication(
   userId: string,

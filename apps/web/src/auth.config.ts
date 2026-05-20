@@ -25,12 +25,18 @@ export const authConfig = {
       return isLoggedIn;
     },
     jwt({ token, user }) {
-      if (user) token.userId = user.id;
+      if (user) {
+        token.userId = user.id;
+        token.companyId = user.companyId ?? null;
+        token.employeeId = user.employeeId ?? null;
+      }
       return token;
     },
     session({ session, token }) {
       if (token.userId && session.user) {
         session.user.id = token.userId as string;
+        session.user.companyId = (token.companyId as string | null) ?? null;
+        session.user.employeeId = (token.employeeId as string | null) ?? null;
       }
       return session;
     },
