@@ -2,9 +2,11 @@
 
 import { redirect } from "next/navigation";
 import {
+  assignRole,
   createRole,
   deleteRole,
   getPermissionCatalog,
+  revokeRole,
   setRolePermissions,
   updateRole,
   type CatalogCategory,
@@ -66,4 +68,21 @@ export async function setRolePermissionsAction(
 ): Promise<ApiResponse<{ roleId: string; count: number }>> {
   const employeeId = await requireEmployeeId();
   return toApiResponse(await setRolePermissions(employeeId, roleId, input));
+}
+
+/** 직원에게 역할 부여 */
+export async function assignRoleAction(
+  targetEmployeeId: string,
+  roleId: string,
+): Promise<ApiResponse<{ userRoleId: string }>> {
+  const employeeId = await requireEmployeeId();
+  return toApiResponse(await assignRole(employeeId, targetEmployeeId, roleId));
+}
+
+/** 직원의 역할 매핑 해제 — SYSTEM_SUPER_ADMIN 은 락아웃 가드 적용 */
+export async function revokeRoleAction(
+  userRoleId: string,
+): Promise<ApiResponse<{ userRoleId: string }>> {
+  const employeeId = await requireEmployeeId();
+  return toApiResponse(await revokeRole(employeeId, userRoleId));
 }

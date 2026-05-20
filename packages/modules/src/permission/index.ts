@@ -12,6 +12,7 @@ export {
 } from "./lockout";
 export { setRolePermissions } from "./mapping";
 export { createRole, deleteRole, listRoles, updateRole } from "./role";
+export { assignRole, revokeRole } from "./userrole";
 export type { RoleListItem } from "./role";
 export { matchesScope } from "./scope";
 export type {
