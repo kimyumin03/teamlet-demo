@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
+import { listDepartments } from "@teamlet/modules/department";
 import { listEmployees, type EmployeeListItem } from "@teamlet/modules/employee";
 import { EmptyState } from "@teamlet/ui";
 import { UsersRound } from "lucide-react";
 import { auth } from "@/auth";
 import { AddMemberButton } from "@/components/members/add-member-button";
+import { DepartmentSidebar } from "@/components/members/department-sidebar";
+
+const UNASSIGNED = "__none__";
 
 /**
  * 구성원 디렉토리 (docs/06 §2). P2 1단계 — read 전용 리스트.
@@ -38,14 +42,24 @@ function formatHireDate(d: Date | null): string {
   });
 }
 
-export default async function MembersPage() {
+export default async function MembersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ department?: string }>;
+}) {
+  const params = await searchParams;
+  const selected = params.department ?? null;
+
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const result = await listEmployees(session.user.employeeId);
+  const [employeesResult, departmentsResult] = await Promise.all([
+    listEmployees(session.user.employeeId),
+    listDepartments(session.user.employeeId),
+  ]);
 
-  if (!result.ok) {
+  if (!employeesResult.ok) {
     return (
       <div className="mx-auto max-w-5xl px-6 py-16">
         <h1 className="text-2xl font-semibold text-foreground">구성원</h1>
@@ -53,62 +67,104 @@ export default async function MembersPage() {
           role="alert"
           className="mt-6 rounded-md bg-destructive-50 px-4 py-3 text-sm text-destructive-700"
         >
-          {result.error.message}
+          {employeesResult.error.message}
         </p>
       </div>
     );
   }
 
-  const employees = result.data;
+  const allEmployees = employeesResult.data;
+  const departments = departmentsResult.ok ? departmentsResult.data : [];
+
+  const unassignedCount = allEmployees.filter((e) => !e.departmentId).length;
+  const filtered =
+    selected === null
+      ? allEmployees
+      : selected === UNASSIGNED
+        ? allEmployees.filter((e) => !e.departmentId)
+        : allEmployees.filter((e) => e.departmentId === selected);
+
+  const selectedLabel =
+    selected === null
+      ? "전체"
+      : selected === UNASSIGNED
+        ? "미배정"
+        : (departments.find((d) => d.id === selected)?.name ?? "부서");
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-12">
+    <div className="mx-auto max-w-6xl px-6 py-12">
       <header className="mb-6 flex items-baseline justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">구성원</h1>
           <p className="mt-1 text-sm text-foreground-muted">
-            전체 {employees.length}명
+            {selectedLabel} · {filtered.length}명
           </p>
         </div>
         <AddMemberButton />
       </header>
 
-      {employees.length === 0 ? (
-        <EmptyState
-          icon={<UsersRound />}
-          title="아직 등록된 구성원이 없어요"
-          description="회사 신청 승인 시 신청자 본인이 첫 구성원으로 등록돼요."
-        />
-      ) : (
-        <ul className="flex flex-col gap-1">
-          {employees.map((emp) => (
-            <li
-              key={emp.id}
-              className="grid grid-cols-[1.5fr_1fr_1fr_auto] items-center gap-4 rounded-lg border border-border bg-background-primary px-4 py-3"
-            >
-              <div className="flex flex-col gap-0.5">
-                <span className="font-medium text-foreground">{emp.name}</span>
-                {emp.companyEmail && (
-                  <span className="text-sm text-foreground-muted">
-                    {emp.companyEmail}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
+        <aside className="md:sticky md:top-12 md:self-start">
+          <DepartmentSidebar
+            departments={departments}
+            selected={selected}
+            totalCount={allEmployees.length}
+            unassignedCount={unassignedCount}
+          />
+        </aside>
+
+        <main>
+      {filtered.length === 0 ? (
+            <EmptyState
+              icon={<UsersRound />}
+              title={
+                selected === null
+                  ? "아직 등록된 구성원이 없어요"
+                  : "이 부서에 구성원이 없어요"
+              }
+              description={
+                selected === null
+                  ? "회사 신청 승인 시 신청자 본인이 첫 구성원으로 등록돼요."
+                  : "사이드바에서 다른 부서를 선택하거나 구성원을 추가해 보세요."
+              }
+            />
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {filtered.map((emp) => (
+                <li
+                  key={emp.id}
+                  className="grid grid-cols-[1.5fr_1fr_1fr_1fr_auto] items-center gap-4 rounded-lg border border-border bg-background-primary px-4 py-3"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-medium text-foreground">
+                      {emp.name}
+                    </span>
+                    {emp.companyEmail && (
+                      <span className="text-sm text-foreground-muted">
+                        {emp.companyEmail}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-foreground-muted">
+                    {emp.departmentName ?? "—"}
+                  </div>
+                  <div className="text-sm text-foreground-muted">
+                    {emp.employeeNumber ?? "—"}
+                  </div>
+                  <div className="text-sm text-foreground-muted">
+                    {formatHireDate(emp.hireDate)}
+                  </div>
+                  <span
+                    className={`rounded-md px-2 py-0.5 text-xs ${STATUS_CLASS[emp.employmentStatus]}`}
+                  >
+                    {STATUS_LABEL[emp.employmentStatus]}
                   </span>
-                )}
-              </div>
-              <div className="text-sm text-foreground-muted">
-                {emp.employeeNumber ?? "—"}
-              </div>
-              <div className="text-sm text-foreground-muted">
-                {formatHireDate(emp.hireDate)}
-              </div>
-              <span
-                className={`rounded-md px-2 py-0.5 text-xs ${STATUS_CLASS[emp.employmentStatus]}`}
-              >
-                {STATUS_LABEL[emp.employmentStatus]}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
