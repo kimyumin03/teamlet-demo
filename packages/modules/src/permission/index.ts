@@ -1,4 +1,6 @@
 export { assertPermission, hasPermission } from "./assert";
+export { bootstrapCompanyRoles } from "./bootstrap";
+export type { BootstrapResult } from "./bootstrap";
 export {
   getPermissionCatalog,
   PERMISSION_CATEGORIES,
