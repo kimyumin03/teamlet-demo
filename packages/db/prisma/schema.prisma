@@ -100,6 +100,62 @@ enum AuditEventType {
   DOWNLOAD
 }
 
+enum LeaveGrantMethod {
+  ON_REQUEST
+  ON_OTHER_EXHAUSTED
+  MANUAL
+  ON_HIRE
+  PERIODIC
+  ON_TENURE
+}
+
+enum LeaveGrantUnit {
+  MINUTE
+  HOUR
+  DAY
+  UNLIMITED
+}
+
+enum LeavePaymentType {
+  PAID
+  UNPAID
+  PARTIAL_PAID
+}
+
+enum LeaveGenderRestriction {
+  ALL
+  MALE
+  FEMALE
+}
+
+enum LeaveEvidenceRequirement {
+  NONE
+  BEFORE
+  AFTER
+}
+
+enum LeaveRequestStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveTxCategory {
+  MONTHLY
+  ANNUAL
+  EXTRA_GRANT
+  ADJUSTMENT
+}
+
+enum LeaveTxType {
+  GRANT
+  EXPIRE
+  USE
+  ADJUST
+}
+
 // ─────────────────────────────────────────────────────────────
 // 인증 · 멀티 테넌시 (docs/03 §13)
 // ─────────────────────────────────────────────────────────────
@@ -159,6 +215,8 @@ model Company {
   invites       EmployeeInvite[]
   loginPolicy   CompanyLoginPolicy?
   auditLogs     AuditLog[]
+  leaveTypes      LeaveType[]
+  companyHolidays CompanyHoliday[]
   // 신청 승인 시 생성된 회사 역참조
   fromApplication CompanyApplication? @relation("CreatedCompany")
 
@@ -305,6 +363,10 @@ model Employee {
   position   Position?              @relation(fields: [positionId], references: [id], onDelete: SetNull)
   membership UserCompanyMembership?
   userRoles  UserRole[]
+  leaveBalances    LeaveBalance[]
+  leaveRequests    LeaveRequest[]
+  leaveTransactions LeaveTransaction[] @relation("LeaveTransactions")
+  actedTransactions LeaveTransaction[] @relation("LeaveTransactionActor")
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
@@ -479,6 +541,128 @@ model AuditLog {
   @@index([companyId, occurredAt])
   @@index([targetType, targetId])
   @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 3 — 휴가 (docs/03 §4)
+// ─────────────────────────────────────────────────────────────
+
+/// 회사별 휴가 종류. is_system=true 는 법정 8종 (비활성화만 가능, 삭제 불가).
+model LeaveType {
+  id                   String                  @id @default(cuid())
+  companyId            String
+  key                  String
+  name                 String
+  description          String                  @default("")
+  isSystem             Boolean                 @default(false)
+  isRequired           Boolean                 @default(false)
+  isActive             Boolean                 @default(true)
+  grantMethod          LeaveGrantMethod        @default(ON_REQUEST)
+  grantUnit            LeaveGrantUnit          @default(DAY)
+  grantAmount          Decimal?
+  paymentType          LeavePaymentType        @default(PAID)
+  genderRestriction    LeaveGenderRestriction  @default(ALL)
+  evidenceRequirement  LeaveEvidenceRequirement @default(NONE)
+  sortOrder            Int                     @default(0)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  leaveBalances     LeaveBalance[]
+  leaveRequests     LeaveRequest[]
+  leaveTransactions LeaveTransaction[]
+
+  @@unique([companyId, key])
+  @@index([companyId, isActive])
+  @@map("leave_types")
+}
+
+/// 직원별·종류별 연도 잔여 캐시 (조회 최적화).
+model LeaveBalance {
+  id            String   @id @default(cuid())
+  employeeId    String
+  leaveTypeId   String
+  year          Int
+  grantedDays   Decimal  @default(0)
+  usedDays      Decimal  @default(0)
+  adjustedDays  Decimal  @default(0)
+  updatedAt     DateTime @updatedAt
+
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@index([employeeId, year])
+  @@map("leave_balances")
+}
+
+/// 휴가 신청.
+model LeaveRequest {
+  id          String             @id @default(cuid())
+  employeeId  String
+  leaveTypeId String
+  startDate   DateTime           @db.Date
+  endDate     DateTime           @db.Date
+  days        Decimal
+  reason      String             @default("")
+  status      LeaveRequestStatus @default(PENDING)
+  reviewNote  String?
+  reviewedAt  DateTime?
+  reviewedBy  String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  employee          Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType         LeaveType          @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  leaveTransactions LeaveTransaction[]
+
+  @@index([employeeId, status])
+  @@index([leaveTypeId])
+  @@map("leave_requests")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 3 — 공휴일 + 휴가 원장 (docs/03 §4)
+// ─────────────────────────────────────────────────────────────
+
+/// 회사 공휴일 (법정 + 자체). 휴가 일수 계산 시 영업일에서 제외.
+model CompanyHoliday {
+  id         String   @id @default(cuid())
+  companyId  String
+  date       DateTime @db.Date
+  name       String
+  isNational Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, date])
+  @@index([companyId])
+  @@map("company_holidays")
+}
+
+/// 휴가 변동 이력 — 불변 원장. 부여/소멸/사용/조정 모두 기록.
+model LeaveTransaction {
+  id             String          @id @default(cuid())
+  employeeId     String
+  leaveTypeId    String
+  occurredAt     DateTime        @default(now())
+  category       LeaveTxCategory
+  txType         LeaveTxType
+  days           Decimal
+  reason         String          @default("")
+  note           String?
+  actorId        String?
+  leaveRequestId String?
+
+  employee     Employee      @relation("LeaveTransactions", fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType    LeaveType     @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  leaveRequest LeaveRequest? @relation(fields: [leaveRequestId], references: [id])
+  actor        Employee?     @relation("LeaveTransactionActor", fields: [actorId], references: [id])
+
+  @@index([employeeId, leaveTypeId])
+  @@index([leaveRequestId])
+  @@map("leave_transactions")
 }
 
 // ─────────────────────────────────────────────────────────────

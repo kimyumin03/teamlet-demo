@@ -16,6 +16,7 @@ import { prisma } from "@teamlet/db";
 import { err, errors, ok, type Result } from "@teamlet/shared";
 import { recordAudit } from "../audit/index";
 import { bootstrapCompanyRoles } from "../permission/bootstrap";
+import { bootstrapCompanyLeaveTypes } from "../leave/bootstrap";
 
 export type ApprovalResult = {
   companyId: string;
@@ -115,8 +116,11 @@ export async function approveCompanyApplication(
     return { company, employee };
   });
 
-  // 트랜잭션 밖: 시스템 역할 + 전권한 매핑 (idempotent)
-  const bootstrap = await bootstrapCompanyRoles(txResult.company.id);
+  // 트랜잭션 밖: 시스템 역할 + 전권한 매핑 + 법정 휴가 종류 (모두 idempotent)
+  const [bootstrap] = await Promise.all([
+    bootstrapCompanyRoles(txResult.company.id),
+    bootstrapCompanyLeaveTypes(txResult.company.id),
+  ]);
 
   // SUPER_ADMIN 부여
   await prisma.userRole.create({
