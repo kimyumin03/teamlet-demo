@@ -6,6 +6,10 @@ export {
   PERMISSION_CATEGORIES,
 } from "./catalog";
 export { getEffectivePermissions } from "./effective";
+export {
+  assertNotLastSuperAdmin,
+  countActiveSuperAdmins,
+} from "./lockout";
 export { setRolePermissions } from "./mapping";
 export { createRole, deleteRole, listRoles, updateRole } from "./role";
 export type { RoleListItem } from "./role";
