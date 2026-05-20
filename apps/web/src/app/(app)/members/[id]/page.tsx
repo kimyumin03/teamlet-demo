@@ -4,6 +4,7 @@ import { listDepartments } from "@teamlet/modules/department";
 import { getEmployee, type EmployeeDetail } from "@teamlet/modules/employee";
 import { ChevronLeft, Shield } from "lucide-react";
 import { auth } from "@/auth";
+import { DeactivateEmployeeButton } from "@/components/members/deactivate-button";
 import { EditMemberButton } from "@/components/members/edit-member-button";
 
 export const dynamic = "force-dynamic";
@@ -101,7 +102,16 @@ export default async function MemberDetailPage({
             )}
           </p>
         </div>
-        <EditMemberButton employee={emp} departments={departments} />
+        {emp.isActive && (
+          <div className="flex items-center gap-2">
+            <EditMemberButton employee={emp} departments={departments} />
+            <DeactivateEmployeeButton
+              employeeId={emp.id}
+              employeeName={emp.name}
+              redirectAfter="/members"
+            />
+          </div>
+        )}
       </header>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -154,7 +164,7 @@ export default async function MemberDetailPage({
       </div>
 
       <p className="mt-8 text-xs text-foreground-subtle">
-        역할 배정 / 비활성화는 다음 단계에서 추가돼요.
+        역할 배정 / 복직 처리는 다음 단계에서 추가돼요.
       </p>
     </div>
   );

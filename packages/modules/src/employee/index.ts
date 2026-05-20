@@ -25,6 +25,7 @@ import {
 import { recordAudit } from "../audit/index";
 import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
+import { assertNotLastSuperAdmin } from "../permission/lockout";
 
 const DIRECTORY_READ = "member.directory.read";
 const DIRECTORY_MANAGE = "member.directory.manage";
@@ -239,6 +240,98 @@ export async function updateEmployee(
   });
 
   return ok({ employeeId: updated.id });
+}
+
+/**
+ * 직원 비활성화 (퇴직 처리). Employee.isActive=false + employmentStatus=RESIGNED +
+ * 모든 활성 UserRole.isActive=false. 트랜잭션 처리.
+ *
+ * 가드:
+ *  - `member.directory.manage`
+ *  - 본인 비활성화 차단
+ *  - SUPER_ADMIN UserRole 박탈 시 `assertNotLastSuperAdmin` (락아웃 가드)
+ */
+export async function deactivateEmployee(
+  actorEmployeeId: string,
+  targetEmployeeId: string,
+  reason?: string,
+): Promise<Result<{ employeeId: string }>> {
+  try {
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  if (actorEmployeeId === targetEmployeeId) {
+    return err(errors.conflict("본인은 비활성화할 수 없어요"));
+  }
+
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const emp = await prisma.employee.findUnique({
+    where: { id: targetEmployeeId },
+    select: {
+      id: true,
+      name: true,
+      companyId: true,
+      isActive: true,
+      employmentStatus: true,
+      userRoles: {
+        where: {
+          isActive: true,
+          role: { type: "SYSTEM_SUPER_ADMIN", isActive: true },
+        },
+        select: { id: true },
+      },
+    },
+  });
+  if (!emp || emp.companyId !== actor.companyId) {
+    return err(errors.notFound("구성원을 찾을 수 없어요"));
+  }
+  if (!emp.isActive) {
+    return err(errors.conflict("이미 비활성화된 구성원이에요"));
+  }
+
+  if (emp.userRoles.length > 0) {
+    const guard = await assertNotLastSuperAdmin(
+      actor.companyId,
+      emp.userRoles.map((ur) => ur.id),
+    );
+    if (!guard.ok) return guard;
+  }
+
+  await prisma.$transaction([
+    prisma.employee.update({
+      where: { id: targetEmployeeId },
+      data: { isActive: false, employmentStatus: "RESIGNED" },
+    }),
+    prisma.userRole.updateMany({
+      where: { employeeId: targetEmployeeId, isActive: true },
+      data: { isActive: false },
+    }),
+  ]);
+
+  await recordAudit({
+    companyId: actor.companyId,
+    actorUserId: actor.userId,
+    activityType: "member",
+    eventType: "UPDATE",
+    targetType: "Employee",
+    targetId: targetEmployeeId,
+    targetLabel: emp.name,
+    description: `구성원 비활성화 (퇴직): ${emp.name}${reason ? ` — ${reason}` : ""}`,
+    beforeSnapshot: {
+      isActive: true,
+      employmentStatus: emp.employmentStatus,
+    },
+    afterSnapshot: {
+      isActive: false,
+      employmentStatus: "RESIGNED",
+    },
+  });
+
+  return ok({ employeeId: targetEmployeeId });
 }
 
 export type EmployeeRoleAssignment = {

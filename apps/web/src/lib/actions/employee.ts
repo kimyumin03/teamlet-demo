@@ -1,7 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createEmployee, updateEmployee } from "@teamlet/modules/employee";
+import {
+  createEmployee,
+  deactivateEmployee,
+  updateEmployee,
+} from "@teamlet/modules/employee";
 import {
   toApiResponse,
   type ApiResponse,
@@ -33,5 +37,16 @@ export async function updateEmployeeAction(
   const employeeId = await requireEmployeeId();
   return toApiResponse(
     await updateEmployee(employeeId, targetEmployeeId, input),
+  );
+}
+
+/** 구성원 비활성화 (퇴직) — 락아웃 가드 (마지막 SUPER_ADMIN 차단) */
+export async function deactivateEmployeeAction(
+  targetEmployeeId: string,
+  reason?: string,
+): Promise<ApiResponse<{ employeeId: string }>> {
+  const employeeId = await requireEmployeeId();
+  return toApiResponse(
+    await deactivateEmployee(employeeId, targetEmployeeId, reason),
   );
 }
