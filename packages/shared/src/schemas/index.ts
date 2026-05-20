@@ -73,8 +73,16 @@ export const employeeCreateSchema = z.object({
   employeeNumber: z.string().trim().max(30).optional(),
   companyEmail: z.string().trim().max(254).optional(),
   hireDate: z.string().trim().optional(),
+  departmentId: z.string().optional(),
 });
 export type EmployeeCreateInput = z.infer<typeof employeeCreateSchema>;
+
+/** 부서 추가 (docs/02 §3, docs/03 §3 Department). parentId 없으면 최상위. */
+export const departmentCreateSchema = z.object({
+  name: z.string().trim().min(1, "부서명을 입력해 주세요").max(50),
+  parentId: z.string().optional(),
+});
+export type DepartmentCreateInput = z.infer<typeof departmentCreateSchema>;
 
 /** 역할-권한 매핑 일괄 설정 (docs/02 §11-1, docs/03 §7 RolePermission). 전체 교체 패턴. */
 export const setRolePermissionsSchema = z.object({

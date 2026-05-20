@@ -13,15 +13,24 @@ import {
   DialogTitle,
   Input,
 } from "@teamlet/ui";
+import type { DepartmentNode } from "@teamlet/modules/department";
 import { createEmployeeAction } from "@/lib/actions/employee";
 
-export function AddMemberButton() {
+export function AddMemberButton({
+  departments,
+  defaultDepartmentId,
+}: {
+  departments: DepartmentNode[];
+  /** URL 에 선택된 부서 — Dialog 초기값에 미리 채움 (UX 편의) */
+  defaultDepartmentId?: string | null;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [employeeNumber, setEmployeeNumber] = useState("");
   const [companyEmail, setCompanyEmail] = useState("");
   const [hireDate, setHireDate] = useState("");
+  const [departmentId, setDepartmentId] = useState(defaultDepartmentId ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -30,6 +39,7 @@ export function AddMemberButton() {
     setEmployeeNumber("");
     setCompanyEmail("");
     setHireDate("");
+    setDepartmentId(defaultDepartmentId ?? "");
     setError(null);
   }
 
@@ -42,6 +52,7 @@ export function AddMemberButton() {
         employeeNumber: employeeNumber || undefined,
         companyEmail: companyEmail || undefined,
         hireDate: hireDate || undefined,
+        departmentId: departmentId || undefined,
       });
       if (!res.ok) {
         setError(res.error.message);
@@ -131,6 +142,28 @@ export function AddMemberButton() {
               value={companyEmail}
               onChange={(e) => setCompanyEmail(e.target.value)}
             />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="emp-department"
+              className="text-sm text-foreground-muted"
+            >
+              부서 (선택)
+            </label>
+            <select
+              id="emp-department"
+              value={departmentId}
+              onChange={(e) => setDepartmentId(e.target.value)}
+              className="h-10 rounded-md border border-border bg-background-primary px-3 text-base text-foreground focus-visible:border-border-focus focus-visible:shadow-focus focus-visible:outline-none"
+            >
+              <option value="">미배정</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {error && (

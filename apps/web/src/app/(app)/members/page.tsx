@@ -4,6 +4,7 @@ import { listEmployees, type EmployeeListItem } from "@teamlet/modules/employee"
 import { EmptyState } from "@teamlet/ui";
 import { UsersRound } from "lucide-react";
 import { auth } from "@/auth";
+import { AddDepartmentButton } from "@/components/members/add-department-button";
 import { AddMemberButton } from "@/components/members/add-member-button";
 import { DepartmentSidebar } from "@/components/members/department-sidebar";
 
@@ -100,7 +101,15 @@ export default async function MembersPage({
             {selectedLabel} · {filtered.length}명
           </p>
         </div>
-        <AddMemberButton />
+        <div className="flex items-center gap-2">
+          <AddDepartmentButton departments={departments} />
+          <AddMemberButton
+            departments={departments}
+            defaultDepartmentId={
+              selected && selected !== UNASSIGNED ? selected : null
+            }
+          />
+        </div>
       </header>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">

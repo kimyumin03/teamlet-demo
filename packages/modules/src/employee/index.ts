@@ -124,6 +124,7 @@ export async function createEmployee(
   const employeeNumber = d.employeeNumber?.trim() || null;
   const companyEmail = d.companyEmail?.trim() || null;
   const hireDateRaw = d.hireDate?.trim() || null;
+  const departmentId = d.departmentId?.trim() || null;
 
   if (companyEmail && !EMAIL_RE.test(companyEmail)) {
     return err(errors.validation("올바른 이메일 형식이 아니에요"));
@@ -141,6 +142,19 @@ export async function createEmployee(
     hireDate = parsedDate;
   }
 
+  if (departmentId) {
+    const dept = await prisma.department.findUnique({
+      where: { id: departmentId },
+      select: { companyId: true, isActive: true },
+    });
+    if (!dept || dept.companyId !== actor.companyId) {
+      return err(errors.notFound("부서를 찾을 수 없어요"));
+    }
+    if (!dept.isActive) {
+      return err(errors.conflict("비활성 부서엔 배정할 수 없어요"));
+    }
+  }
+
   if (companyEmail) {
     const dup = await prisma.employee.findFirst({
       where: { companyId: actor.companyId, companyEmail },
@@ -152,6 +166,7 @@ export async function createEmployee(
   const employee = await prisma.employee.create({
     data: {
       companyId: actor.companyId,
+      departmentId,
       name: d.name,
       employeeNumber,
       companyEmail,
@@ -174,6 +189,7 @@ export async function createEmployee(
       employeeNumber,
       companyEmail,
       hireDate,
+      departmentId,
     },
   });
 
