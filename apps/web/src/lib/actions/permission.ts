@@ -5,6 +5,7 @@ import {
   createRole,
   deleteRole,
   getPermissionCatalog,
+  setRolePermissions,
   updateRole,
   type CatalogCategory,
 } from "@teamlet/modules/permission";
@@ -13,6 +14,7 @@ import {
   type ApiResponse,
   type RoleCreateInput,
   type RoleUpdateInput,
+  type SetRolePermissionsInput,
 } from "@teamlet/shared";
 import { auth } from "@/auth";
 
@@ -55,4 +57,13 @@ export async function deleteRoleAction(
 ): Promise<ApiResponse<{ roleId: string }>> {
   const employeeId = await requireEmployeeId();
   return toApiResponse(await deleteRole(employeeId, roleId));
+}
+
+/** 역할-권한 매핑 일괄 설정 (전체 교체) */
+export async function setRolePermissionsAction(
+  roleId: string,
+  input: SetRolePermissionsInput,
+): Promise<ApiResponse<{ roleId: string; count: number }>> {
+  const employeeId = await requireEmployeeId();
+  return toApiResponse(await setRolePermissions(employeeId, roleId, input));
 }

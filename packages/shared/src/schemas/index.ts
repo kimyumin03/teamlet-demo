@@ -67,6 +67,22 @@ export const roleUpdateSchema = z.object({
 });
 export type RoleUpdateInput = z.infer<typeof roleUpdateSchema>;
 
+/** 역할-권한 매핑 일괄 설정 (docs/02 §11-1, docs/03 §7 RolePermission). 전체 교체 패턴. */
+export const setRolePermissionsSchema = z.object({
+  items: z.array(
+    z.object({
+      permissionKey: z.string().min(1, "권한 키가 필요해요"),
+      scopeType: z
+        .enum(["ALL", "DEPARTMENT", "DIRECT_REPORTS", "SELF"])
+        .nullable()
+        .optional(),
+      departmentIds: z.array(z.string()).optional(),
+      includeSubDepartments: z.boolean().optional(),
+    }),
+  ),
+});
+export type SetRolePermissionsInput = z.infer<typeof setRolePermissionsSchema>;
+
 export const companyApplicationSchema = z.object({
   companyName: z.string().min(2, "회사명을 입력해 주세요").max(100),
   businessNumber: z
