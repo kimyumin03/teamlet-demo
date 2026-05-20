@@ -38,10 +38,18 @@ export type EmployeeListItem = {
   hireDate: Date | null;
   employmentStatus: EmploymentStatus;
   isActive: boolean;
+  departmentId: string | null;
+  departmentName: string | null;
+};
+
+export type EmployeeListFilter = {
+  /** 특정 부서로 필터. `null` = 부서 미배정만. `undefined`/생략 = 전체. */
+  departmentId?: string | null;
 };
 
 export async function listEmployees(
   actorEmployeeId: string,
+  filter: EmployeeListFilter = {},
 ): Promise<Result<EmployeeListItem[]>> {
   try {
     await assertPermission(actorEmployeeId, DIRECTORY_READ);
@@ -53,7 +61,12 @@ export async function listEmployees(
   if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
 
   const employees = await prisma.employee.findMany({
-    where: { companyId: actor.companyId },
+    where: {
+      companyId: actor.companyId,
+      ...(filter.departmentId !== undefined
+        ? { departmentId: filter.departmentId }
+        : {}),
+    },
     select: {
       id: true,
       name: true,
@@ -62,11 +75,25 @@ export async function listEmployees(
       hireDate: true,
       employmentStatus: true,
       isActive: true,
+      departmentId: true,
+      department: { select: { name: true } },
     },
     orderBy: [{ isActive: "desc" }, { name: "asc" }],
   });
 
-  return ok(employees);
+  return ok(
+    employees.map((e) => ({
+      id: e.id,
+      name: e.name,
+      employeeNumber: e.employeeNumber,
+      companyEmail: e.companyEmail,
+      hireDate: e.hireDate,
+      employmentStatus: e.employmentStatus,
+      isActive: e.isActive,
+      departmentId: e.departmentId,
+      departmentName: e.department?.name ?? null,
+    })),
+  );
 }
 
 /**

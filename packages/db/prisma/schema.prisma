@@ -268,9 +268,10 @@ model Department {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company  Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  parent   Department?  @relation("DepartmentTree", fields: [parentId], references: [id])
-  children Department[] @relation("DepartmentTree")
+  company   Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent    Department?  @relation("DepartmentTree", fields: [parentId], references: [id])
+  children  Department[] @relation("DepartmentTree")
+  employees Employee[]
 
   @@index([companyId, parentId])
   @@map("departments")
@@ -280,6 +281,7 @@ model Department {
 model Employee {
   id               String           @id @default(cuid())
   companyId        String
+  departmentId     String?
   name             String
   employeeNumber   String?
   companyEmail     String?
@@ -297,11 +299,13 @@ model Employee {
   updatedAt        DateTime         @updatedAt
 
   company    Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department Department?            @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   membership UserCompanyMembership?
   userRoles  UserRole[]
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
+  @@index([companyId, departmentId])
   @@map("employees")
 }
 
