@@ -7,31 +7,13 @@
  */
 
 import { prisma } from "@teamlet/db";
-import { DomainError, err, errors, ok, type Result } from "@teamlet/shared";
+import { err, errors, ok, type Result } from "@teamlet/shared";
 import { recordAudit } from "../audit/index";
+import { catchDomainErr, loadActor } from "./_actor";
 import { assertPermission } from "./assert";
 import { assertNotLastSuperAdmin } from "./lockout";
 
 const ROLE_MANAGE = "permission.role.manage";
-
-type Actor = { companyId: string; userId: string };
-
-async function loadActor(actorEmployeeId: string): Promise<Actor | null> {
-  const e = await prisma.employee.findUnique({
-    where: { id: actorEmployeeId },
-    select: {
-      companyId: true,
-      membership: { select: { userId: true } },
-    },
-  });
-  if (!e || !e.membership) return null;
-  return { companyId: e.companyId, userId: e.membership.userId };
-}
-
-function catchDomainErr<T>(e: unknown): Result<T> {
-  if (e instanceof DomainError) return err(e);
-  throw e;
-}
 
 /**
  * 직원에게 역할 부여. 이미 비활성 매핑이 있으면 재활성화(rebind),

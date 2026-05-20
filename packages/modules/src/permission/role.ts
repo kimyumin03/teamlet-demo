@@ -9,7 +9,6 @@
 import { prisma } from "@teamlet/db";
 import type { RoleType } from "@teamlet/db";
 import {
-  DomainError,
   err,
   errors,
   ok,
@@ -20,6 +19,7 @@ import {
   type RoleUpdateInput,
 } from "@teamlet/shared";
 import { recordAudit } from "../audit/index";
+import { catchDomainErr, loadActor } from "./_actor";
 import { assertPermission } from "./assert";
 
 const ROLE_MANAGE = "permission.role.manage";
@@ -78,25 +78,6 @@ export async function listRoles(
       memberCount: r._count.userRoles,
     })),
   );
-}
-
-type Actor = { companyId: string; userId: string };
-
-async function loadActor(actorEmployeeId: string): Promise<Actor | null> {
-  const e = await prisma.employee.findUnique({
-    where: { id: actorEmployeeId },
-    select: {
-      companyId: true,
-      membership: { select: { userId: true } },
-    },
-  });
-  if (!e || !e.membership) return null;
-  return { companyId: e.companyId, userId: e.membership.userId };
-}
-
-function catchDomainErr<T>(e: unknown): Result<T> {
-  if (e instanceof DomainError) return err(e);
-  throw e;
 }
 
 export async function createRole(
