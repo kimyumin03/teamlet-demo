@@ -77,6 +77,17 @@ export const employeeCreateSchema = z.object({
 });
 export type EmployeeCreateInput = z.infer<typeof employeeCreateSchema>;
 
+/** 직원 정보 수정 (docs/06 §2 구성원). 빈 문자열은 모듈에서 null 로 변환 — 필드 지우기 의미. name 만 필수. */
+export const employeeUpdateSchema = z.object({
+  name: z.string().trim().min(2, "이름은 2자 이상이어야 해요").max(50),
+  employeeNumber: z.string().trim().max(30).optional(),
+  companyEmail: z.string().trim().max(254).optional(),
+  personalEmail: z.string().trim().max(254).optional(),
+  hireDate: z.string().trim().optional(),
+  departmentId: z.string().optional(),
+});
+export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
+
 /** 부서 추가 (docs/02 §3, docs/03 §3 Department). parentId 없으면 최상위. */
 export const departmentCreateSchema = z.object({
   name: z.string().trim().min(1, "부서명을 입력해 주세요").max(50),

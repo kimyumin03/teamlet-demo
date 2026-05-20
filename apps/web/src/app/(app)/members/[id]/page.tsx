@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { listDepartments } from "@teamlet/modules/department";
 import { getEmployee, type EmployeeDetail } from "@teamlet/modules/employee";
 import { ChevronLeft, Shield } from "lucide-react";
 import { auth } from "@/auth";
+import { EditMemberButton } from "@/components/members/edit-member-button";
 
 export const dynamic = "force-dynamic";
 
@@ -56,22 +58,27 @@ export default async function MemberDetailPage({
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const result = await getEmployee(session.user.employeeId, id);
-  if (!result.ok) {
-    if (result.error.code === "NOT_FOUND") notFound();
+  const [empResult, deptResult] = await Promise.all([
+    getEmployee(session.user.employeeId, id),
+    listDepartments(session.user.employeeId),
+  ]);
+
+  if (!empResult.ok) {
+    if (empResult.error.code === "NOT_FOUND") notFound();
     return (
       <div className="mx-auto max-w-3xl px-6 py-16">
         <p
           role="alert"
           className="rounded-md bg-destructive-50 px-4 py-3 text-sm text-destructive-700"
         >
-          {result.error.message}
+          {empResult.error.message}
         </p>
       </div>
     );
   }
 
-  const emp = result.data;
+  const emp = empResult.data;
+  const departments = deptResult.ok ? deptResult.data : [];
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
@@ -94,6 +101,7 @@ export default async function MemberDetailPage({
             )}
           </p>
         </div>
+        <EditMemberButton employee={emp} departments={departments} />
       </header>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -146,7 +154,7 @@ export default async function MemberDetailPage({
       </div>
 
       <p className="mt-8 text-xs text-foreground-subtle">
-        정보 수정 / 역할 배정 / 비활성화는 다음 단계에서 추가돼요.
+        역할 배정 / 비활성화는 다음 단계에서 추가돼요.
       </p>
     </div>
   );

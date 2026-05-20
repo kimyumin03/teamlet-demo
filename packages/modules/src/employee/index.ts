@@ -14,10 +14,12 @@ import { prisma } from "@teamlet/db";
 import type { EmploymentStatus, RoleType } from "@teamlet/db";
 import {
   employeeCreateSchema,
+  employeeUpdateSchema,
   err,
   errors,
   ok,
   type EmployeeCreateInput,
+  type EmployeeUpdateInput,
   type Result,
 } from "@teamlet/shared";
 import { recordAudit } from "../audit/index";
@@ -94,6 +96,149 @@ export async function listEmployees(
       departmentName: e.department?.name ?? null,
     })),
   );
+}
+
+/** 입력에서 받은 날짜 문자열 → Date | null. 빈 값 허용. */
+function parseHireDate(raw: string | null): Result<Date | null> {
+  if (!raw) return ok(null);
+  if (!DATE_RE.test(raw)) {
+    return err(errors.validation("입사일은 YYYY-MM-DD 형식이어야 해요"));
+  }
+  const d = new Date(`${raw}T00:00:00.000Z`);
+  if (Number.isNaN(d.getTime())) {
+    return err(errors.validation("입사일을 인식할 수 없어요"));
+  }
+  return ok(d);
+}
+
+/**
+ * 직원 정보 수정. `member.directory.manage` 가드. 모든 필드 전체 교체 패턴
+ * (클라이언트가 default 값 채워서 보냄). 빈 문자열은 필드 지우기 의미.
+ */
+export async function updateEmployee(
+  actorEmployeeId: string,
+  employeeId: string,
+  raw: EmployeeUpdateInput,
+): Promise<Result<{ employeeId: string }>> {
+  const parsed = employeeUpdateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return err(
+      errors.validation(parsed.error.issues[0]?.message ?? "입력 오류"),
+    );
+  }
+
+  try {
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const current = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: {
+      id: true,
+      name: true,
+      employeeNumber: true,
+      companyEmail: true,
+      personalEmail: true,
+      hireDate: true,
+      departmentId: true,
+      companyId: true,
+    },
+  });
+  if (!current || current.companyId !== actor.companyId) {
+    return err(errors.notFound("구성원을 찾을 수 없어요"));
+  }
+
+  const d = parsed.data;
+  const employeeNumber = d.employeeNumber?.trim() || null;
+  const companyEmail = d.companyEmail?.trim() || null;
+  const personalEmail = d.personalEmail?.trim() || null;
+  const hireDateRaw = d.hireDate?.trim() || null;
+  const departmentId = d.departmentId?.trim() || null;
+
+  if (companyEmail && !EMAIL_RE.test(companyEmail)) {
+    return err(errors.validation("올바른 회사 이메일 형식이 아니에요"));
+  }
+  if (personalEmail && !EMAIL_RE.test(personalEmail)) {
+    return err(errors.validation("올바른 개인 이메일 형식이 아니에요"));
+  }
+
+  const hireDateResult = parseHireDate(hireDateRaw);
+  if (!hireDateResult.ok) return hireDateResult;
+  const hireDate = hireDateResult.data;
+
+  if (departmentId) {
+    const dept = await prisma.department.findUnique({
+      where: { id: departmentId },
+      select: { companyId: true, isActive: true },
+    });
+    if (!dept || dept.companyId !== actor.companyId) {
+      return err(errors.notFound("부서를 찾을 수 없어요"));
+    }
+    if (!dept.isActive) {
+      return err(errors.conflict("비활성 부서엔 배정할 수 없어요"));
+    }
+  }
+
+  if (companyEmail && companyEmail !== current.companyEmail) {
+    const dup = await prisma.employee.findFirst({
+      where: {
+        companyId: actor.companyId,
+        companyEmail,
+        NOT: { id: employeeId },
+      },
+      select: { id: true },
+    });
+    if (dup) return err(errors.conflict("이미 사용 중인 회사 이메일이에요"));
+  }
+
+  const before = {
+    name: current.name,
+    employeeNumber: current.employeeNumber,
+    companyEmail: current.companyEmail,
+    personalEmail: current.personalEmail,
+    hireDate: current.hireDate,
+    departmentId: current.departmentId,
+  };
+
+  const updated = await prisma.employee.update({
+    where: { id: employeeId },
+    data: {
+      name: d.name,
+      employeeNumber,
+      companyEmail,
+      personalEmail,
+      hireDate,
+      departmentId,
+    },
+    select: { id: true, name: true },
+  });
+
+  await recordAudit({
+    companyId: actor.companyId,
+    actorUserId: actor.userId,
+    activityType: "member",
+    eventType: "UPDATE",
+    targetType: "Employee",
+    targetId: employeeId,
+    targetLabel: updated.name,
+    description: `구성원 수정: ${updated.name}`,
+    beforeSnapshot: before,
+    afterSnapshot: {
+      name: updated.name,
+      employeeNumber,
+      companyEmail,
+      personalEmail,
+      hireDate,
+      departmentId,
+    },
+  });
+
+  return ok({ employeeId: updated.id });
 }
 
 export type EmployeeRoleAssignment = {

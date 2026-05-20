@@ -1,11 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createEmployee } from "@teamlet/modules/employee";
+import { createEmployee, updateEmployee } from "@teamlet/modules/employee";
 import {
   toApiResponse,
   type ApiResponse,
   type EmployeeCreateInput,
+  type EmployeeUpdateInput,
 } from "@teamlet/shared";
 import { auth } from "@/auth";
 
@@ -22,4 +23,15 @@ export async function createEmployeeAction(
 ): Promise<ApiResponse<{ employeeId: string }>> {
   const employeeId = await requireEmployeeId();
   return toApiResponse(await createEmployee(employeeId, input));
+}
+
+/** 구성원 정보 수정 — `member.directory.manage` 가드 (모듈 내부) */
+export async function updateEmployeeAction(
+  targetEmployeeId: string,
+  input: EmployeeUpdateInput,
+): Promise<ApiResponse<{ employeeId: string }>> {
+  const employeeId = await requireEmployeeId();
+  return toApiResponse(
+    await updateEmployee(employeeId, targetEmployeeId, input),
+  );
 }
