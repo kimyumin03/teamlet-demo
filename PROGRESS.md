@@ -8,71 +8,46 @@
 | 영역 | 상태 | 비고 |
 |---|---|---|
 | 명세서 `/docs` | ✅ 100% | 00~06 7종, 6,050 lines |
-| DB 스키마 + 시드 | ✅ P1+P2 일부 | 마이그레이션 3개 (`0_init` / `1_employee_department` / `2_position_model`) |
+| DB 스키마 + 시드 | ✅ P1+P2+P3 일부 | 마이그레이션 4개 (`0_init` ~ `4_leave_domain`) |
 | Shared 패키지 | ✅ 골격 | errors, schemas, types, utils |
 | UI 시스템 | 🟡 기초만 | theme + primitives 3 / patterns 3 (Checkbox/Tabs/Card 미구현) |
 | **P1 인증/가입** | ✅ 완료 | auth 모듈 + 화면 5개 + NextAuth + 데모 자가-승인 |
-| **P1 권한** | ✅ 핵심 완료 | 평가/CRUD/매핑/UserRole/락아웃/부트스트랩 ✓ — 권한 편집 UI만 P2 잔여 |
-| **P2 Core HR (구성원/조직/직책)** | ✅ 7단계 완료 | 디렉토리/검색/부서/상세/수정/퇴직/직책 (PositionHistory + 부서 이동은 P3) |
+| **P1 권한** | ✅ 핵심 완료 | 평가/CRUD/매핑/UserRole/락아웃/부트스트랩 ✓ — 권한 편집 UI만 잔여 |
+| **P2 Core HR (구성원/조직/직책)** | ✅ 7단계 완료 | 디렉토리/검색/부서/상세/수정/퇴직/직책 |
+| **P3 휴가** | 🟡 DB+모듈 완료 | CompanyHoliday·LeaveTransaction 스키마 + leave 모듈 5종 — UI 미착수 |
 | Worker | ⬜ 빈 skeleton | BullMQ 미구현 |
-| P3~P8 | ⬜ 미착수 | 휴가/워크플로우/채용/문서/보안/확장 |
+| P4~P8 | ⬜ 미착수 | 워크플로우/채용/문서/보안/확장 |
 
 ## 현재 위치
 
-- **Phase**: P2 Core HR 7단계까지 완료 → **로컬 페이지 확인 단계**
+- **Phase**: P3 휴가 — DB + 모듈 완료, **다음은 `/leave` UI**
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `e7c8a3a feat(position): P2 7단계 — Position 모델 + 직원 직책 배정`
+- **마지막 커밋**: `90730fe feat(leave): P3 1단계 — 휴가 도메인 DB + 모듈 레이어`
 
-## 다음 세션 시작 — 로컬 확인 셋업
-
-**Docker Desktop 미시작 + `.env` 파일 부재 상태**. 다음 세션에서 이걸 먼저 해결하고 페이지 확인 진행.
-
-### 1단계: Docker Desktop 시작 (Windows)
-
-작업표시줄에서 Docker Desktop 앱 켜기. 안정 상태(고래 아이콘이 정적)까지 1~2분 대기.
-
-WSL2 미설치 시: Windows 기능 → "Windows Subsystem for Linux" + "Virtual Machine Platform" 활성화 후 재부팅.
-
-### 2단계: `.env` 파일 생성 (PowerShell, `D:\teamlet`에서)
+## 다음 작업 — P3 휴가 UI
 
 ```powershell
-Copy-Item .env.example .env
-
-# AUTH_SECRET 생성 (32바이트 base64)
-$bytes = New-Object byte[] 32
-(New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes($bytes)
-[Convert]::ToBase64String($bytes)
+pnpm docker:up
+pnpm db:migrate   # 4_leave_domain 포함
+pnpm db:seed
+pnpm dev
 ```
 
-`.env` 파일 편집:
-- `AUTH_SECRET="..."` 자리에 출력된 base64 붙여넣기
-- 맨 아래 한 줄 추가: `TEAMLET_DEMO_AUTO_APPROVE="true"`
+### 구현할 것 (P3 UI)
 
-### 3단계: DB + Dev 서버
-
-```powershell
-pnpm docker:up           # Postgres + Redis + MinIO (~30초)
-pnpm db:generate         # Prisma client
-pnpm db:migrate          # 0_init + 1_employee_department + 2_position_model
-pnpm db:seed             # 권한 카탈로그
-pnpm dev                 # http://localhost:3000
-```
-
-### 페이지 확인 체크리스트
-
-- [ ] `/signup` 가입 → 자동 로그인 → `/join-company`
-- [ ] "회사 등록 신청" → 자가-승인 → `/home`
-- [ ] `/members` 진입 → 본인 1명 (시스템 역할 자동 부여 확인)
-- [ ] `+ 직책` (사원/팀장) → `+ 부서` (영업팀) → `+ 구성원` (부서/직책 선택)
-- [ ] 사이드바 부서 클릭 → URL `?department=` 필터링
-- [ ] 검색창 "김" → 디바운스 후 필터
-- [ ] 직원 상세 → "수정" → "퇴직 처리" (목록으로 복귀)
-- [ ] `/settings/permissions` → 시스템 역할 3종 확인
+1. **`/leave` 페이지** — 내 잔여 휴가 현황 + 신청 내역 목록
+2. **휴가 신청 Dialog** — 휴가 종류 선택 / 날짜 / 일수 / 사유
+3. **관리자 승인 뷰** — 대기 중 신청 목록 + 승인/반려 버튼
+4. **잔여 부여 Dialog** — 관리자가 특정 직원에게 수동 부여
+5. **(선택) `/leave/requests`** — 전체 신청 내역 (관리자용)
 
 ## 최근 한 일
 
-### P2 Core HR (이번 세션)
+### P3 휴가 도메인 — DB + 모듈 (2026-05-20 이번 세션)
+- `90730fe` P3 1단계 — CompanyHoliday·LeaveTransaction 스키마 + leave 모듈 (bootstrap/balance/request) + Server Actions
+
+### P2 Core HR (이전 세션)
 - `e7c8a3a` P2 7단계 — Position 모델 + 직원 직책 배정 (UI 통합)
 - `1297d6f` P2 6단계 — 부서 이름 변경 + 삭제(soft)
 - `bef08b7` P2 5-C — 직원 비활성화 (퇴직 처리, 락아웃 가드 적용)
