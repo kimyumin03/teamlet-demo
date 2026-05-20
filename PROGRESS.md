@@ -110,6 +110,8 @@ pnpm dev                 # http://localhost:3000
 
 ## 알려진 이슈 / 메모
 
+- **UI 디자인 폴리시**: 기능 검증 완료 후 Flex 스타일로 디자인 다듬기 (기능 구현 우선, 디자인은 후순위)
+
 - **Docker Desktop 미설치/미시작 시**: 마이그레이션·DB 작업 전부 막힘. WSL2 활성화 필요.
 - **`.env` 파일 부재**: 루트에 `.env.example`만 있음. 위 셋업 가이드 따라 복사 + AUTH_SECRET + TEAMLET_DEMO_AUTO_APPROVE 설정 필요.
 - 빌드는 **Turbopack 전용** (webpack prod 빌드는 Docker Desktop 소켓 EACCES 이슈)
