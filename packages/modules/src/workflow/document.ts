@@ -1,6 +1,60 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
-import type { CreateDocumentInput, DocumentListItem, PendingApprovalItem } from "./types";
+import type { CreateDocumentInput, DocumentListItem, PendingApprovalItem, DocumentDetail } from "./types";
+
+export async function getDocument(
+  employeeId: string,
+  documentId: string,
+): Promise<Result<DocumentDetail>> {
+  const doc = await prisma.formDocument.findUnique({
+    where: { id: documentId },
+    include: {
+      author: { select: { name: true } },
+      approvalLines: {
+        include: {
+          approver: { select: { name: true } },
+          actions: {
+            include: { actor: { select: { name: true } } },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+        orderBy: { step: "asc" },
+      },
+    },
+  });
+
+  if (!doc) return err(errors.notFound("문서를 찾을 수 없어요"));
+
+  const isRelated =
+    doc.authorId === employeeId ||
+    doc.approvalLines.some((l) => l.approverId === employeeId);
+  if (!isRelated) return err(errors.forbidden("열람 권한이 없어요"));
+
+  return ok({
+    id: doc.id,
+    title: doc.title,
+    kind: doc.kind,
+    status: doc.status,
+    formData: doc.formData as Record<string, unknown>,
+    authorName: doc.author.name,
+    createdAt: doc.createdAt,
+    approvalLines: doc.approvalLines.map((l) => ({
+      id: l.id,
+      step: l.step,
+      approverId: l.approverId,
+      approverName: l.approver.name,
+      status: l.status,
+      approvedAt: l.approvedAt,
+      actions: l.actions.map((a) => ({
+        id: a.id,
+        actorName: a.actor.name,
+        action: a.action,
+        comment: a.comment,
+        createdAt: a.createdAt,
+      })),
+    })),
+  });
+}
 
 export async function createDocument(
   input: CreateDocumentInput,

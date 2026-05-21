@@ -90,9 +90,10 @@ export default async function WorkflowPage() {
         ) : (
           <ul className="flex flex-col gap-1">
             {myDocs.map((doc) => (
-              <li
-                key={doc.id}
-                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 rounded-lg border border-border bg-background-primary px-4 py-3"
+              <li key={doc.id}>
+              <a
+                href={`/workflow/documents/${doc.id}`}
+                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 rounded-lg border border-border bg-background-primary px-4 py-3 transition-colors hover:bg-background-secondary"
               >
                 <div className="flex flex-col gap-0.5">
                   <span className="font-medium text-foreground">{doc.title}</span>
@@ -107,7 +108,8 @@ export default async function WorkflowPage() {
                   {STATUS_LABEL[doc.status]}
                 </span>
                 <div />
-              </li>
+              </a>
+            </li>
             ))}
           </ul>
         )}

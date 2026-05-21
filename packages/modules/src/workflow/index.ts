@@ -1,3 +1,3 @@
-export { createDocument, listMyDocuments, listPendingApprovals } from "./document";
+export { getDocument, createDocument, listMyDocuments, listPendingApprovals } from "./document";
 export { approveDocument, rejectDocument } from "./approval";
-export type { CreateDocumentInput, DocumentListItem, PendingApprovalItem, FormDocumentKind, FormDocumentStatus } from "./types";
+export type { CreateDocumentInput, DocumentListItem, DocumentDetail, PendingApprovalItem, FormDocumentKind, FormDocumentStatus } from "./types";

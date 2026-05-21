@@ -23,6 +23,31 @@ export type DocumentListItem = {
   totalSteps: number;
 };
 
+export type DocumentDetail = {
+  id: string;
+  title: string;
+  kind: FormDocumentKind;
+  status: FormDocumentStatus;
+  formData: Record<string, unknown>;
+  authorName: string;
+  createdAt: Date;
+  approvalLines: {
+    id: string;
+    step: number;
+    approverId: string;
+    approverName: string;
+    status: ApprovalLineStatus;
+    approvedAt: Date | null;
+    actions: {
+      id: string;
+      actorName: string;
+      action: string;
+      comment: string | null;
+      createdAt: Date;
+    }[];
+  }[];
+};
+
 export type PendingApprovalItem = {
   id: string;
   documentId: string;
