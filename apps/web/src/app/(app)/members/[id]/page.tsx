@@ -5,13 +5,15 @@ import { getEmployee, type EmployeeDetail } from "@teamlet/modules/employee";
 import { listPositions } from "@teamlet/modules/position";
 import { listEmployeeLeaveHistory } from "@teamlet/modules/leave";
 import { listEmployeeDocuments } from "@teamlet/modules/workflow";
+import { listRoles, type RoleListItem } from "@teamlet/modules/permission";
 import type { LeaveRequestItem } from "@teamlet/modules/leave";
 import type { DocumentListItem } from "@teamlet/modules/workflow";
-import { ChevronLeft, Shield } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { DeactivateEmployeeButton } from "@/components/members/deactivate-button";
 import { EditMemberButton } from "@/components/members/edit-member-button";
 import { InviteLinkButton } from "@/components/members/invite-link-button";
+import { MemberRolesManager } from "@/components/members/member-roles-manager";
 
 export const dynamic = "force-dynamic";
 
@@ -107,12 +109,13 @@ export default async function MemberDetailPage({
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const [empResult, deptResult, posResult, leaveResult, workflowResult] = await Promise.all([
+  const [empResult, deptResult, posResult, leaveResult, workflowResult, rolesResult] = await Promise.all([
     getEmployee(session.user.employeeId, id),
     listDepartments(session.user.employeeId),
     listPositions(session.user.employeeId),
     listEmployeeLeaveHistory(session.user.employeeId, id),
     listEmployeeDocuments(session.user.employeeId, id),
+    listRoles(session.user.employeeId),
   ]);
 
   if (!empResult.ok) {
@@ -131,6 +134,7 @@ export default async function MemberDetailPage({
   const positions = posResult.ok ? posResult.data : [];
   const leaveHistory: LeaveRequestItem[] = leaveResult.ok ? leaveResult.data : [];
   const workflowDocs: DocumentListItem[] = workflowResult.ok ? workflowResult.data : [];
+  const assignableRoles: RoleListItem[] = rolesResult.ok ? rolesResult.data : [];
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
@@ -321,31 +325,12 @@ export default async function MemberDetailPage({
 
       {/* 권한 탭 */}
       {activeTab === "roles" && (
-        <section className="rounded-lg border border-border bg-background-primary p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <Shield className="size-4 text-foreground-subtle" />
-            <h2 className="text-sm font-medium text-foreground">배정된 역할 ({emp.roles.length})</h2>
-          </div>
-          {emp.roles.length === 0 ? (
-            <p className="text-sm text-foreground-muted">배정된 역할이 없어요.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {emp.roles.map((r) => (
-                <li key={r.userRoleId} className="flex items-center justify-between rounded-md bg-background-secondary px-3 py-2">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-foreground">{r.roleName}</span>
-                    {r.isSystem && (
-                      <span className="text-xs text-foreground-muted">
-                        {r.roleType === "SYSTEM_SUPER_ADMIN" ? "최고 관리자" : r.roleType === "DYNAMIC_ORG_HEAD" ? "조직장 (동적)" : "시스템"}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs text-foreground-subtle">{formatDate(r.assignedAt)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <MemberRolesManager
+          employeeId={emp.id}
+          employeeName={emp.name}
+          assignedRoles={emp.roles}
+          assignableRoles={assignableRoles}
+        />
       )}
     </div>
   );
