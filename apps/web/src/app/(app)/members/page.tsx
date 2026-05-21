@@ -141,6 +141,13 @@ export default async function MembersPage({
           <div className="w-56">
             <MemberSearchInput initialValue={query} />
           </div>
+          <a
+            href="/api/members/export"
+            download
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background-primary px-3 text-sm text-foreground-muted hover:bg-background-secondary"
+          >
+            CSV 내보내기
+          </a>
           <CsvImportButton />
           <AddPositionButton />
           <AddDepartmentButton departments={departments} />
