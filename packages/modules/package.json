@@ -13,7 +13,8 @@
     "./department": "./src/department/index.ts",
     "./position": "./src/position/index.ts",
     "./leave": "./src/leave/index.ts",
-    "./workflow": "./src/workflow/index.ts"
+    "./workflow": "./src/workflow/index.ts",
+    "./recruit": "./src/recruit/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

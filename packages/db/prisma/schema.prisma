@@ -178,6 +178,20 @@ enum ApprovalActionType {
   CANCEL
 }
 
+enum JobPostingStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum CandidateResult {
+  IN_PROGRESS
+  PASSED
+  FAILED
+  WITHDRAWN
+}
+
 enum LeaveTxType {
   GRANT
   EXPIRE
@@ -248,6 +262,7 @@ model Company {
   companyHolidays CompanyHoliday[]
   formTemplates   FormTemplate[]
   formDocuments   FormDocument[]
+  jobPostings     JobPosting[]
   // 신청 승인 시 생성된 회사 역참조
   fromApplication CompanyApplication? @relation("CreatedCompany")
 
@@ -401,6 +416,8 @@ model Employee {
   authoredDocuments FormDocument[]     @relation("AuthoredDocuments")
   approvalLines     ApprovalLine[]     @relation("ApprovalLines")
   approvalActions   ApprovalAction[]   @relation("ApprovalActions")
+  managedPostings   JobPosting[]       @relation("ManagedPostings")
+  managedCandidates Candidate[]        @relation("ManagedCandidates")
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
@@ -781,6 +798,68 @@ model ApprovalAction {
 
   @@index([documentId])
   @@map("approval_actions")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 5 — 채용 (docs/03 §5)
+// ─────────────────────────────────────────────────────────────
+
+/// 채용 공고.
+model JobPosting {
+  id          String           @id @default(cuid())
+  companyId   String
+  managerId   String
+  title       String
+  description String           @default("")
+  status      JobPostingStatus @default(DRAFT)
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  company    Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  manager    Employee     @relation("ManagedPostings", fields: [managerId], references: [id])
+  stages     JobStage[]
+  candidates Candidate[]
+
+  @@index([companyId, status])
+  @@map("job_postings")
+}
+
+/// 전형 단계.
+model JobStage {
+  id        String   @id @default(cuid())
+  postingId String
+  order     Int
+  name      String
+  createdAt DateTime @default(now())
+
+  posting    JobPosting  @relation(fields: [postingId], references: [id], onDelete: Cascade)
+  candidates Candidate[] @relation("CurrentStage")
+
+  @@unique([postingId, order])
+  @@map("job_stages")
+}
+
+/// 후보자.
+model Candidate {
+  id             String          @id @default(cuid())
+  postingId      String
+  managerId      String?
+  name           String
+  email          String
+  phone          String?
+  currentStageId String?
+  result         CandidateResult @default(IN_PROGRESS)
+  answers        Json            @default("{}")
+  appliedAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  posting      JobPosting  @relation(fields: [postingId], references: [id], onDelete: Cascade)
+  currentStage JobStage?   @relation("CurrentStage", fields: [currentStageId], references: [id])
+  manager      Employee?   @relation("ManagedCandidates", fields: [managerId], references: [id])
+
+  @@index([postingId, result])
+  @@map("candidates")
 }
 
 // ─────────────────────────────────────────────────────────────
