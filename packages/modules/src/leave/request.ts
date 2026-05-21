@@ -1,6 +1,30 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
-import type { RequestLeaveInput } from "./types";
+import type { RequestLeaveInput, LeaveRequestItem } from "./types";
+
+export async function listMyLeaveRequests(
+  employeeId: string,
+): Promise<Result<LeaveRequestItem[]>> {
+  const requests = await prisma.leaveRequest.findMany({
+    where: { employeeId },
+    include: { leaveType: { select: { name: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return ok(
+    requests.map((r) => ({
+      id: r.id,
+      leaveTypeName: r.leaveType.name,
+      startDate: r.startDate,
+      endDate: r.endDate,
+      days: Number(r.days),
+      reason: r.reason,
+      status: r.status,
+      reviewNote: r.reviewNote,
+      createdAt: r.createdAt,
+    })),
+  );
+}
 
 export async function requestLeave(
   input: RequestLeaveInput,
@@ -11,7 +35,7 @@ export async function requestLeave(
     where: { id: leaveTypeId },
     select: { isActive: true },
   });
-  if (!leaveType?.isActive) return err(errors.badRequest("비활성 휴가 종류예요"));
+  if (!leaveType?.isActive) return err(errors.validation("비활성 휴가 종류예요"));
 
   const year = startDate.getFullYear();
   const balance = await prisma.leaveBalance.findUnique({
@@ -24,7 +48,7 @@ export async function requestLeave(
     : 0;
 
   if (remaining < days)
-    return err(errors.badRequest(`잔여 휴가가 부족해요 (잔여 ${remaining}일, 신청 ${days}일)`));
+    return err(errors.validation(`잔여 휴가가 부족해요 (잔여 ${remaining}일, 신청 ${days}일)`));
 
   const req = await prisma.leaveRequest.create({
     data: { employeeId, leaveTypeId, startDate, endDate, days, reason: reason ?? "" },
@@ -43,7 +67,7 @@ export async function approveLeave(
     select: { id: true, employeeId: true, leaveTypeId: true, days: true, status: true, startDate: true },
   });
   if (!req) return err(errors.notFound("휴가 신청을 찾을 수 없어요"));
-  if (req.status !== "PENDING") return err(errors.badRequest("대기 중인 신청만 승인할 수 있어요"));
+  if (req.status !== "PENDING") return err(errors.validation("대기 중인 신청만 승인할 수 있어요"));
 
   const year = req.startDate.getFullYear();
 
@@ -84,7 +108,7 @@ export async function rejectLeave(
     select: { status: true },
   });
   if (!req) return err(errors.notFound("휴가 신청을 찾을 수 없어요"));
-  if (req.status !== "PENDING") return err(errors.badRequest("대기 중인 신청만 반려할 수 있어요"));
+  if (req.status !== "PENDING") return err(errors.validation("대기 중인 신청만 반려할 수 있어요"));
 
   await prisma.leaveRequest.update({
     where: { id: requestId },
@@ -105,7 +129,7 @@ export async function cancelLeave(
   if (!req) return err(errors.notFound("휴가 신청을 찾을 수 없어요"));
   if (req.employeeId !== employeeId) return err(errors.forbidden("본인 신청만 취소할 수 있어요"));
   if (!["PENDING", "APPROVED"].includes(req.status))
-    return err(errors.badRequest("취소할 수 없는 상태예요"));
+    return err(errors.validation("취소할 수 없는 상태예요"));
 
   const year = req.startDate.getFullYear();
   const wasApproved = req.status === "APPROVED";

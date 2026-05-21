@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { getMembershipSummary } from "@teamlet/modules/tenancy";
@@ -22,9 +23,19 @@ export default async function HomePage() {
         환영해요, {session.user.name}님
       </h1>
       <p className="text-sm text-foreground-muted">
-        활성 회사 {summary.active.length}곳에 소속되어 있어요. 홈 피드 ·
-        구성원 · 휴가 · 워크플로우는 Phase 2 부터 제공돼요.
+        활성 회사 {summary.active.length}곳에 소속되어 있어요.
       </p>
+      <nav className="flex flex-wrap gap-2">
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/members">구성원</Link>
+        </Button>
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/leave">휴가</Link>
+        </Button>
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/settings/permissions">권한 설정</Link>
+        </Button>
+      </nav>
       <form
         action={async () => {
           "use server";

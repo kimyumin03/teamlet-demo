@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./kysely": "./src/kysely.ts"
+    "./kysely": "./src/kysely.ts",
+    "./seed/leave-types": "./seed/leave-types.ts"
   },
   "scripts": {
     "generate": "prisma generate",

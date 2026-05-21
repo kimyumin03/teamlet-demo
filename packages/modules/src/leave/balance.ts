@@ -1,6 +1,31 @@
 import { prisma } from "@teamlet/db";
-import { ok, err, type Result } from "@teamlet/shared";
-import type { GrantLeaveInput, LeaveBalanceSummary } from "./types";
+import { ok, err, errors, type Result } from "@teamlet/shared";
+import type { GrantLeaveInput, LeaveBalanceSummary, LeaveTypeItem } from "./types";
+
+export async function listLeaveTypes(
+  employeeId: string,
+): Promise<Result<LeaveTypeItem[]>> {
+  const emp = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { companyId: true },
+  });
+  if (!emp) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
+
+  const types = await prisma.leaveType.findMany({
+    where: { companyId: emp.companyId, isActive: true },
+    select: { id: true, name: true, key: true, grantAmount: true },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  return ok(
+    types.map((t) => ({
+      id: t.id,
+      name: t.name,
+      key: t.key,
+      grantAmount: t.grantAmount ? Number(t.grantAmount) : null,
+    })),
+  );
+}
 
 export async function getLeaveBalances(
   employeeId: string,

@@ -1,4 +1,4 @@
-import type { LeaveTxCategory, LeaveTxType } from "@teamlet/db";
+import type { LeaveTxCategory, LeaveTxType, LeaveRequestStatus } from "@teamlet/db";
 
 export type LeaveBalanceSummary = {
   leaveTypeId: string;
@@ -26,4 +26,23 @@ export type RequestLeaveInput = {
   endDate: Date;
   days: number;
   reason?: string;
+};
+
+export type LeaveTypeItem = {
+  id: string;
+  name: string;
+  key: string;
+  grantAmount: number | null;
+};
+
+export type LeaveRequestItem = {
+  id: string;
+  leaveTypeName: string;
+  startDate: Date;
+  endDate: Date;
+  days: number;
+  reason: string;
+  status: LeaveRequestStatus;
+  reviewNote: string | null;
+  createdAt: Date;
 };
