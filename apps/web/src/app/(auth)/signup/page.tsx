@@ -2,9 +2,14 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { SignupForm } from "@/components/forms/signup-form";
 
-export default async function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
   const session = await auth();
-  if (session?.user) redirect("/home");
+  const { callbackUrl } = await searchParams;
+  if (session?.user) redirect(callbackUrl ?? "/home");
 
   return (
     <div className="flex flex-col gap-5">
@@ -14,7 +19,7 @@ export default async function SignupPage() {
           계정을 만들고 회사에 가입하세요.
         </p>
       </div>
-      <SignupForm />
+      <SignupForm callbackUrl={callbackUrl} />
     </div>
   );
 }

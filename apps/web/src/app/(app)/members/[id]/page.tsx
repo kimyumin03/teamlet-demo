@@ -7,6 +7,7 @@ import { ChevronLeft, Shield } from "lucide-react";
 import { auth } from "@/auth";
 import { DeactivateEmployeeButton } from "@/components/members/deactivate-button";
 import { EditMemberButton } from "@/components/members/edit-member-button";
+import { InviteLinkButton } from "@/components/members/invite-link-button";
 
 export const dynamic = "force-dynamic";
 
@@ -122,7 +123,8 @@ export default async function MemberDetailPage({
           </p>
         </div>
         {emp.isActive && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {!emp.hasLinkedAccount && <InviteLinkButton employeeId={emp.id} />}
             <EditMemberButton employee={emp} departments={departments} positions={positions} />
             <DeactivateEmployeeButton employeeId={emp.id} employeeName={emp.name} redirectAfter="/members" />
           </div>

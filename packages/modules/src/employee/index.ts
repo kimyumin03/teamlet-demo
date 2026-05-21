@@ -393,6 +393,7 @@ export type EmployeeDetail = EmployeeListItem & {
   leaveBalances: { leaveTypeName: string; remaining: number }[];
   createdAt: Date;
   roles: EmployeeRoleAssignment[];
+  hasLinkedAccount: boolean;
 };
 
 /**
@@ -459,6 +460,7 @@ export async function getEmployee(
           },
         },
       },
+      membership: { select: { status: true } },
     },
   });
 
@@ -498,6 +500,7 @@ export async function getEmployee(
       isSystem: ur.role.isSystem,
       assignedAt: ur.assignedAt,
     })),
+    hasLinkedAccount: emp.membership?.status === "ACTIVE",
   });
 }
 

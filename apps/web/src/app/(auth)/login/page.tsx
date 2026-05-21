@@ -2,9 +2,14 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { LoginForm } from "@/components/forms/login-form";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
   const session = await auth();
-  if (session?.user) redirect("/home");
+  const { callbackUrl } = await searchParams;
+  if (session?.user) redirect(callbackUrl ?? "/home");
 
   return (
     <div className="flex flex-col gap-5">
@@ -14,7 +19,7 @@ export default async function LoginPage() {
           Teamlet 계정으로 로그인하세요.
         </p>
       </div>
-      <LoginForm />
+      <LoginForm callbackUrl={callbackUrl} />
     </div>
   );
 }

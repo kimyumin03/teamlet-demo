@@ -11,6 +11,12 @@ export async function googleLoginAction() {
 
 export type ActionState = { error: string | null };
 
+function safeCallbackUrl(raw: string | null | undefined): string {
+  if (!raw) return "/home";
+  // 외부 URL 리디렉션 방지 — 상대 경로만 허용
+  return raw.startsWith("/") ? raw : "/home";
+}
+
 /** 로그인 (docs/06 §1.1) */
 export async function loginAction(
   _prev: ActionState,
@@ -18,11 +24,11 @@ export async function loginAction(
 ): Promise<ActionState> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const redirectTo = safeCallbackUrl(formData.get("callbackUrl") as string | null);
   try {
-    await signIn("credentials", { email, password, redirectTo: "/home" });
+    await signIn("credentials", { email, password, redirectTo });
     return { error: null };
   } catch (e) {
-    // redirect 신호는 AuthError 가 아니므로 re-throw 되어 정상 동작
     if (e instanceof AuthError) {
       return { error: "이메일 또는 비밀번호가 올바르지 않아요" };
     }
@@ -30,7 +36,7 @@ export async function loginAction(
   }
 }
 
-/** 회원가입 → 자동 로그인 → 회사 가입 흐름 (docs/06 §1.2) */
+/** 회원가입 → 자동 로그인 → callbackUrl 또는 회사 가입 흐름 (docs/06 §1.2) */
 export async function signupAction(
   _prev: ActionState,
   formData: FormData,
@@ -53,11 +59,14 @@ export async function signupAction(
     return { error: result.error.message };
   }
 
+  const callbackUrl = safeCallbackUrl(formData.get("callbackUrl") as string | null);
+  const redirectTo = callbackUrl !== "/home" ? callbackUrl : "/join-company";
+
   try {
     await signIn("credentials", {
       email: raw.email,
       password: raw.password,
-      redirectTo: "/join-company",
+      redirectTo,
     });
     return { error: null };
   } catch (e) {

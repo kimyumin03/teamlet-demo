@@ -7,11 +7,12 @@ import { loginAction, googleLoginAction, type ActionState } from "@/lib/actions/
 
 const initial: ActionState = { error: null };
 
-export function LoginForm() {
+export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, formAction, isPending] = useActionState(loginAction, initial);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {callbackUrl && <input type="hidden" name="callbackUrl" value={callbackUrl} />}
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="text-sm text-foreground-muted">
           이메일

@@ -13,11 +13,12 @@ const fields = [
   { id: "phone", label: "휴대폰", type: "tel", autoComplete: "tel" },
 ] as const;
 
-export function SignupForm() {
+export function SignupForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, formAction, isPending] = useActionState(signupAction, initial);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {callbackUrl && <input type="hidden" name="callbackUrl" value={callbackUrl} />}
       {fields.map((f) => (
         <div key={f.id} className="flex flex-col gap-1.5">
           <label htmlFor={f.id} className="text-sm text-foreground-muted">
