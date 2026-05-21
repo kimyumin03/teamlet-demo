@@ -65,6 +65,18 @@ export async function createDocument(
   if (input.approverIds.length === 0)
     return err(errors.validation("결재자를 한 명 이상 지정해야 해요"));
 
+  // 결재자 중복 지정 차단
+  const uniqueApprovers = new Set(input.approverIds);
+  if (uniqueApprovers.size !== input.approverIds.length)
+    return err(errors.validation("같은 결재자를 중복 지정할 수 없어요"));
+
+  // 결재자가 모두 같은 회사 소속인지 검증 (cross-tenant 방지)
+  const approverCount = await prisma.employee.count({
+    where: { id: { in: [...uniqueApprovers] }, companyId: input.companyId },
+  });
+  if (approverCount !== uniqueApprovers.size)
+    return err(errors.validation("결재자 중 회사 소속이 아닌 사람이 있어요"));
+
   const doc = await prisma.$transaction(async (tx) => {
     const created = await tx.formDocument.create({
       data: {
@@ -79,12 +91,13 @@ export async function createDocument(
       select: { id: true },
     });
 
+    // 모든 결재선은 PENDING 으로 시작 — 순차 진행은 approveDocument 가 step 순서로 강제
     await tx.approvalLine.createMany({
       data: input.approverIds.map((approverId, idx) => ({
         documentId: created.id,
         step: idx + 1,
         approverId,
-        status: idx === 0 ? "PENDING" : "PENDING",
+        status: "PENDING",
       })),
     });
 
@@ -171,8 +184,13 @@ export async function listEmployeeDocuments(
 export async function listPendingApprovals(
   employeeId: string,
 ): Promise<Result<PendingApprovalItem[]>> {
+  // 진행 중 문서의 PENDING 결재선만 — 반려/취소된 문서의 죽은 결재선 제외
   const lines = await prisma.approvalLine.findMany({
-    where: { approverId: employeeId, status: "PENDING" },
+    where: {
+      approverId: employeeId,
+      status: "PENDING",
+      document: { status: "IN_PROGRESS" },
+    },
     include: {
       document: {
         include: { author: { select: { name: true } } },
@@ -183,9 +201,18 @@ export async function listPendingApprovals(
 
   const items = await Promise.all(
     lines.map(async (line) => {
-      const totalSteps = await prisma.approvalLine.count({
-        where: { documentId: line.documentId },
-      });
+      const [totalSteps, priorUnapproved] = await Promise.all([
+        prisma.approvalLine.count({ where: { documentId: line.documentId } }),
+        prisma.approvalLine.count({
+          where: {
+            documentId: line.documentId,
+            step: { lt: line.step },
+            status: { not: "APPROVED" },
+          },
+        }),
+      ]);
+      // 이전 단계 미완료 → 아직 내 결재 차례 아님
+      if (priorUnapproved > 0) return null;
       return {
         id: line.id,
         documentId: line.documentId,
@@ -199,5 +226,5 @@ export async function listPendingApprovals(
     }),
   );
 
-  return ok(items);
+  return ok(items.filter((i): i is PendingApprovalItem => i !== null));
 }

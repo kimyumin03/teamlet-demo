@@ -14,6 +14,18 @@ export async function approveDocument(
   if (line.approverId !== actorId) return err(errors.forbidden("본인 결재 항목만 처리할 수 있어요"));
   if (line.status !== "PENDING") return err(errors.validation("대기 중인 항목만 처리할 수 있어요"));
 
+  // 순차 결재 강제 — 이전 단계가 모두 승인돼야 처리 가능
+  const priorUnapproved = await prisma.approvalLine.count({
+    where: {
+      documentId: line.documentId,
+      step: { lt: line.step },
+      status: { not: "APPROVED" },
+    },
+  });
+  if (priorUnapproved > 0) {
+    return err(errors.validation("이전 단계 결재가 완료되지 않았어요"));
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.approvalLine.update({
       where: { id: lineId },
