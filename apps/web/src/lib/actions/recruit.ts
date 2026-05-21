@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { prisma } from "@teamlet/db";
-import { createPosting, updatePostingStatus, createCandidate, moveCandidateStage, setCandidateResult } from "@teamlet/modules/recruit";
+import { createPosting, updatePostingStatus, createCandidate, updateCandidateNote, moveCandidateStage, setCandidateResult } from "@teamlet/modules/recruit";
 import type { CandidateResult } from "@teamlet/modules/recruit";
 import { toApiResponse, type ApiResponse } from "@teamlet/shared";
 import { auth } from "@/auth";
@@ -62,4 +62,12 @@ export async function setCandidateResultAction(
 ): Promise<ApiResponse<void>> {
   const { employeeId } = await requireEmployee();
   return toApiResponse(await setCandidateResult(employeeId, candidateId, result));
+}
+
+export async function updateCandidateNoteAction(
+  candidateId: string,
+  note: string,
+): Promise<ApiResponse<void>> {
+  const { employeeId } = await requireEmployee();
+  return toApiResponse(await updateCandidateNote(employeeId, candidateId, note));
 }

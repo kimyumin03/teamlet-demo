@@ -1,3 +1,3 @@
 export { listPostings, getPosting, createPosting, updatePostingStatus } from "./posting";
-export { createCandidate, moveCandidateStage, setCandidateResult } from "./candidate";
-export type { PostingListItem, PostingDetail, CandidateListItem, CreatePostingInput, CreateCandidateInput, JobPostingStatus, CandidateResult } from "./types";
+export { createCandidate, getCandidate, updateCandidateNote, moveCandidateStage, setCandidateResult } from "./candidate";
+export type { PostingListItem, PostingDetail, CandidateListItem, CandidateDetail, CreatePostingInput, CreateCandidateInput, JobPostingStatus, CandidateResult } from "./types";

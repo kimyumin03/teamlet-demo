@@ -106,7 +106,7 @@ export default async function PostingDetailPage({
             description="후보자 추가 버튼을 눌러 첫 지원자를 등록해 보세요."
           />
         ) : view === "kanban" ? (
-          <CandidateKanban stages={posting.stages} candidates={posting.candidates} />
+          <CandidateKanban stages={posting.stages} candidates={posting.candidates} postingId={posting.id} />
         ) : (
           <ul className="flex flex-col gap-1">
             {posting.candidates.map((c) => (
@@ -114,10 +114,13 @@ export default async function PostingDetailPage({
                 key={c.id}
                 className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 rounded-lg border border-border bg-background-primary px-4 py-3"
               >
-                <div className="flex flex-col gap-0.5">
+                <Link
+                  href={`/recruit/postings/${posting.id}/candidates/${c.id}`}
+                  className="flex flex-col gap-0.5 hover:underline"
+                >
                   <span className="font-medium text-foreground">{c.name}</span>
                   <span className="text-sm text-foreground-muted">{c.email}</span>
-                </div>
+                </Link>
                 <span className="text-sm text-foreground-muted">
                   {c.currentStageName ?? "단계 미배정"}
                 </span>

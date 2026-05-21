@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CandidateListItem, CandidateResult } from "@teamlet/modules/recruit";
 import { moveCandidateStageAction, setCandidateResultAction } from "@/lib/actions/recruit";
@@ -18,9 +19,11 @@ const RESULT_CLASS: Record<CandidateResult, string> = {
 function CandidateCard({
   candidate,
   stages,
+  postingId,
 }: {
   candidate: CandidateListItem;
   stages: { id: string; name: string }[];
+  postingId: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -41,8 +44,13 @@ function CandidateCard({
 
   return (
     <div className={`rounded-lg border border-border bg-background-primary p-3 ${isPending ? "opacity-50" : ""}`}>
-      <p className="font-medium text-foreground text-sm">{candidate.name}</p>
-      <p className="text-xs text-foreground-muted truncate">{candidate.email}</p>
+      <Link
+        href={`/recruit/postings/${postingId}/candidates/${candidate.id}`}
+        className="hover:underline"
+      >
+        <p className="font-medium text-foreground text-sm">{candidate.name}</p>
+        <p className="text-xs text-foreground-muted truncate">{candidate.email}</p>
+      </Link>
       <div className="mt-2 flex flex-col gap-1.5">
         {stages.length > 0 && (
           <select
@@ -78,9 +86,11 @@ function CandidateCard({
 export function CandidateKanban({
   stages,
   candidates,
+  postingId,
 }: {
   stages: { id: string; order: number; name: string }[];
   candidates: CandidateListItem[];
+  postingId: string;
 }) {
   // 단계별 그룹핑 + 미배정 컬럼
   const unassigned = candidates.filter((c) => !c.currentStageName);
@@ -116,7 +126,7 @@ export function CandidateKanban({
               </div>
             ) : (
               col.items.map((c) => (
-                <CandidateCard key={c.id} candidate={c} stages={stages} />
+                <CandidateCard key={c.id} candidate={c} stages={stages} postingId={postingId} />
               ))
             )}
           </div>

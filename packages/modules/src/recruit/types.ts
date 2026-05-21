@@ -40,6 +40,24 @@ export type CreatePostingInput = {
   stages: string[];
 };
 
+export type CandidateDetail = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  result: CandidateResult;
+  currentStageId: string | null;
+  currentStageName: string | null;
+  note: string;
+  appliedAt: Date;
+  updatedAt: Date;
+  posting: {
+    id: string;
+    title: string;
+    stages: { id: string; order: number; name: string }[];
+  };
+};
+
 export type CreateCandidateInput = {
   postingId: string;
   managerId?: string;
