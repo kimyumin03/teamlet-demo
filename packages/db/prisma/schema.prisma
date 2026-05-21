@@ -149,6 +149,35 @@ enum LeaveTxCategory {
   ADJUSTMENT
 }
 
+enum FormDocumentKind {
+  GENERAL
+  LEAVE_REQUEST
+  INFO_CHANGE
+  ANNOUNCEMENT
+}
+
+enum FormDocumentStatus {
+  DRAFT
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ApprovalLineStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SKIPPED
+}
+
+enum ApprovalActionType {
+  APPROVE
+  REJECT
+  DELEGATE
+  CANCEL
+}
+
 enum LeaveTxType {
   GRANT
   EXPIRE
@@ -217,6 +246,8 @@ model Company {
   auditLogs     AuditLog[]
   leaveTypes      LeaveType[]
   companyHolidays CompanyHoliday[]
+  formTemplates   FormTemplate[]
+  formDocuments   FormDocument[]
   // 신청 승인 시 생성된 회사 역참조
   fromApplication CompanyApplication? @relation("CreatedCompany")
 
@@ -367,6 +398,9 @@ model Employee {
   leaveRequests    LeaveRequest[]
   leaveTransactions LeaveTransaction[] @relation("LeaveTransactions")
   actedTransactions LeaveTransaction[] @relation("LeaveTransactionActor")
+  authoredDocuments FormDocument[]     @relation("AuthoredDocuments")
+  approvalLines     ApprovalLine[]     @relation("ApprovalLines")
+  approvalActions   ApprovalAction[]   @relation("ApprovalActions")
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
@@ -663,6 +697,90 @@ model LeaveTransaction {
   @@index([employeeId, leaveTypeId])
   @@index([leaveRequestId])
   @@map("leave_transactions")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 4 — 워크플로우 (docs/03 §4)
+// ─────────────────────────────────────────────────────────────
+
+/// 양식 템플릿 — 결재 문서 유형 정의.
+model FormTemplate {
+  id          String           @id @default(cuid())
+  companyId   String
+  name        String
+  kind        FormDocumentKind @default(GENERAL)
+  description String           @default("")
+  fields      Json             @default("[]")
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  company   Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  documents FormDocument[]
+
+  @@index([companyId, isActive])
+  @@map("form_templates")
+}
+
+/// 작성된 결재 문서.
+model FormDocument {
+  id         String             @id @default(cuid())
+  companyId  String
+  templateId String?
+  authorId   String
+  title      String
+  kind       FormDocumentKind   @default(GENERAL)
+  formData   Json               @default("{}")
+  status     FormDocumentStatus @default(DRAFT)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  template      FormTemplate?  @relation(fields: [templateId], references: [id])
+  author        Employee       @relation("AuthoredDocuments", fields: [authorId], references: [id])
+  approvalLines ApprovalLine[]
+  actions       ApprovalAction[]
+
+  @@index([companyId, status])
+  @@index([authorId, status])
+  @@map("form_documents")
+}
+
+/// 결재 단계 인스턴스 (문서별 순서대로 생성).
+model ApprovalLine {
+  id         String            @id @default(cuid())
+  documentId String
+  step       Int
+  approverId String
+  status     ApprovalLineStatus @default(PENDING)
+  approvedAt DateTime?
+  createdAt  DateTime          @default(now())
+
+  document   FormDocument     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  approver   Employee         @relation("ApprovalLines", fields: [approverId], references: [id])
+  actions    ApprovalAction[]
+
+  @@unique([documentId, step])
+  @@index([approverId, status])
+  @@map("approval_lines")
+}
+
+/// 결재 처리 이력 (immutable).
+model ApprovalAction {
+  id         String             @id @default(cuid())
+  documentId String
+  lineId     String
+  actorId    String
+  action     ApprovalActionType
+  comment    String?
+  createdAt  DateTime           @default(now())
+
+  document FormDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  line     ApprovalLine @relation(fields: [lineId], references: [id], onDelete: Cascade)
+  actor    Employee     @relation("ApprovalActions", fields: [actorId], references: [id])
+
+  @@index([documentId])
+  @@map("approval_actions")
 }
 
 // ─────────────────────────────────────────────────────────────
