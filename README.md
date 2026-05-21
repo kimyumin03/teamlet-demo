@@ -85,3 +85,18 @@ pnpm dev              # http://localhost:3000
 - **Server Actions**: `toApiResponse()` 래퍼로 클라이언트에 전달
 - **멀티 테넌시**: `UserRole`은 `employeeId` 기준 (회사별 신분). 플랫폼 운영자는 `SYSTEM_ADMIN_EMAILS`로 별도 식별
 - **데모 모드**: `TEAMLET_DEMO_AUTO_APPROVE=true` — 회사 신청 즉시 승인 (운영 금지, 운영 시 `/admin`에서 수동 검토)
+
+## 작업 로그
+
+### 2026-05-21 (목)
+
+isOrgHead 권한 통합부터 시작해 Flex 갭 검토, 보안 가드 일괄 추가, 권한 운영 UI(역할 배정·권한 매트릭스), 플랫폼 운영 콘솔, 착시 제거까지 완료했다. 권한 시스템이 UI로 실제 작동하는 상태가 됐고, 아직 동작하지 않는 정책은 "준비 중"으로 정직하게 표기했다.
+
+### 2026-05-22 (금) 예정
+
+- **[AI 지시 문서 탭]**
+  - 각 md 파일 output 개선
+  - Claude Code 외 AI 도구용 문서 작성법 서칭 및 적용
+- **[AI 도구 연결]**
+  - 연결한 AI 도구 테스트하며 안정성 개선
+  - Cursor · Gemini · Antigravity 연결 방법 서칭 및 연결
