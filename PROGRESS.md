@@ -14,37 +14,37 @@
 | **P1 인증/가입** | ✅ 완료 | auth 모듈 + 화면 5개 + NextAuth + 데모 자가-승인 |
 | **P1 권한** | ✅ 핵심 완료 | 평가/CRUD/매핑/UserRole/락아웃/부트스트랩 ✓ — 권한 편집 UI만 잔여 |
 | **P2 Core HR (구성원/조직/직책)** | ✅ 7단계 완료 | 디렉토리/검색/부서/상세/수정/퇴직/직책 |
-| **P3 휴가** | 🟡 진행 중 | /leave 페이지 + 신청 Dialog + 취소 ✓ — 관리자 승인 뷰 미착수 |
+| **P3 휴가** | ✅ UI 완료 | /leave + 신청/취소 + 관리자 승인/반려 + 수동 부여 ✓ |
 | Worker | ⬜ 빈 skeleton | BullMQ 미구현 |
 | P4~P8 | ⬜ 미착수 | 워크플로우/채용/문서/보안/확장 |
 
 ## 현재 위치
 
-- **Phase**: P3 휴가 — `/leave` 페이지 완료, **다음은 관리자 승인 뷰**
+- **Phase**: P3 휴가 UI 완료, **다음은 P4 워크플로우 또는 P2 잔여 폴리시**
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `770b293 feat(leave): P3 2단계 — 휴가 페이지 UI`
+- **마지막 커밋**: `3d51dd5 feat(leave): P3 4단계 — 휴가 수동 부여 Dialog`
 
-## 다음 작업 — P3 휴가 관리자 뷰
+## 다음 작업 — P4 워크플로우 또는 P2 잔여 폴리시
 
-```powershell
-pnpm docker:up
-pnpm db:migrate   # 4_leave_domain 포함
-pnpm db:seed
-pnpm dev
-```
+### P3 완료 목록
+1. ✅ `/leave` 페이지 — 잔여 현황 + 신청 내역
+2. ✅ 휴가 신청 Dialog
+3. ✅ 관리자 승인/반려 뷰 (`/leave/requests`)
+4. ✅ 수동 부여 Dialog
 
-### 구현할 것 (P3 관리자 뷰)
+### P2 잔여 폴리시 (선택)
+- 부서 이동 (parentId + 순환 가드)
+- PositionHistory 시점 이력
+- 직원 복직 처리
 
-1. ✅ **`/leave` 페이지** — 내 잔여 휴가 현황 + 신청 내역 목록
-2. ✅ **휴가 신청 Dialog** — 휴가 종류 선택 / 날짜 / 일수 / 사유
-3. **관리자 승인 뷰** — 대기 중 신청 목록 + 승인/반려 버튼
-4. **잔여 부여 Dialog** — 관리자가 특정 직원에게 수동 부여
-5. **(선택) `/leave/requests`** — 전체 신청 내역 (관리자용)
+### P4 워크플로우 (다음 Phase)
 
 ## 최근 한 일
 
 ### P3 휴가 UI (2026-05-21 이번 세션)
+- `3d51dd5` P3 4단계 — 수동 부여 Dialog (GrantLeaveButton)
+- `d6f8758` P3 3단계 — 관리자 승인/반려 뷰 (/leave/requests)
 - `770b293` P3 2단계 — /leave 페이지 + 신청 Dialog + 취소 버튼
 
 ### P3 휴가 도메인 — DB + 모듈 (2026-05-20)
