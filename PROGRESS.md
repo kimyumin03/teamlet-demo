@@ -22,26 +22,36 @@
 
 ## 현재 위치
 
-- **Phase**: P4 워크플로우 MVP 완료, **다음은 DB migrate 후 테스트 또는 P5~**
+- **Phase**: P5 채용 MVP 완료 — 다음은 P6 또는 P2 잔여 폴리시
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `7866497 feat(workflow): P4 2~3단계 — 워크플로우 모듈 + /workflow UI`
-- **⚠️ P4 migrate 필요**: `pnpm db:migrate` 실행해야 workflow 테이블 생성됨
+- **마지막 커밋**: `9eb0e62 chore: PROGRESS.md — P5 채용 MVP 완료 기록`
+- **마이그레이션**: 6개 모두 적용됨 (`0_init` ~ `6_recruit_core`)
 
-## 다음 작업
+## 다음 작업 후보
 
-### P4 워크플로우 잔여 (선택)
-- FormTemplate 관리 UI (`/workflow/templates`)
-- 문서 상세 페이지 (`/workflow/documents/[id]`) — 결재 이력 + 현재 단계
+### P6 문서·증명서 (다음 Phase)
+- 재직증명서, 경력증명서 발급 신청 + PDF 생성
+- MinIO 파일 스토리지 연동
 
 ### P2 잔여 폴리시 (선택)
 - 부서 이동 (parentId + 순환 가드)
 - PositionHistory 시점 이력
 - 직원 복직 처리
 
-### P4 워크플로우 (다음 Phase)
+### P1 잔여
+- 권한 편집 UI (Checkbox/Tabs UI primitive 보강 필요)
 
 ## 최근 한 일
+
+### P5 채용 (2026-05-21 이번 세션)
+- `481c37d` P5 — DB(JobPosting/JobStage/Candidate) + recruit 모듈 + /recruit + /recruit/postings/[id]
+
+### P4 워크플로우 (2026-05-21 이번 세션)
+- `d9686f7` P4 4단계 — 문서 상세 페이지 (/workflow/documents/[id])
+- `8eb358f` P4 마이그레이션 — 5_workflow_core
+- `7866497` P4 2~3단계 — 워크플로우 모듈 + /workflow UI
+- `e7b2703` P4 1단계 — DB 스키마 (FormTemplate/Document/ApprovalLine/Action)
 
 ### P3 휴가 UI (2026-05-21 이번 세션)
 - `3d51dd5` P3 4단계 — 수동 부여 Dialog (GrantLeaveButton)
@@ -76,16 +86,12 @@
 - `56e308a` 역할 CRUD + 시스템 역할 보호
 - `12c11e9` 권한 카탈로그 조회
 
-## 페이지 확인 후 다음 자연스러운 단계
+## 알려진 미완/잔여
 
-페이지 확인하면서 발견된 버그/UX 우선 처리. 그 후 로드맵 순서:
-
-- **P2 잔여 폴리시** (확인 결과 보고 결정)
-  - 부서 이동(parentId 변경 + 순환 가드)
-  - PositionHistory 시점 이력
-  - 권한 매핑 편집 UI (UI primitive Checkbox/Tabs 보강 필요)
-  - 직원 복직 처리
-- **P3 휴가** 진입 — LeaveType / LeaveBalance / LeaveRequest 도메인 + 신청·승인 흐름. 공휴일/법정휴가 시드는 데이터로 이미 정의 (적용 안 됨)
+- Worker(BullMQ) 빈 skeleton — 휴가/워크플로우 알림 미구현
+- FormTemplate 관리 UI (`/workflow/templates`) 미구현
+- 권한 편집 UI — Checkbox/Tabs 미구현으로 보류 중
+- `Position.isOrgHead` — DB 데이터만, 권한 평가 미통합
 
 ## 알려진 이슈 / 메모
 
