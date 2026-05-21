@@ -1,6 +1,6 @@
 /**
  * Scope 평가 (docs/01 §5, docs/03 §7).
- * P1 범위: ALL / SELF 실구현. DEPARTMENT / DIRECT_REPORTS 는 P2 (Employee 부서/manager 관계 도입 후).
+ * ALL / SELF / DEPARTMENT 실구현. DIRECT_REPORTS 는 향후 manager 관계 도입 후.
  */
 
 import type { EffectivePermission, ScopeContext } from "./types";
@@ -22,6 +22,12 @@ export function matchesScope(
       );
 
     case "DEPARTMENT":
+      return Boolean(
+        perm.departmentIds.length > 0 &&
+          ctx.targetDepartmentId != null &&
+          perm.departmentIds.includes(ctx.targetDepartmentId),
+      );
+
     case "DIRECT_REPORTS":
       return false;
   }

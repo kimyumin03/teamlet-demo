@@ -14,6 +14,14 @@ import { prisma } from "@teamlet/db";
 import type { RoleType } from "@teamlet/db";
 import { errors } from "@teamlet/shared";
 
+// Flex 조직장 기본 권한 — DEPARTMENT scope로 자동 부여
+const ORG_HEAD_DEFAULT_KEYS = [
+  "member.directory.read",
+  "member.hr_info.read",
+  "leave.balance.read",
+  "workflow.document.read",
+];
+
 export type BootstrapResult = {
   superAdminRoleId: string;
   orgHeadRoleId: string;
@@ -89,6 +97,21 @@ export async function bootstrapCompanyRoles(
           enabled: true,
           scopeType: p.hasScope ? "ALL" : null,
         },
+      }),
+    ),
+  );
+
+  // DYNAMIC_ORG_HEAD 기본 권한 — DEPARTMENT scope
+  const orgHeadPerms = await prisma.permission.findMany({
+    where: { key: { in: ORG_HEAD_DEFAULT_KEYS } },
+    select: { id: true },
+  });
+  await prisma.$transaction(
+    orgHeadPerms.map((p) =>
+      prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: orgHead.id, permissionId: p.id } },
+        create: { roleId: orgHead.id, permissionId: p.id, enabled: true, scopeType: "DEPARTMENT" },
+        update: { enabled: true, scopeType: "DEPARTMENT" },
       }),
     ),
   );

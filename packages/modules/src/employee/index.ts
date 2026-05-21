@@ -4,10 +4,10 @@
  * P2 1단계: 디렉토리 read 흐름만 (listEmployees / getEmployee).
  * P2 2단계 이후: 직원 추가/수정/비활성화, 부서 연결, 직책/PositionHistory.
  *
- * 권한: `member.directory.read` (ALL scope 만 P1 평가 모듈 지원).
- * - SUPER_ADMIN: ALL → 회사 전체
- * - 일반 직원: 권한 미보유 → 페이지 진입 자체 막힘
- * - SELF scope: P2 에서 자기 자신만 보이는 분기 추가 예정
+ * 권한: `member.directory.read` scope-aware 평가.
+ * - SUPER_ADMIN (ALL): 회사 전체 조회
+ * - DYNAMIC_ORG_HEAD (DEPARTMENT): 본인 부서만 조회
+ * - 권한 없음: 403
  */
 
 import { prisma } from "@teamlet/db";
@@ -25,6 +25,7 @@ import {
 import { recordAudit } from "../audit/index";
 import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
+import { getEffectivePermissions } from "../permission/effective";
 import { assertNotLastSuperAdmin } from "../permission/lockout";
 
 const DIRECTORY_READ = "member.directory.read";
@@ -57,21 +58,36 @@ export async function listEmployees(
   actorEmployeeId: string,
   filter: EmployeeListFilter = {},
 ): Promise<Result<EmployeeListItem[]>> {
-  try {
-    await assertPermission(actorEmployeeId, DIRECTORY_READ);
-  } catch (e) {
-    return catchDomainErr(e);
-  }
-
   const actor = await loadActor(actorEmployeeId);
   if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  // scope-aware 권한 검사: DEPARTMENT scope는 해당 부서만 조회
+  const perms = await getEffectivePermissions(actorEmployeeId);
+  const perm = perms.get(DIRECTORY_READ);
+  if (!perm) return err(errors.forbidden("구성원 목록을 볼 권한이 없어요"));
+
+  // DEPARTMENT scope → departmentIds 필터 적용 (scope bypass 방지)
+  const scopedDeptIds =
+    perm.scopeType === "DEPARTMENT" && perm.departmentIds.length > 0
+      ? perm.departmentIds
+      : null;
+
+  // filter.departmentId가 있으면: scope 내에서만 허용
+  let deptWhere: { departmentId?: string | { in: string[] } | null } = {};
+  if (filter.departmentId !== undefined) {
+    const allowed =
+      !scopedDeptIds || filter.departmentId === null
+        ? true
+        : scopedDeptIds.includes(filter.departmentId);
+    deptWhere = allowed ? { departmentId: filter.departmentId } : { departmentId: { in: [] } };
+  } else if (scopedDeptIds) {
+    deptWhere = { departmentId: { in: scopedDeptIds } };
+  }
 
   const employees = await prisma.employee.findMany({
     where: {
       companyId: actor.companyId,
-      ...(filter.departmentId !== undefined
-        ? { departmentId: filter.departmentId }
-        : {}),
+      ...deptWhere,
     },
     select: {
       id: true,

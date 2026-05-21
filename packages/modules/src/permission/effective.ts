@@ -20,19 +20,43 @@ const SCOPE_RANK: Record<ScopeType, number> = {
 export async function getEffectivePermissions(
   employeeId: string,
 ): Promise<Map<PermissionKey, EffectivePermission>> {
-  const userRoles = await prisma.userRole.findMany({
-    where: { employeeId, isActive: true },
-    include: {
-      role: {
-        include: {
-          rolePermissions: {
-            where: { enabled: true },
-            include: { permission: true },
+  // 직원 기본 정보 + 조직장 여부 함께 조회
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: {
+      companyId: true,
+      departmentId: true,
+      position: { select: { isOrgHead: true } },
+    },
+  });
+
+  const [userRoles, orgHeadRole] = await Promise.all([
+    prisma.userRole.findMany({
+      where: { employeeId, isActive: true },
+      include: {
+        role: {
+          include: {
+            rolePermissions: {
+              where: { enabled: true },
+              include: { permission: true },
+            },
           },
         },
       },
-    },
-  });
+    }),
+    // 조직장이고 부서가 있을 때만 DYNAMIC_ORG_HEAD 역할 조회
+    employee?.position?.isOrgHead && employee.departmentId && employee.companyId
+      ? prisma.role.findFirst({
+          where: { companyId: employee.companyId, type: "DYNAMIC_ORG_HEAD", isActive: true },
+          include: {
+            rolePermissions: {
+              where: { enabled: true },
+              include: { permission: true },
+            },
+          },
+        })
+      : Promise.resolve(null),
+  ]);
 
   const merged = new Map<PermissionKey, EffectivePermission>();
 
@@ -48,6 +72,55 @@ export async function getEffectivePermissions(
         includeSubDepartments: rp.includeSubDepartments,
         sourceRoleIds: [ur.role.id],
         sourceRoleTypes: [ur.role.type],
+      };
+
+      const existing = merged.get(key);
+      if (!existing) {
+        merged.set(key, incoming);
+        continue;
+      }
+
+      const rankExisting = existing.scopeType
+        ? SCOPE_RANK[existing.scopeType]
+        : Number.POSITIVE_INFINITY;
+      const rankIncoming = incoming.scopeType
+        ? SCOPE_RANK[incoming.scopeType]
+        : Number.POSITIVE_INFINITY;
+
+      const winner = rankIncoming > rankExisting ? incoming : existing;
+
+      merged.set(key, {
+        ...winner,
+        departmentIds: dedupe([
+          ...existing.departmentIds,
+          ...incoming.departmentIds,
+        ]),
+        includeSubDepartments:
+          existing.includeSubDepartments || incoming.includeSubDepartments,
+        sourceRoleIds: dedupe([
+          ...existing.sourceRoleIds,
+          ...incoming.sourceRoleIds,
+        ]),
+        sourceRoleTypes: dedupe([
+          ...existing.sourceRoleTypes,
+          ...incoming.sourceRoleTypes,
+        ]),
+      });
+    }
+  }
+
+  // DYNAMIC_ORG_HEAD 권한 자동 주입
+  if (orgHeadRole && employee?.departmentId) {
+    for (const rp of orgHeadRole.rolePermissions) {
+      const key = rp.permission.key;
+      const incoming: EffectivePermission = {
+        key,
+        action: rp.permission.action,
+        scopeType: "DEPARTMENT",
+        departmentIds: [employee.departmentId],
+        includeSubDepartments: rp.includeSubDepartments,
+        sourceRoleIds: [orgHeadRole.id],
+        sourceRoleTypes: ["DYNAMIC_ORG_HEAD"],
       };
 
       const existing = merged.get(key);
