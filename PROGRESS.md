@@ -18,21 +18,27 @@
 | Worker | ⬜ 빈 skeleton | BullMQ 미구현 |
 | **P4 워크플로우** | ✅ MVP 완료 | /workflow + 문서 상세 + 승인/반려 ✓ |
 | **P5 채용** | ✅ MVP 완료 | /recruit 공고 목록 + /recruit/postings/[id] 후보자 관리 ✓ |
-| P6~P8 | ⬜ 미착수 | 문서·증명서/보안/확장 |
+| **P6 문서·증명서** | ✅ MVP 완료 | /documents 보관소 + /documents/certificates 발급/인쇄 ✓ |
+| P7~P8 | ⬜ 미착수 | 보안/확장 |
 
 ## 현재 위치
 
-- **Phase**: P5 채용 MVP 완료 — 다음은 P6 또는 P2 잔여 폴리시
+- **Phase**: P6 문서·증명서 MVP 완료 — 다음은 P7 보안 또는 P2 잔여 폴리시
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `9eb0e62 chore: PROGRESS.md — P5 채용 MVP 완료 기록`
-- **마이그레이션**: 6개 모두 적용됨 (`0_init` ~ `6_recruit_core`)
+- **마지막 커밋**: `11b1edc feat(document): P6 문서·증명서`
+- **마이그레이션**: 7개 모두 적용됨 (`0_init` ~ `7_document_certificate`)
 
 ## 다음 작업 후보
 
-### P6 문서·증명서 (다음 Phase)
-- 재직증명서, 경력증명서 발급 신청 + PDF 생성
-- MinIO 파일 스토리지 연동
+### P7 보안 (다음 Phase)
+- CompanySecurityPolicy — 2FA 정책, IP 화이트리스트
+- AuditLog 강화
+
+### P2 잔여 폴리시 (선택)
+- 부서 이동 (parentId + 순환 가드)
+- PositionHistory 시점 이력
+- 직원 복직 처리
 
 ### P2 잔여 폴리시 (선택)
 - 부서 이동 (parentId + 순환 가드)
@@ -43,6 +49,9 @@
 - 권한 편집 UI (Checkbox/Tabs UI primitive 보강 필요)
 
 ## 최근 한 일
+
+### P6 문서·증명서 (2026-05-21 이번 세션)
+- `11b1edc` P6 — DB(CompanyDocument/CertificateIssue) + document 모듈 + /documents + /documents/certificates
 
 ### P5 채용 (2026-05-21 이번 세션)
 - `481c37d` P5 — DB(JobPosting/JobStage/Candidate) + recruit 모듈 + /recruit + /recruit/postings/[id]
