@@ -57,6 +57,9 @@ export default async function LeavePage() {
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="secondary" size="sm">
+            <Link href="/leave/calendar">팀 캘린더</Link>
+          </Button>
+          <Button asChild variant="secondary" size="sm">
             <Link href="/leave/requests">승인 관리</Link>
           </Button>
           <LeaveRequestButton leaveTypes={leaveTypes} />
