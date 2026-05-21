@@ -20,13 +20,27 @@ const STATUS_CLASS: Record<PostingListItem["status"], string> = {
   CANCELLED: "bg-background-secondary text-foreground-subtle",
 };
 
-export default async function RecruitPage() {
+const STATUS_TABS = [
+  { key: "", label: "전체" },
+  { key: "OPEN", label: "진행중" },
+  { key: "DRAFT", label: "초안" },
+  { key: "CLOSED", label: "마감" },
+] as const;
+
+export default async function RecruitPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
+  const { status: statusFilter = "" } = await searchParams;
+
   const result = await listPostings(session.user.employeeId);
-  const postings = result.ok ? result.data : [];
+  const all = result.ok ? result.data : [];
+  const postings = statusFilter ? all.filter((p) => p.status === statusFilter) : all;
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
@@ -37,6 +51,26 @@ export default async function RecruitPage() {
         </div>
         <CreatePostingButton />
       </header>
+
+      {/* 상태 필터 탭 */}
+      <div className="mb-4 flex gap-1 rounded-lg border border-border bg-background-secondary p-0.5 w-fit">
+        {STATUS_TABS.map((tab) => (
+          <Link
+            key={tab.key}
+            href={tab.key ? `/recruit?status=${tab.key}` : "/recruit"}
+            className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+              statusFilter === tab.key
+                ? "bg-background-primary font-medium text-foreground shadow-sm"
+                : "text-foreground-muted hover:text-foreground"
+            }`}
+          >
+            {tab.label}
+            <span className="ml-1.5 text-xs text-foreground-subtle">
+              {tab.key ? all.filter((p) => p.status === tab.key).length : all.length}
+            </span>
+          </Link>
+        ))}
+      </div>
 
       {postings.length === 0 ? (
         <EmptyState

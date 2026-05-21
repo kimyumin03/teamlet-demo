@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { AddCandidateButton } from "@/components/recruit/add-candidate-button";
 import { CandidateActions } from "@/components/recruit/candidate-actions";
 import { PostingStatusButton } from "@/components/recruit/posting-status-button";
+import { CandidateKanban } from "@/components/recruit/candidate-kanban";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +23,15 @@ const RESULT_CLASS: Record<CandidateListItem["result"], string> = {
   WITHDRAWN: "bg-background-secondary text-foreground-subtle",
 };
 
-export default async function PostingDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PostingDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ view?: string }>;
+}) {
   const { id } = await params;
+  const { view = "list" } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
@@ -70,13 +78,35 @@ export default async function PostingDetailPage({ params }: { params: Promise<{ 
       )}
 
       <section>
-        <h2 className="mb-3 text-sm font-medium text-foreground-muted">후보자</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-foreground-muted">
+            후보자 {posting.candidates.length}명
+          </h2>
+          <div className="flex gap-1 rounded-lg border border-border bg-background-secondary p-0.5">
+            {[{ v: "list", label: "목록" }, { v: "kanban", label: "칸반" }].map(({ v, label }) => (
+              <Link
+                key={v}
+                href={`/recruit/postings/${posting.id}?view=${v}`}
+                className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                  view === v
+                    ? "bg-background-primary font-medium text-foreground shadow-sm"
+                    : "text-foreground-muted hover:text-foreground"
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
+
         {posting.candidates.length === 0 ? (
           <EmptyState
             icon={<UserPlus />}
             title="등록된 후보자가 없어요"
             description="후보자 추가 버튼을 눌러 첫 지원자를 등록해 보세요."
           />
+        ) : view === "kanban" ? (
+          <CandidateKanban stages={posting.stages} candidates={posting.candidates} />
         ) : (
           <ul className="flex flex-col gap-1">
             {posting.candidates.map((c) => (
