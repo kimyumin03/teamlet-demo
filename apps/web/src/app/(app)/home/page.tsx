@@ -39,6 +39,9 @@ export default async function HomePage() {
           <Link href="/recruit">채용</Link>
         </Button>
         <Button asChild variant="secondary" size="sm">
+          <Link href="/documents">문서 보관소</Link>
+        </Button>
+        <Button asChild variant="secondary" size="sm">
           <Link href="/settings/permissions">권한 설정</Link>
         </Button>
       </nav>

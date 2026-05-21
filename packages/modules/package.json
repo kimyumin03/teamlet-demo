@@ -14,7 +14,8 @@
     "./position": "./src/position/index.ts",
     "./leave": "./src/leave/index.ts",
     "./workflow": "./src/workflow/index.ts",
-    "./recruit": "./src/recruit/index.ts"
+    "./recruit": "./src/recruit/index.ts",
+    "./document": "./src/document/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

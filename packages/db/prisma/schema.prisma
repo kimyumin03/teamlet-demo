@@ -262,7 +262,8 @@ model Company {
   companyHolidays CompanyHoliday[]
   formTemplates   FormTemplate[]
   formDocuments   FormDocument[]
-  jobPostings     JobPosting[]
+  jobPostings       JobPosting[]
+  companyDocuments  CompanyDocument[]
   // 신청 승인 시 생성된 회사 역참조
   fromApplication CompanyApplication? @relation("CreatedCompany")
 
@@ -416,8 +417,11 @@ model Employee {
   authoredDocuments FormDocument[]     @relation("AuthoredDocuments")
   approvalLines     ApprovalLine[]     @relation("ApprovalLines")
   approvalActions   ApprovalAction[]   @relation("ApprovalActions")
-  managedPostings   JobPosting[]       @relation("ManagedPostings")
-  managedCandidates Candidate[]        @relation("ManagedCandidates")
+  managedPostings      JobPosting[]       @relation("ManagedPostings")
+  managedCandidates    Candidate[]        @relation("ManagedCandidates")
+  uploadedDocuments    CompanyDocument[]  @relation("UploadedDocuments")
+  issuedCertificates   CertificateIssue[] @relation("IssuedCertificates")
+  certificateIssuances CertificateIssue[] @relation("CertificateIssuers")
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
@@ -860,6 +864,57 @@ model Candidate {
 
   @@index([postingId, result])
   @@map("candidates")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 6 — 문서·증명서 (docs/03 §6)
+// ─────────────────────────────────────────────────────────────
+
+enum CompanyDocumentCategory {
+  GENERAL
+  NOTICE
+  POLICY
+}
+
+enum CertificateType {
+  EMPLOYMENT
+  CAREER
+}
+
+/// 회사 공용 문서 보관소.
+model CompanyDocument {
+  id          String                  @id @default(cuid())
+  companyId   String
+  uploadedById String
+  title       String
+  category    CompanyDocumentCategory @default(GENERAL)
+  fileUrl     String
+  isPublic    Boolean                 @default(true)
+  createdAt   DateTime                @default(now())
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  uploadedBy Employee @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+
+  @@index([companyId, category])
+  @@map("company_documents")
+}
+
+/// 증명서 발급 이력.
+model CertificateIssue {
+  id           String          @id @default(cuid())
+  employeeId   String
+  issuerId     String
+  type         CertificateType
+  issueNumber  String          @unique
+  purpose      String
+  snapshotData Json
+  createdAt    DateTime        @default(now())
+
+  employee Employee @relation("IssuedCertificates", fields: [employeeId], references: [id])
+  issuer   Employee @relation("CertificateIssuers", fields: [issuerId], references: [id])
+
+  @@index([employeeId])
+  @@map("certificate_issues")
 }
 
 // ─────────────────────────────────────────────────────────────

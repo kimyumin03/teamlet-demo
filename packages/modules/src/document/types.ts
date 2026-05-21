@@ -1,0 +1,38 @@
+import type { CompanyDocumentCategory, CertificateType } from "@teamlet/db";
+
+export type CompanyDocumentItem = {
+  id: string;
+  title: string;
+  category: CompanyDocumentCategory;
+  fileUrl: string;
+  isPublic: boolean;
+  uploaderName: string;
+  createdAt: Date;
+};
+
+export type CertificateIssueItem = {
+  id: string;
+  type: CertificateType;
+  issueNumber: string;
+  purpose: string;
+  createdAt: Date;
+  employeeName: string;
+  issuerName: string;
+};
+
+export type CertificateDetail = CertificateIssueItem & {
+  snapshotData: Record<string, unknown>;
+};
+
+export type CreateCompanyDocumentInput = {
+  title: string;
+  category: CompanyDocumentCategory;
+  fileUrl: string;
+  isPublic?: boolean;
+};
+
+export type IssueCertificateInput = {
+  employeeId: string;
+  type: CertificateType;
+  purpose: string;
+};
