@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { listDepartments } from "@teamlet/modules/department";
 import { listEmployees, type EmployeeListItem } from "@teamlet/modules/employee";
 import { listPositions } from "@teamlet/modules/position";
@@ -12,6 +13,7 @@ import { AddPositionButton } from "@/components/members/add-position-button";
 import { DepartmentActions } from "@/components/members/department-actions";
 import { DepartmentSidebar } from "@/components/members/department-sidebar";
 import { MemberSearchInput } from "@/components/members/search-input";
+import { StatusTabs } from "@/components/members/status-tabs";
 
 const UNASSIGNED = "__none__";
 
@@ -48,14 +50,18 @@ function formatHireDate(d: Date | null): string {
   });
 }
 
+const ACTIVE_STATUSES = new Set(["ACTIVE", "PROBATION", "ON_LEAVE", "SECONDED", "SCHEDULED"]);
+
 export default async function MembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ department?: string; q?: string }>;
+  searchParams: Promise<{ department?: string; q?: string; status?: string; empType?: string }>;
 }) {
   const params = await searchParams;
   const selected = params.department ?? null;
   const query = (params.q ?? "").trim().toLowerCase();
+  const statusFilter = params.status ?? "";
+  const empTypeFilter = params.empType ?? "";
 
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -88,11 +94,19 @@ export default async function MembersPage({
 
   const unassignedCount = allEmployees.filter((e) => !e.departmentId).length;
 
+  // tab counts (before dept/query filter)
+  const tabCounts = {
+    "": allEmployees.length,
+    active: allEmployees.filter((e) => ACTIVE_STATUSES.has(e.employmentStatus)).length,
+    resigned: allEmployees.filter((e) => e.employmentStatus === "RESIGNED").length,
+  };
+
   const filtered = allEmployees.filter((e) => {
     if (selected === UNASSIGNED && e.departmentId) return false;
-    if (selected && selected !== UNASSIGNED && e.departmentId !== selected) {
-      return false;
-    }
+    if (selected && selected !== UNASSIGNED && e.departmentId !== selected) return false;
+    if (statusFilter === "active" && !ACTIVE_STATUSES.has(e.employmentStatus)) return false;
+    if (statusFilter === "resigned" && e.employmentStatus !== "RESIGNED") return false;
+    if (empTypeFilter && e.employmentType !== empTypeFilter) return false;
     if (!query) return true;
     return (
       e.name.toLowerCase().includes(query) ||
@@ -137,6 +151,12 @@ export default async function MembersPage({
           />
         </div>
       </header>
+
+      <div className="mb-4">
+        <Suspense>
+          <StatusTabs counts={tabCounts} />
+        </Suspense>
+      </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
         <aside className="md:sticky md:top-12 md:self-start">

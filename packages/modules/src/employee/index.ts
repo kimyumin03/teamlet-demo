@@ -40,6 +40,7 @@ export type EmployeeListItem = {
   companyEmail: string | null;
   hireDate: Date | null;
   employmentStatus: EmploymentStatus;
+  employmentType: string;
   isActive: boolean;
   departmentId: string | null;
   departmentName: string | null;
@@ -79,6 +80,7 @@ export async function listEmployees(
       companyEmail: true,
       hireDate: true,
       employmentStatus: true,
+      employmentType: true,
       isActive: true,
       departmentId: true,
       department: { select: { name: true } },
@@ -96,6 +98,7 @@ export async function listEmployees(
       companyEmail: e.companyEmail,
       hireDate: e.hireDate,
       employmentStatus: e.employmentStatus,
+      employmentType: e.employmentType,
       isActive: e.isActive,
       departmentId: e.departmentId,
       departmentName: e.department?.name ?? null,
