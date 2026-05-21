@@ -5,6 +5,10 @@ import { createUserAccount } from "@teamlet/modules/auth";
 import { signupSchema } from "@teamlet/shared";
 import { signIn } from "@/auth";
 
+export async function googleLoginAction() {
+  await signIn("google", { redirectTo: "/home" });
+}
+
 export type ActionState = { error: string | null };
 
 /** 로그인 (docs/06 §1.1) */
