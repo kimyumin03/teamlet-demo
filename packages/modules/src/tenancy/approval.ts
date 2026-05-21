@@ -151,3 +151,50 @@ export async function approveCompanyApplication(
     superAdminRoleId: bootstrap.superAdminRoleId,
   });
 }
+
+/**
+ * 회사 신청 반려 — 플랫폼 운영자가 PENDING 신청을 거절.
+ * 가드는 호출처(플랫폼 관리자 콘솔)에서 적용.
+ */
+export async function rejectCompanyApplication(
+  applicationId: string,
+  ctx: {
+    approverUserId?: string | null;
+    reviewMemo?: string | null;
+    ip?: string | null;
+    userAgent?: string | null;
+  } = {},
+): Promise<Result<{ applicationId: string }>> {
+  const app = await prisma.companyApplication.findUnique({
+    where: { id: applicationId },
+    select: { id: true, status: true, companyName: true },
+  });
+  if (!app) return err(errors.notFound("신청을 찾을 수 없어요"));
+  if (app.status !== "PENDING") {
+    return err(errors.conflict("이미 처리된 신청이에요"));
+  }
+
+  await prisma.companyApplication.update({
+    where: { id: applicationId },
+    data: {
+      status: "REJECTED",
+      reviewerUserId: ctx.approverUserId ?? null,
+      reviewedAt: new Date(),
+      reviewMemo: ctx.reviewMemo ?? null,
+    },
+  });
+
+  await recordAudit({
+    actorUserId: ctx.approverUserId ?? null,
+    activityType: "tenancy",
+    eventType: "UPDATE",
+    targetType: "CompanyApplication",
+    targetId: applicationId,
+    targetLabel: app.companyName,
+    description: `회사 신청 반려: ${app.companyName}`,
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+  });
+
+  return ok({ applicationId });
+}
