@@ -245,9 +245,10 @@ enum DecimalRule {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  passwordHash  String
+  passwordHash  String?
   name          String
   phone         String?
+  googleId      String?   @unique
   axhubUserId   String?   @unique
   emailVerified Boolean   @default(false)
   verifiedAt    DateTime?

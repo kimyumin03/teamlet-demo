@@ -157,6 +157,31 @@ export type LeavePolicyCreateInput = z.infer<typeof leavePolicyCreateSchema>;
 export const leavePolicyUpdateSchema = leavePolicyCreateSchema.omit({ leaveTypeId: true }).partial();
 export type LeavePolicyUpdateInput = z.infer<typeof leavePolicyUpdateSchema>;
 
+/** 프로필 수정 */
+export const profileUpdateSchema = z.object({
+  name: z.string().trim().min(2, "이름은 2자 이상이어야 해요").max(50),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^01[016789]\d{7,8}$/, "휴대폰 번호 형식이 아니에요")
+    .optional()
+    .or(z.literal("")),
+});
+export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
+
+/** 비밀번호 변경 */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "현재 비밀번호를 입력해 주세요"),
+    newPassword: passwordSchema,
+    newPasswordConfirm: z.string(),
+  })
+  .refine((v) => v.newPassword === v.newPasswordConfirm, {
+    message: "새 비밀번호가 일치하지 않아요",
+    path: ["newPasswordConfirm"],
+  });
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 /** 직책 추가 (docs/03 §3 Position). isOrgHead 는 DYNAMIC_ORG_HEAD 평가용. */
 export const positionCreateSchema = z.object({
   name: z.string().trim().min(1, "직책명을 입력해 주세요").max(50),

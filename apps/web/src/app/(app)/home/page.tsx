@@ -35,6 +35,7 @@ function StatCard({ label, value, sub, href }: { label: string; value: string | 
 }
 
 const NAV_LINKS = [
+  { href: "/settings/profile", label: "개인 설정" },
   { href: "/members", label: "구성원" },
   { href: "/leave", label: "휴가" },
   { href: "/workflow", label: "워크플로우" },

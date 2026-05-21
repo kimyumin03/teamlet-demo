@@ -45,6 +45,12 @@ export async function authenticateUser(
     return null;
   }
 
+  if (!user.passwordHash) {
+    // Google OAuth 전용 계정 — 자격증명 로그인 불가
+    await recordAttempt(normalizedEmail, user.id, false, "no_password", ctx);
+    return null;
+  }
+
   const valid = await verifyPassword(password, user.passwordHash);
   if (!valid) {
     await recordAttempt(normalizedEmail, user.id, false, "bad_password", ctx);

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { listNotifications, countUnreadNotifications } from "@teamlet/modules/notification";
@@ -30,6 +31,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {employeeId && (
             <NotificationBell items={notifications} unreadCount={unreadCount} />
           )}
+          <Link
+            href="/settings/profile"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-background-secondary text-xs font-medium text-foreground-muted hover:bg-background-tertiary transition-colors"
+            title="개인 설정"
+          >
+            {session.user.name?.charAt(0).toUpperCase() ?? "?"}
+          </Link>
         </div>
       </header>
       {children}

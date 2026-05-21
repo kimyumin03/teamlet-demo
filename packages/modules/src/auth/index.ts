@@ -8,3 +8,5 @@ export {
   createUserAccount,
   type SignupContext,
 } from "./signup";
+export { getUserProfile, updateUserProfile, changePassword, type UserProfile } from "./profile";
+export { findOrCreateGoogleUser, type GoogleUserResult } from "./oauth";
