@@ -8,7 +8,7 @@
 | 영역 | 상태 | 비고 |
 |---|---|---|
 | 명세서 `/docs` | ✅ 100% | 00~06 7종, 6,050 lines |
-| DB 스키마 + 시드 | ✅ P1+P2+P3+P4 일부 | 마이그레이션 4개 + P4 스키마 추가 (migrate 필요) |
+| DB 스키마 + 시드 | ✅ P1~P5 | 마이그레이션 6개 (`0_init` ~ `6_recruit_core`) |
 | Shared 패키지 | ✅ 골격 | errors, schemas, types, utils |
 | UI 시스템 | 🟡 기초만 | theme + primitives 3 / patterns 3 (Checkbox/Tabs/Card 미구현) |
 | **P1 인증/가입** | ✅ 완료 | auth 모듈 + 화면 5개 + NextAuth + 데모 자가-승인 |
@@ -16,8 +16,9 @@
 | **P2 Core HR (구성원/조직/직책)** | ✅ 7단계 완료 | 디렉토리/검색/부서/상세/수정/퇴직/직책 |
 | **P3 휴가** | ✅ UI 완료 | /leave + 신청/취소 + 관리자 승인/반려 + 수동 부여 ✓ |
 | Worker | ⬜ 빈 skeleton | BullMQ 미구현 |
-| **P4 워크플로우** | 🟡 MVP 완료 | DB스키마 + 모듈 + /workflow UI (문서작성/승인/반려) ✓ — 마이그레이션 미적용 |
-| P5~P8 | ⬜ 미착수 | 채용/문서/보안/확장 |
+| **P4 워크플로우** | ✅ MVP 완료 | /workflow + 문서 상세 + 승인/반려 ✓ |
+| **P5 채용** | ✅ MVP 완료 | /recruit 공고 목록 + /recruit/postings/[id] 후보자 관리 ✓ |
+| P6~P8 | ⬜ 미착수 | 문서·증명서/보안/확장 |
 
 ## 현재 위치
 
