@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Button,
@@ -85,7 +86,10 @@ export function RoleListClient({
                 key={role.id}
                 className="flex items-center gap-4 rounded-lg border border-border bg-background-primary px-4 py-3"
               >
-                <div className="flex flex-1 flex-col gap-1">
+                <Link
+                  href={`/settings/permissions/${role.id}`}
+                  className="-mx-2 flex flex-1 flex-col gap-1 rounded-md px-2 py-1 hover:bg-background-secondary"
+                >
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">
                       {role.name}
@@ -101,7 +105,7 @@ export function RoleListClient({
                       {role.description}
                     </p>
                   )}
-                </div>
+                </Link>
 
                 <div className="flex items-center gap-1 text-sm text-foreground-muted">
                   <UsersRound className="size-4" />

@@ -4,8 +4,8 @@ import { auth } from "@/auth";
 import { RoleListClient } from "@/components/permissions/role-list-client";
 
 /**
- * 권한 설정 (docs/02 §11-1). P1 MVP — 역할 리스트 + 생성/삭제.
- * 권한 매핑 편집(좌측 카테고리 탭 + 체크박스)은 다음 PR.
+ * 권한 설정 (docs/02 §11-1). 역할 리스트 + 생성/삭제.
+ * 역할을 클릭하면 권한 매트릭스 편집 페이지(`[roleId]`)로 이동.
  */
 export const dynamic = "force-dynamic";
 
@@ -35,8 +35,8 @@ export default async function PermissionsPage() {
       <header className="mb-8">
         <h1 className="text-2xl font-semibold text-foreground">권한 설정</h1>
         <p className="mt-1 text-sm text-foreground-muted">
-          역할(권한 그룹)을 만들고 구성원에게 부여해요. 시스템 역할은 수정·삭제할
-          수 없어요.
+          역할(권한 그룹)을 만들고 구성원에게 부여해요. 역할을 클릭하면 권한을
+          편집할 수 있어요. 구성원별 역할 배정은 구성원 상세 → 권한 탭에서 해요.
         </p>
       </header>
       <RoleListClient initialRoles={result.data} />

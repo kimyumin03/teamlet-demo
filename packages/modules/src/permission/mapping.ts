@@ -9,6 +9,7 @@
  */
 
 import { prisma } from "@teamlet/db";
+import type { ScopeType } from "@teamlet/db";
 import {
   err,
   errors,
@@ -22,6 +23,59 @@ import { catchDomainErr, loadActor } from "./_actor";
 import { assertPermission } from "./assert";
 
 const ROLE_MANAGE = "permission.role.manage";
+const ROLE_READ = "permission.role.read";
+
+export type RolePermissionItem = {
+  permissionKey: string;
+  scopeType: ScopeType | null;
+  departmentIds: string[];
+  includeSubDepartments: boolean;
+};
+
+/**
+ * 역할에 현재 매핑된 권한 목록 조회 — 권한 매트릭스 편집 UI 초기 상태용.
+ * 가드: `permission.role.read` + cross-tenant.
+ */
+export async function getRolePermissions(
+  actorEmployeeId: string,
+  roleId: string,
+): Promise<Result<RolePermissionItem[]>> {
+  try {
+    await assertPermission(actorEmployeeId, ROLE_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const role = await prisma.role.findUnique({
+    where: { id: roleId },
+    select: { id: true, companyId: true },
+  });
+  if (!role || role.companyId !== actor.companyId) {
+    return err(errors.notFound("역할을 찾을 수 없어요"));
+  }
+
+  const rows = await prisma.rolePermission.findMany({
+    where: { roleId, enabled: true },
+    select: {
+      scopeType: true,
+      departmentIds: true,
+      includeSubDepartments: true,
+      permission: { select: { key: true } },
+    },
+  });
+
+  return ok(
+    rows.map((rp) => ({
+      permissionKey: rp.permission.key,
+      scopeType: rp.scopeType,
+      departmentIds: rp.departmentIds,
+      includeSubDepartments: rp.includeSubDepartments,
+    })),
+  );
+}
 
 export async function setRolePermissions(
   actorEmployeeId: string,

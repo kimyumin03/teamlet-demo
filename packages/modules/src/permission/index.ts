@@ -10,7 +10,8 @@ export {
   assertNotLastSuperAdmin,
   countActiveSuperAdmins,
 } from "./lockout";
-export { setRolePermissions } from "./mapping";
+export { setRolePermissions, getRolePermissions } from "./mapping";
+export type { RolePermissionItem } from "./mapping";
 export { createRole, deleteRole, listRoles, updateRole } from "./role";
 export { assignRole, revokeRole } from "./userrole";
 export type { RoleListItem } from "./role";
