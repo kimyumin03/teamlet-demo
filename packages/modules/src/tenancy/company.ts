@@ -1,5 +1,10 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
+import { catchDomainErr } from "../permission/_actor";
+import { assertPermission } from "../permission/assert";
+
+const BASIC_INFO_READ = "company.basic_info.read";
+const BASIC_INFO_MANAGE = "company.basic_info.manage";
 
 export type CompanyInfo = {
   id: string;
@@ -30,6 +35,12 @@ export type CompanyUpdateInput = {
 export async function getCompanyInfo(
   actorEmployeeId: string,
 ): Promise<Result<CompanyInfo>> {
+  try {
+    await assertPermission(actorEmployeeId, BASIC_INFO_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -63,6 +74,12 @@ export async function updateCompanyInfo(
   actorEmployeeId: string,
   input: CompanyUpdateInput,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, BASIC_INFO_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },

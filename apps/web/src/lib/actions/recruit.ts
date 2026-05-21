@@ -24,10 +24,8 @@ export async function createPostingAction(input: {
   description?: string;
   stages: string[];
 }): Promise<ApiResponse<{ id: string }>> {
-  const { employeeId, companyId } = await requireEmployee();
-  return toApiResponse(
-    await createPosting({ companyId, managerId: employeeId, ...input }),
-  );
+  const { employeeId } = await requireEmployee();
+  return toApiResponse(await createPosting(employeeId, input));
 }
 
 export async function updatePostingStatusAction(
@@ -45,7 +43,7 @@ export async function createCandidateAction(input: {
   phone?: string;
 }): Promise<ApiResponse<{ id: string }>> {
   const { employeeId } = await requireEmployee();
-  return toApiResponse(await createCandidate({ ...input, managerId: employeeId }));
+  return toApiResponse(await createCandidate(employeeId, input));
 }
 
 export async function moveCandidateStageAction(

@@ -1,11 +1,21 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
-import { loadActor } from "../permission/_actor";
+import { catchDomainErr, loadActor } from "../permission/_actor";
+import { assertPermission } from "../permission/assert";
 import type { PostingListItem, PostingDetail, CreatePostingInput } from "./types";
+
+const POSTING_READ = "recruit.posting.read";
+const POSTING_MANAGE = "recruit.posting.manage";
 
 export async function listPostings(
   actorEmployeeId: string,
 ): Promise<Result<PostingListItem[]>> {
+  try {
+    await assertPermission(actorEmployeeId, POSTING_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const actor = await loadActor(actorEmployeeId);
   if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
 
@@ -34,6 +44,12 @@ export async function getPosting(
   actorEmployeeId: string,
   postingId: string,
 ): Promise<Result<PostingDetail>> {
+  try {
+    await assertPermission(actorEmployeeId, POSTING_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const actor = await loadActor(actorEmployeeId);
   if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
 
@@ -72,15 +88,25 @@ export async function getPosting(
 }
 
 export async function createPosting(
+  actorEmployeeId: string,
   input: CreatePostingInput,
 ): Promise<Result<{ id: string }>> {
+  try {
+    await assertPermission(actorEmployeeId, POSTING_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
   if (!input.title.trim()) return err(errors.validation("공고 제목을 입력해 주세요"));
 
   const posting = await prisma.$transaction(async (tx) => {
     const created = await tx.jobPosting.create({
       data: {
-        companyId: input.companyId,
-        managerId: input.managerId,
+        companyId: actor.companyId,
+        managerId: actorEmployeeId,
         title: input.title,
         description: input.description ?? "",
         status: "OPEN",
@@ -109,6 +135,12 @@ export async function updatePostingStatus(
   postingId: string,
   status: "OPEN" | "CLOSED" | "CANCELLED",
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, POSTING_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const actor = await loadActor(actorEmployeeId);
   if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
 

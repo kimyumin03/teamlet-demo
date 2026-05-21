@@ -1,5 +1,9 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
+import { catchDomainErr } from "../permission/_actor";
+import { assertPermission } from "../permission/assert";
+
+const HOLIDAYS_MANAGE = "company.holidays.manage";
 
 export type HolidayItem = {
   id: string;
@@ -37,6 +41,12 @@ export async function addCompanyHoliday(
   actorEmployeeId: string,
   input: { date: string; name: string; isNational?: boolean },
 ): Promise<Result<{ id: string }>> {
+  try {
+    await assertPermission(actorEmployeeId, HOLIDAYS_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -65,6 +75,12 @@ export async function deleteCompanyHoliday(
   actorEmployeeId: string,
   holidayId: string,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, HOLIDAYS_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },

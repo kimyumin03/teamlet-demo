@@ -2,7 +2,11 @@ import { prisma } from "@teamlet/db";
 import type { AuditEventType } from "@teamlet/db";
 import { ok, err, errors } from "@teamlet/shared";
 import type { Result } from "@teamlet/shared";
+import { catchDomainErr } from "../permission/_actor";
+import { assertPermission } from "../permission/assert";
 import type { AuditLogItem } from "./types";
+
+const AUDIT_READ = "audit.log.read";
 
 export type AuditLogFilter = {
   limit?: number;
@@ -16,6 +20,12 @@ export async function listAuditLogs(
   employeeId: string,
   options: AuditLogFilter = {},
 ): Promise<Result<{ items: AuditLogItem[]; total: number }>> {
+  try {
+    await assertPermission(employeeId, AUDIT_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({ where: { id: employeeId }, select: { companyId: true } });
   if (!emp) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
 

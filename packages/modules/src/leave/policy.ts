@@ -6,6 +6,11 @@ import type {
   AnnualFirstYearRule,
   DecimalRule,
 } from "@teamlet/db";
+import { catchDomainErr } from "../permission/_actor";
+import { assertPermission } from "../permission/assert";
+
+const POLICY_READ = "leave.policy.read";
+const POLICY_MANAGE = "leave.policy.manage";
 
 export type LeavePolicyItem = {
   id: string;
@@ -43,6 +48,12 @@ export type LeavePolicyUpdateInput = Partial<Omit<LeavePolicyCreateInput, "leave
 export async function listLeavePolicies(
   actorEmployeeId: string,
 ): Promise<Result<LeavePolicyItem[]>> {
+  try {
+    await assertPermission(actorEmployeeId, POLICY_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -82,6 +93,12 @@ export async function createLeavePolicy(
   actorEmployeeId: string,
   input: LeavePolicyCreateInput,
 ): Promise<Result<{ id: string }>> {
+  try {
+    await assertPermission(actorEmployeeId, POLICY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -125,6 +142,12 @@ export async function updateLeavePolicy(
   policyId: string,
   input: LeavePolicyUpdateInput,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, POLICY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -167,6 +190,12 @@ export async function deleteLeavePolicy(
   actorEmployeeId: string,
   policyId: string,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, POLICY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -197,6 +226,12 @@ export async function listPolicyAssignments(
   actorEmployeeId: string,
   policyId: string,
 ): Promise<Result<PolicyAssignmentItem[]>> {
+  try {
+    await assertPermission(actorEmployeeId, POLICY_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -239,6 +274,12 @@ export async function assignLeavePolicy(
   targetEmployeeId: string,
   effectiveDate: string,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, POLICY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -267,6 +308,12 @@ export async function removeLeavePolicy(
   actorEmployeeId: string,
   assignmentId: string,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, POLICY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },

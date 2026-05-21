@@ -1,6 +1,10 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
+import { catchDomainErr } from "../permission/_actor";
+import { assertPermission } from "../permission/assert";
 import type { GrantLeaveInput, LeaveBalanceSummary, LeaveTypeItem } from "./types";
+
+const ADJUST_EXECUTE = "leave.adjust.execute";
 
 export async function listLeaveTypes(
   employeeId: string,
@@ -60,6 +64,12 @@ export async function grantLeave(
   actorId: string,
   input: GrantLeaveInput,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorId, ADJUST_EXECUTE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const { employeeId, leaveTypeId, days, category, reason, note } = input;
   const year = new Date().getFullYear();
 
@@ -90,6 +100,12 @@ export async function adjustLeave(
   actorId: string,
   input: { employeeId: string; leaveTypeId: string; days: number; reason?: string; note?: string },
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorId, ADJUST_EXECUTE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const { employeeId, leaveTypeId, days, reason, note } = input;
   const year = new Date().getFullYear();
 

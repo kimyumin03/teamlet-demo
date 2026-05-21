@@ -1,12 +1,22 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
-import { loadActor } from "../permission/_actor";
+import { catchDomainErr, loadActor } from "../permission/_actor";
+import { assertPermission } from "../permission/assert";
 import type { CreateCandidateInput, CandidateResult, CandidateDetail } from "./types";
+
+const CANDIDATE_READ = "recruit.candidate.read";
+const CANDIDATE_MANAGE = "recruit.candidate.manage";
 
 export async function getCandidate(
   actorEmployeeId: string,
   candidateId: string,
 ): Promise<Result<CandidateDetail>> {
+  try {
+    await assertPermission(actorEmployeeId, CANDIDATE_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const actor = await loadActor(actorEmployeeId);
   if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
 
@@ -55,6 +65,12 @@ export async function updateCandidateNote(
   candidateId: string,
   note: string,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, CANDIDATE_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const actor = await loadActor(actorEmployeeId);
   if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
 
@@ -76,18 +92,30 @@ export async function updateCandidateNote(
 }
 
 export async function createCandidate(
+  actorEmployeeId: string,
   input: CreateCandidateInput,
 ): Promise<Result<{ id: string }>> {
+  try {
+    await assertPermission(actorEmployeeId, CANDIDATE_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
   const posting = await prisma.jobPosting.findUnique({
     where: { id: input.postingId },
     include: { stages: { orderBy: { order: "asc" }, take: 1 } },
   });
-  if (!posting) return err(errors.notFound("공고를 찾을 수 없어요"));
+  // cross-tenant 방지 — 다른 회사 공고에 후보자 주입 차단
+  if (!posting || posting.companyId !== actor.companyId)
+    return err(errors.notFound("공고를 찾을 수 없어요"));
 
   const candidate = await prisma.candidate.create({
     data: {
       postingId: input.postingId,
-      managerId: input.managerId ?? null,
+      managerId: actorEmployeeId,
       name: input.name,
       email: input.email,
       phone: input.phone ?? null,
@@ -104,6 +132,12 @@ export async function moveCandidateStage(
   candidateId: string,
   stageId: string,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, CANDIDATE_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const actor = await loadActor(actorEmployeeId);
   if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
 
@@ -127,6 +161,12 @@ export async function setCandidateResult(
   candidateId: string,
   result: CandidateResult,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, CANDIDATE_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const actor = await loadActor(actorEmployeeId);
   if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
 

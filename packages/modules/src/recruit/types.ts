@@ -33,8 +33,6 @@ export type CandidateListItem = {
 };
 
 export type CreatePostingInput = {
-  companyId: string;
-  managerId: string;
   title: string;
   description?: string;
   stages: string[];
@@ -60,7 +58,6 @@ export type CandidateDetail = {
 
 export type CreateCandidateInput = {
   postingId: string;
-  managerId?: string;
   name: string;
   email: string;
   phone?: string;

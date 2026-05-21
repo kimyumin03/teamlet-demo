@@ -1,7 +1,12 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
-import { loadActor } from "../permission/_actor";
+import { catchDomainErr, loadActor } from "../permission/_actor";
+import { assertPermission } from "../permission/assert";
+import { getEffectivePermissions } from "../permission/effective";
 import type { RequestLeaveInput, LeaveRequestItem, PendingLeaveRequestItem } from "./types";
+
+const BALANCE_READ = "leave.balance.read";
+const BALANCE_MANAGE = "leave.balance.manage";
 
 export async function listPendingLeaveRequests(
   actorEmployeeId: string,
@@ -9,8 +14,24 @@ export async function listPendingLeaveRequests(
   const actor = await loadActor(actorEmployeeId);
   if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
 
+  // 휴가 승인 권한 + scope 확인 (DEPARTMENT scope는 해당 부서 신청만)
+  const perms = await getEffectivePermissions(actorEmployeeId);
+  const perm = perms.get(BALANCE_MANAGE);
+  if (!perm) return err(errors.forbidden("휴가 신청 목록을 볼 권한이 없어요"));
+
+  const scopedDeptIds =
+    perm.scopeType === "DEPARTMENT" && perm.departmentIds.length > 0
+      ? perm.departmentIds
+      : null;
+
   const requests = await prisma.leaveRequest.findMany({
-    where: { employee: { companyId: actor.companyId }, status: "PENDING" },
+    where: {
+      employee: {
+        companyId: actor.companyId,
+        ...(scopedDeptIds ? { departmentId: { in: scopedDeptIds } } : {}),
+      },
+      status: "PENDING",
+    },
     include: {
       employee: { select: { name: true } },
       leaveType: { select: { name: true } },
@@ -66,10 +87,22 @@ export async function listEmployeeLeaveHistory(
 
   const target = await prisma.employee.findUnique({
     where: { id: targetEmployeeId },
-    select: { companyId: true },
+    select: { companyId: true, departmentId: true },
   });
   if (!target || target.companyId !== actor.companyId) {
     return err(errors.notFound("직원을 찾을 수 없어요"));
+  }
+
+  // 본인 이력은 권한 없이, 타인 이력은 leave.balance.read 권한 필요
+  if (targetEmployeeId !== actorEmployeeId) {
+    try {
+      await assertPermission(actorEmployeeId, BALANCE_READ, {
+        targetEmployeeId,
+        targetDepartmentId: target.departmentId ?? undefined,
+      });
+    } catch (e) {
+      return catchDomainErr(e);
+    }
   }
 
   const requests = await prisma.leaveRequest.findMany({
@@ -131,10 +164,27 @@ export async function approveLeave(
 ): Promise<Result<void>> {
   const req = await prisma.leaveRequest.findUnique({
     where: { id: requestId },
-    select: { id: true, employeeId: true, leaveTypeId: true, days: true, status: true, startDate: true },
+    select: {
+      id: true,
+      employeeId: true,
+      leaveTypeId: true,
+      days: true,
+      status: true,
+      startDate: true,
+      employee: { select: { departmentId: true } },
+    },
   });
   if (!req) return err(errors.notFound("휴가 신청을 찾을 수 없어요"));
   if (req.status !== "PENDING") return err(errors.validation("대기 중인 신청만 승인할 수 있어요"));
+
+  try {
+    await assertPermission(actorId, BALANCE_MANAGE, {
+      targetEmployeeId: req.employeeId,
+      targetDepartmentId: req.employee.departmentId ?? undefined,
+    });
+  } catch (e) {
+    return catchDomainErr(e);
+  }
 
   const year = req.startDate.getFullYear();
 
@@ -172,10 +222,23 @@ export async function rejectLeave(
 ): Promise<Result<void>> {
   const req = await prisma.leaveRequest.findUnique({
     where: { id: requestId },
-    select: { status: true },
+    select: {
+      status: true,
+      employeeId: true,
+      employee: { select: { departmentId: true } },
+    },
   });
   if (!req) return err(errors.notFound("휴가 신청을 찾을 수 없어요"));
   if (req.status !== "PENDING") return err(errors.validation("대기 중인 신청만 반려할 수 있어요"));
+
+  try {
+    await assertPermission(actorId, BALANCE_MANAGE, {
+      targetEmployeeId: req.employeeId,
+      targetDepartmentId: req.employee.departmentId ?? undefined,
+    });
+  } catch (e) {
+    return catchDomainErr(e);
+  }
 
   await prisma.leaveRequest.update({
     where: { id: requestId },

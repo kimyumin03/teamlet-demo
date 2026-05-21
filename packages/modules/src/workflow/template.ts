@@ -1,6 +1,11 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
+import { catchDomainErr } from "../permission/_actor";
+import { assertPermission } from "../permission/assert";
 import type { FormDocumentKind } from "./types";
+
+const TEMPLATE_READ = "workflow.template.read";
+const TEMPLATE_MANAGE = "workflow.template.manage";
 
 export type FieldType = "text" | "textarea" | "number" | "date" | "select" | "checkbox";
 
@@ -36,6 +41,12 @@ export type FormTemplateUpdateInput = Partial<FormTemplateCreateInput> & { isAct
 export async function listFormTemplates(
   actorEmployeeId: string,
 ): Promise<Result<FormTemplateItem[]>> {
+  try {
+    await assertPermission(actorEmployeeId, TEMPLATE_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -66,6 +77,12 @@ export async function getFormTemplate(
   actorEmployeeId: string,
   templateId: string,
 ): Promise<Result<FormTemplateItem>> {
+  try {
+    await assertPermission(actorEmployeeId, TEMPLATE_READ);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -94,6 +111,12 @@ export async function createFormTemplate(
   actorEmployeeId: string,
   input: FormTemplateCreateInput,
 ): Promise<Result<{ id: string }>> {
+  try {
+    await assertPermission(actorEmployeeId, TEMPLATE_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -118,6 +141,12 @@ export async function updateFormTemplate(
   templateId: string,
   input: FormTemplateUpdateInput,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, TEMPLATE_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },
@@ -147,6 +176,12 @@ export async function deleteFormTemplate(
   actorEmployeeId: string,
   templateId: string,
 ): Promise<Result<void>> {
+  try {
+    await assertPermission(actorEmployeeId, TEMPLATE_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const emp = await prisma.employee.findUnique({
     where: { id: actorEmployeeId },
     select: { companyId: true },

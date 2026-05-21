@@ -1,7 +1,11 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors } from "@teamlet/shared";
 import type { Result } from "@teamlet/shared";
+import { catchDomainErr } from "../permission/_actor";
+import { assertPermission } from "../permission/assert";
 import type { CertificateIssueItem, CertificateDetail, IssueCertificateInput } from "./types";
+
+const CERTIFICATE_MANAGE = "document.certificate.manage";
 
 function generateIssueNumber(type: string): string {
   const prefix = type === "EMPLOYMENT" ? "EMP" : "CAR";
@@ -53,6 +57,12 @@ export async function issueCertificate(
   issuerId: string,
   input: IssueCertificateInput,
 ): Promise<Result<{ id: string; issueNumber: string }>> {
+  try {
+    await assertPermission(issuerId, CERTIFICATE_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   const issuer = await prisma.employee.findUnique({ where: { id: issuerId }, select: { companyId: true, name: true } });
   if (!issuer) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
 
