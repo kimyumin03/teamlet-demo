@@ -123,6 +123,51 @@ export async function listMyDocuments(
   );
 }
 
+/** HR이 특정 직원이 기안한 워크플로우 문서 목록 조회 (같은 회사 내). */
+export async function listEmployeeDocuments(
+  actorEmployeeId: string,
+  targetEmployeeId: string,
+): Promise<Result<DocumentListItem[]>> {
+  const actor = await prisma.employee.findUnique({
+    where: { id: actorEmployeeId },
+    select: { companyId: true },
+  });
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const target = await prisma.employee.findUnique({
+    where: { id: targetEmployeeId },
+    select: { companyId: true },
+  });
+  if (!target || target.companyId !== actor.companyId) {
+    return err(errors.notFound("직원을 찾을 수 없어요"));
+  }
+
+  const docs = await prisma.formDocument.findMany({
+    where: { authorId: targetEmployeeId },
+    include: {
+      author: { select: { name: true } },
+      approvalLines: { select: { step: true, status: true }, orderBy: { step: "asc" } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return ok(
+    docs.map((d) => {
+      const pendingLine = d.approvalLines.find((l) => l.status === "PENDING");
+      return {
+        id: d.id,
+        title: d.title,
+        kind: d.kind,
+        status: d.status,
+        authorName: d.author.name,
+        createdAt: d.createdAt,
+        currentStep: pendingLine?.step ?? null,
+        totalSteps: d.approvalLines.length,
+      };
+    }),
+  );
+}
+
 export async function listPendingApprovals(
   employeeId: string,
 ): Promise<Result<PendingApprovalItem[]>> {

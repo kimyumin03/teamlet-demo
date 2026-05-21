@@ -3,6 +3,10 @@ import { notFound, redirect } from "next/navigation";
 import { listDepartments } from "@teamlet/modules/department";
 import { getEmployee, type EmployeeDetail } from "@teamlet/modules/employee";
 import { listPositions } from "@teamlet/modules/position";
+import { listEmployeeLeaveHistory } from "@teamlet/modules/leave";
+import { listEmployeeDocuments } from "@teamlet/modules/workflow";
+import type { LeaveRequestItem } from "@teamlet/modules/leave";
+import type { DocumentListItem } from "@teamlet/modules/workflow";
 import { ChevronLeft, Shield } from "lucide-react";
 import { auth } from "@/auth";
 import { DeactivateEmployeeButton } from "@/components/members/deactivate-button";
@@ -34,8 +38,31 @@ const GENDER_LABEL: Record<string, string> = {
   OTHER: "기타",
 };
 
+const LEAVE_STATUS_LABEL: Record<string, string> = {
+  DRAFT: "임시저장", PENDING: "검토중", APPROVED: "승인", REJECTED: "반려", CANCELLED: "취소",
+};
+const LEAVE_STATUS_CLASS: Record<string, string> = {
+  DRAFT: "bg-background-secondary text-foreground-subtle",
+  PENDING: "bg-amber-50 text-amber-700",
+  APPROVED: "bg-green-50 text-green-700",
+  REJECTED: "bg-destructive-50 text-destructive-700",
+  CANCELLED: "bg-background-secondary text-foreground-muted",
+};
+const DOC_STATUS_LABEL: Record<string, string> = {
+  DRAFT: "임시저장", IN_PROGRESS: "진행중", APPROVED: "승인", REJECTED: "반려", CANCELLED: "취소",
+};
+const DOC_STATUS_CLASS: Record<string, string> = {
+  DRAFT: "bg-background-secondary text-foreground-subtle",
+  IN_PROGRESS: "bg-amber-50 text-amber-700",
+  APPROVED: "bg-green-50 text-green-700",
+  REJECTED: "bg-destructive-50 text-destructive-700",
+  CANCELLED: "bg-background-secondary text-foreground-muted",
+};
+
 const TABS = [
   { key: "info", label: "정보" },
+  { key: "leave", label: "휴가" },
+  { key: "workflow", label: "결재" },
   { key: "documents", label: "문서·증명서" },
   { key: "roles", label: "권한" },
 ] as const;
@@ -80,10 +107,12 @@ export default async function MemberDetailPage({
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const [empResult, deptResult, posResult] = await Promise.all([
+  const [empResult, deptResult, posResult, leaveResult, workflowResult] = await Promise.all([
     getEmployee(session.user.employeeId, id),
     listDepartments(session.user.employeeId),
     listPositions(session.user.employeeId),
+    listEmployeeLeaveHistory(session.user.employeeId, id),
+    listEmployeeDocuments(session.user.employeeId, id),
   ]);
 
   if (!empResult.ok) {
@@ -100,6 +129,8 @@ export default async function MemberDetailPage({
   const emp = empResult.data;
   const departments = deptResult.ok ? deptResult.data : [];
   const positions = posResult.ok ? posResult.data : [];
+  const leaveHistory: LeaveRequestItem[] = leaveResult.ok ? leaveResult.data : [];
+  const workflowDocs: DocumentListItem[] = workflowResult.ok ? workflowResult.data : [];
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
@@ -190,6 +221,91 @@ export default async function MemberDetailPage({
             </section>
           )}
         </div>
+      )}
+
+      {/* 휴가 탭 */}
+      {activeTab === "leave" && (
+        <div className="flex flex-col gap-4">
+          {emp.leaveBalances.length > 0 && (
+            <section className="rounded-lg border border-border bg-background-primary p-5">
+              <h2 className="mb-4 text-sm font-medium text-foreground">휴가 잔여</h2>
+              <div className="flex flex-wrap gap-3">
+                {emp.leaveBalances.map((lb) => (
+                  <div key={lb.leaveTypeName} className="flex flex-col items-center rounded-md border border-border px-4 py-3 text-center">
+                    <span className="text-xs text-foreground-muted">{lb.leaveTypeName}</span>
+                    <span className="mt-1 text-xl font-semibold text-foreground">{lb.remaining}</span>
+                    <span className="text-xs text-foreground-subtle">일</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section className="rounded-lg border border-border bg-background-primary p-5">
+            <h2 className="mb-4 text-sm font-medium text-foreground">
+              휴가 신청 이력 ({leaveHistory.length})
+            </h2>
+            {leaveHistory.length === 0 ? (
+              <p className="text-sm text-foreground-muted">신청 이력이 없어요.</p>
+            ) : (
+              <ul className="flex flex-col gap-1">
+                {leaveHistory.map((r) => (
+                  <li key={r.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-md bg-background-secondary px-3 py-2.5">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium text-foreground">{r.leaveTypeName}</span>
+                      <span className="text-xs text-foreground-muted">
+                        {formatDate(r.startDate)} ~ {formatDate(r.endDate)} ({r.days}일)
+                      </span>
+                      {r.reason && (
+                        <span className="text-xs text-foreground-subtle">{r.reason}</span>
+                      )}
+                    </div>
+                    <span className="text-xs text-foreground-subtle">{formatDate(r.createdAt)}</span>
+                    <span className={`rounded-md px-2 py-0.5 text-xs ${LEAVE_STATUS_CLASS[r.status] ?? ""}`}>
+                      {LEAVE_STATUS_LABEL[r.status] ?? r.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      )}
+
+      {/* 결재 탭 */}
+      {activeTab === "workflow" && (
+        <section className="rounded-lg border border-border bg-background-primary p-5">
+          <h2 className="mb-4 text-sm font-medium text-foreground">
+            기안 문서 ({workflowDocs.length})
+          </h2>
+          {workflowDocs.length === 0 ? (
+            <p className="text-sm text-foreground-muted">기안한 문서가 없어요.</p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {workflowDocs.map((d) => (
+                <li key={d.id}>
+                  <Link
+                    href={`/workflow/${d.id}`}
+                    className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-md bg-background-secondary px-3 py-2.5 hover:bg-background-primary transition-colors"
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium text-foreground">{d.title}</span>
+                      <span className="text-xs text-foreground-muted">
+                        {d.currentStep != null
+                          ? `${d.currentStep} / ${d.totalSteps} 단계`
+                          : `총 ${d.totalSteps} 단계`}
+                      </span>
+                    </div>
+                    <span className="text-xs text-foreground-subtle">{formatDate(d.createdAt)}</span>
+                    <span className={`rounded-md px-2 py-0.5 text-xs ${DOC_STATUS_CLASS[d.status] ?? ""}`}>
+                      {DOC_STATUS_LABEL[d.status] ?? d.status}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
 
       {/* 문서·증명서 탭 */}

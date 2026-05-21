@@ -56,6 +56,43 @@ export async function listMyLeaveRequests(
   );
 }
 
+/** HR이 특정 직원의 휴가 신청 이력 조회 (같은 회사 내 directory.read 권한 필요). */
+export async function listEmployeeLeaveHistory(
+  actorEmployeeId: string,
+  targetEmployeeId: string,
+): Promise<Result<LeaveRequestItem[]>> {
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const target = await prisma.employee.findUnique({
+    where: { id: targetEmployeeId },
+    select: { companyId: true },
+  });
+  if (!target || target.companyId !== actor.companyId) {
+    return err(errors.notFound("직원을 찾을 수 없어요"));
+  }
+
+  const requests = await prisma.leaveRequest.findMany({
+    where: { employeeId: targetEmployeeId },
+    include: { leaveType: { select: { name: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return ok(
+    requests.map((r) => ({
+      id: r.id,
+      leaveTypeName: r.leaveType.name,
+      startDate: r.startDate,
+      endDate: r.endDate,
+      days: Number(r.days),
+      reason: r.reason,
+      status: r.status,
+      reviewNote: r.reviewNote,
+      createdAt: r.createdAt,
+    })),
+  );
+}
+
 export async function requestLeave(
   input: RequestLeaveInput,
 ): Promise<Result<{ id: string }>> {
