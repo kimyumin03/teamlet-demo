@@ -95,6 +95,26 @@ export const employeeUpdateSchema = z.object({
 });
 export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
 
+/** 회사 정보 수정 */
+export const companyUpdateSchema = z.object({
+  name: z.string().trim().min(2, "회사명을 입력해 주세요").max(100).optional(),
+  phone: z.string().trim().max(20).nullable().optional(),
+  foundedAt: z.string().trim().nullable().optional(),
+  addressRoad: z.string().trim().max(200).nullable().optional(),
+  addressDetail: z.string().trim().max(200).nullable().optional(),
+  visionMission: z.string().trim().max(2000).nullable().optional(),
+  companyCodeActive: z.boolean().optional(),
+});
+export type CompanyUpdateSchemaInput = z.infer<typeof companyUpdateSchema>;
+
+/** 공휴일 추가 */
+export const companyHolidayCreateSchema = z.object({
+  date: z.string().trim().min(1, "날짜를 입력해 주세요"),
+  name: z.string().trim().min(1, "공휴일명을 입력해 주세요").max(50),
+  isNational: z.boolean().optional(),
+});
+export type CompanyHolidayCreateInput = z.infer<typeof companyHolidayCreateSchema>;
+
 /** 휴가 정책 생성/수정 (docs/03 §5 LeavePolicy). */
 export const leavePolicyCreateSchema = z.object({
   name: z.string().trim().min(1, "정책명을 입력해 주세요").max(50),

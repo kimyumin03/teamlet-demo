@@ -18,6 +18,10 @@ import { approveCompanyApplication } from "./approval";
 
 export { approveCompanyApplication } from "./approval";
 export type { ApprovalResult } from "./approval";
+export { getCompanyInfo, updateCompanyInfo } from "./company";
+export type { CompanyInfo, CompanyUpdateInput } from "./company";
+export { listCompanyHolidays, addCompanyHoliday, deleteCompanyHoliday } from "./holiday";
+export type { HolidayItem } from "./holiday";
 
 /** 로그인 후 라우팅 판단용 — 사용자의 회사 멤버십 요약 */
 export async function getMembershipSummary(userId: string): Promise<{
