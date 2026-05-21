@@ -19,6 +19,7 @@
 | **P4 워크플로우** | ✅ MVP 완료 | /workflow + 3단계 위저드(양식→동적필드→결재선) + 문서 상세 ✓ |
 | **P4 양식 빌더** | ✅ 완료 | FormTemplate CRUD + 필드 편집 UI (`/settings/form-templates`) |
 | **P5 채용** | ✅ 강화 완료 | 공고 목록 + 상태 필터 + 후보자 목록/칸반/상세 + 메모 ✓ |
+| **구성원 CSV** | ✅ 완료 | 가져오기 + 내보내기 (`/api/members/export`) |
 | **P6 문서·증명서** | ✅ MVP 완료 | /documents 보관소 + /documents/certificates 발급/인쇄 ✓ |
 | **P7 보안** | ✅ 강화 완료 | 보안 정책 + 감사 로그 (유형/이벤트 필터 + 텍스트 검색) ✓ |
 | **P8 알림** | ✅ 강화 완료 | 알림 벨 패널 + /notifications 전용 페이지 (탭/읽음 처리) ✓ |
@@ -33,7 +34,7 @@
 - **Phase**: P1~P8 + 설정/UX 확장 전반 완료
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `bf9fe1d feat(recruit): 후보자 상세 페이지 + 메모 기능`
+- **마지막 커밋**: `f4c5003 feat(members): CSV 내보내기 — GET /api/members/export`
 - **마이그레이션**: 12개 적용 (`0_init` ~ `12_google_oauth`, db push로 적용)
 
 ## 다음 작업 후보 (우선순위 순)
@@ -51,11 +52,13 @@
 6. 2FA 실제 TOTP 연동
 7. CSV 내보내기 (구성원 다운로드)
 8. ~~채용 후보자 상세 페이지~~ ✅ — 기본정보 + 단계 + 메모 편집
-9. 모바일 반응형 UI 개선
+9. ~~CSV 내보내기~~ ✅ — `/api/members/export` (UTF-8 BOM, RFC 4180)
+10. 모바일 반응형 UI 개선
 
 ## 최근 한 일 (2026-05-21 다음 세션)
 
-### 채용 후보자 상세 페이지
+### CSV 내보내기 + 채용 후보자 상세
+- `f4c5003` 구성원 — CSV 내보내기 `/api/members/export` (UTF-8 BOM, RFC 4180)
 - `bf9fe1d` 채용 — 후보자 상세 `/recruit/postings/[id]/candidates/[candidateId]` + 메모 편집
 - `getCandidate` / `updateCandidateNote` 모듈 추가, 목록·칸반 이름 클릭 → 상세 링크
 
