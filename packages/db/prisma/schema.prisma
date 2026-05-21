@@ -213,6 +213,30 @@ enum LeaveTxType {
   ADJUST
 }
 
+enum LeavePolicyGrantMode {
+  FISCAL_YEAR
+  HIRE_DATE
+}
+
+enum MonthlyGrantRule {
+  MONTHLY_ON_ATTENDANCE
+  LUMP_SUM_ON_HIRE_11
+  LUMP_SUM_UNTIL_FISCAL
+}
+
+enum AnnualFirstYearRule {
+  PRORATED_ON_FIRST_FISCAL
+  DAYS_15_ON_FIRST_FISCAL
+  DAYS_15_ON_ANNIVERSARY
+  LUMP_SUM_ON_HIRE_15
+}
+
+enum DecimalRule {
+  ROUND_UP_DAY
+  ROUND_UP_HALF
+  NO_ADJUSTMENT
+}
+
 // ─────────────────────────────────────────────────────────────
 // 인증 · 멀티 테넌시 (docs/03 §13)
 // ─────────────────────────────────────────────────────────────
@@ -280,6 +304,7 @@ model Company {
   companyDocuments  CompanyDocument[]
   securityPolicy    CompanySecurityPolicy?
   notifications     Notification[]
+  leavePolicies     LeavePolicy[]
   // 신청 승인 시 생성된 회사 역참조
   fromApplication CompanyApplication? @relation("CreatedCompany")
 
@@ -444,7 +469,8 @@ model Employee {
   uploadedDocuments    CompanyDocument[]  @relation("UploadedDocuments")
   issuedCertificates   CertificateIssue[] @relation("IssuedCertificates")
   certificateIssuances CertificateIssue[] @relation("CertificateIssuers")
-  notifications        Notification[]     @relation("ReceivedNotifications")
+  notifications           Notification[]           @relation("ReceivedNotifications")
+  leavePolicyAssignments  LeavePolicyAssignment[]
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
@@ -649,6 +675,7 @@ model LeaveType {
   leaveBalances     LeaveBalance[]
   leaveRequests     LeaveRequest[]
   leaveTransactions LeaveTransaction[]
+  leavePolicies     LeavePolicy[]
 
   @@unique([companyId, key])
   @@index([companyId, isActive])
@@ -741,6 +768,48 @@ model LeaveTransaction {
   @@index([employeeId, leaveTypeId])
   @@index([leaveRequestId])
   @@map("leave_transactions")
+}
+
+/// 연차 부여 정책 (docs/03 §5 LeavePolicy).
+model LeavePolicy {
+  id                  String               @id @default(cuid())
+  companyId           String
+  name                String
+  leaveTypeId         String
+  grantMode           LeavePolicyGrantMode @default(FISCAL_YEAR)
+  fiscalStartMonth    Int                  @default(1)
+  monthlyGrantRule    MonthlyGrantRule     @default(MONTHLY_ON_ATTENDANCE)
+  annualFirstYearRule AnnualFirstYearRule  @default(PRORATED_ON_FIRST_FISCAL)
+  decimalRule         DecimalRule          @default(ROUND_UP_DAY)
+  expiryMonths        Int                  @default(12)
+  carryoverMaxDays    Decimal?
+  isDefault           Boolean              @default(false)
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  company     Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  leaveType   LeaveType                @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  assignments LeavePolicyAssignment[]
+
+  @@index([companyId, isActive])
+  @@map("leave_policies")
+}
+
+/// 직원별 정책 배정 이력.
+model LeavePolicyAssignment {
+  id            String   @id @default(cuid())
+  employeeId    String
+  policyId      String
+  effectiveDate DateTime @db.Date
+  createdAt     DateTime @default(now())
+
+  employee Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  policy   LeavePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([policyId])
+  @@map("leave_policy_assignments")
 }
 
 // ─────────────────────────────────────────────────────────────

@@ -50,6 +50,9 @@ export default async function HomePage() {
         <Button asChild variant="secondary" size="sm">
           <Link href="/settings/permissions">권한 설정</Link>
         </Button>
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/settings/leave-policies">휴가 정책</Link>
+        </Button>
       </nav>
       <form
         action={async () => {

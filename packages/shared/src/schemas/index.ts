@@ -95,6 +95,25 @@ export const employeeUpdateSchema = z.object({
 });
 export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
 
+/** 휴가 정책 생성/수정 (docs/03 §5 LeavePolicy). */
+export const leavePolicyCreateSchema = z.object({
+  name: z.string().trim().min(1, "정책명을 입력해 주세요").max(50),
+  leaveTypeId: z.string().min(1, "휴가 유형을 선택해 주세요"),
+  grantMode: z.enum(["FISCAL_YEAR", "HIRE_DATE"]).optional(),
+  fiscalStartMonth: z.number().int().min(1).max(12).optional(),
+  monthlyGrantRule: z.enum(["MONTHLY_ON_ATTENDANCE", "LUMP_SUM_ON_HIRE_11", "LUMP_SUM_UNTIL_FISCAL"]).optional(),
+  annualFirstYearRule: z.enum(["PRORATED_ON_FIRST_FISCAL", "DAYS_15_ON_FIRST_FISCAL", "DAYS_15_ON_ANNIVERSARY", "LUMP_SUM_ON_HIRE_15"]).optional(),
+  decimalRule: z.enum(["ROUND_UP_DAY", "ROUND_UP_HALF", "NO_ADJUSTMENT"]).optional(),
+  expiryMonths: z.number().int().min(1).max(60).optional(),
+  carryoverMaxDays: z.number().min(0).nullable().optional(),
+  isDefault: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+});
+export type LeavePolicyCreateInput = z.infer<typeof leavePolicyCreateSchema>;
+
+export const leavePolicyUpdateSchema = leavePolicyCreateSchema.omit({ leaveTypeId: true }).partial();
+export type LeavePolicyUpdateInput = z.infer<typeof leavePolicyUpdateSchema>;
+
 /** 직책 추가 (docs/03 §3 Position). isOrgHead 는 DYNAMIC_ORG_HEAD 평가용. */
 export const positionCreateSchema = z.object({
   name: z.string().trim().min(1, "직책명을 입력해 주세요").max(50),
