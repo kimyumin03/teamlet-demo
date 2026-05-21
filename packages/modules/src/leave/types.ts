@@ -35,6 +35,17 @@ export type LeaveTypeItem = {
   grantAmount: number | null;
 };
 
+export type PendingLeaveRequestItem = {
+  id: string;
+  employeeName: string;
+  leaveTypeName: string;
+  startDate: Date;
+  endDate: Date;
+  days: number;
+  reason: string;
+  createdAt: Date;
+};
+
 export type LeaveRequestItem = {
   id: string;
   leaveTypeName: string;

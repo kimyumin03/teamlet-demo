@@ -1,8 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CalendarOff } from "lucide-react";
 import { getLeaveBalances, listLeaveTypes, listMyLeaveRequests } from "@teamlet/modules/leave";
 import type { LeaveRequestItem } from "@teamlet/modules/leave";
-import { EmptyState } from "@teamlet/ui";
+import { EmptyState, Button } from "@teamlet/ui";
 import { auth } from "@/auth";
 import { LeaveRequestButton } from "@/components/leave/leave-request-button";
 import { CancelLeaveButton } from "@/components/leave/cancel-leave-button";
@@ -54,7 +55,12 @@ export default async function LeavePage() {
           <h1 className="text-2xl font-semibold text-foreground">휴가</h1>
           <p className="mt-1 text-sm text-foreground-muted">{year}년 휴가 현황</p>
         </div>
-        <LeaveRequestButton leaveTypes={leaveTypes} />
+        <div className="flex items-center gap-2">
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/leave/requests">승인 관리</Link>
+          </Button>
+          <LeaveRequestButton leaveTypes={leaveTypes} />
+        </div>
       </header>
 
       {balances.length > 0 && (

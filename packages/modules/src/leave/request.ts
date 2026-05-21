@@ -1,6 +1,36 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
-import type { RequestLeaveInput, LeaveRequestItem } from "./types";
+import { loadActor } from "../permission/_actor";
+import type { RequestLeaveInput, LeaveRequestItem, PendingLeaveRequestItem } from "./types";
+
+export async function listPendingLeaveRequests(
+  actorEmployeeId: string,
+): Promise<Result<PendingLeaveRequestItem[]>> {
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const requests = await prisma.leaveRequest.findMany({
+    where: { employee: { companyId: actor.companyId }, status: "PENDING" },
+    include: {
+      employee: { select: { name: true } },
+      leaveType: { select: { name: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return ok(
+    requests.map((r) => ({
+      id: r.id,
+      employeeName: r.employee.name,
+      leaveTypeName: r.leaveType.name,
+      startDate: r.startDate,
+      endDate: r.endDate,
+      days: Number(r.days),
+      reason: r.reason,
+      createdAt: r.createdAt,
+    })),
+  );
+}
 
 export async function listMyLeaveRequests(
   employeeId: string,
