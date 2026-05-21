@@ -8,7 +8,7 @@
 | 영역 | 상태 | 비고 |
 |---|---|---|
 | 명세서 `/docs` | ✅ 100% | 00~06 7종, 6,050 lines |
-| DB 스키마 + 시드 | ✅ P1+P2+P3 일부 | 마이그레이션 4개 (`0_init` ~ `4_leave_domain`) |
+| DB 스키마 + 시드 | ✅ P1+P2+P3+P4 일부 | 마이그레이션 4개 + P4 스키마 추가 (migrate 필요) |
 | Shared 패키지 | ✅ 골격 | errors, schemas, types, utils |
 | UI 시스템 | 🟡 기초만 | theme + primitives 3 / patterns 3 (Checkbox/Tabs/Card 미구현) |
 | **P1 인증/가입** | ✅ 완료 | auth 모듈 + 화면 5개 + NextAuth + 데모 자가-승인 |
@@ -16,22 +16,22 @@
 | **P2 Core HR (구성원/조직/직책)** | ✅ 7단계 완료 | 디렉토리/검색/부서/상세/수정/퇴직/직책 |
 | **P3 휴가** | ✅ UI 완료 | /leave + 신청/취소 + 관리자 승인/반려 + 수동 부여 ✓ |
 | Worker | ⬜ 빈 skeleton | BullMQ 미구현 |
-| P4~P8 | ⬜ 미착수 | 워크플로우/채용/문서/보안/확장 |
+| **P4 워크플로우** | 🟡 MVP 완료 | DB스키마 + 모듈 + /workflow UI (문서작성/승인/반려) ✓ — 마이그레이션 미적용 |
+| P5~P8 | ⬜ 미착수 | 채용/문서/보안/확장 |
 
 ## 현재 위치
 
-- **Phase**: P3 휴가 UI 완료, **다음은 P4 워크플로우 또는 P2 잔여 폴리시**
+- **Phase**: P4 워크플로우 MVP 완료, **다음은 DB migrate 후 테스트 또는 P5~**
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `3d51dd5 feat(leave): P3 4단계 — 휴가 수동 부여 Dialog`
+- **마지막 커밋**: `7866497 feat(workflow): P4 2~3단계 — 워크플로우 모듈 + /workflow UI`
+- **⚠️ P4 migrate 필요**: `pnpm db:migrate` 실행해야 workflow 테이블 생성됨
 
-## 다음 작업 — P4 워크플로우 또는 P2 잔여 폴리시
+## 다음 작업
 
-### P3 완료 목록
-1. ✅ `/leave` 페이지 — 잔여 현황 + 신청 내역
-2. ✅ 휴가 신청 Dialog
-3. ✅ 관리자 승인/반려 뷰 (`/leave/requests`)
-4. ✅ 수동 부여 Dialog
+### P4 워크플로우 잔여 (선택)
+- FormTemplate 관리 UI (`/workflow/templates`)
+- 문서 상세 페이지 (`/workflow/documents/[id]`) — 결재 이력 + 현재 단계
 
 ### P2 잔여 폴리시 (선택)
 - 부서 이동 (parentId + 순환 가드)
