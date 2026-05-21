@@ -19,36 +19,37 @@
 | **P4 워크플로우** | ✅ MVP 완료 | /workflow + 문서 상세 + 승인/반려 ✓ |
 | **P5 채용** | ✅ MVP 완료 | /recruit 공고 목록 + /recruit/postings/[id] 후보자 관리 ✓ |
 | **P6 문서·증명서** | ✅ MVP 완료 | /documents 보관소 + /documents/certificates 발급/인쇄 ✓ |
-| P7~P8 | ⬜ 미착수 | 보안/확장 |
+| **P7 보안** | ✅ MVP 완료 | /settings/security 보안 정책 + /audit-log 감사 로그 뷰어 ✓ |
+| **P8 알림** | ✅ MVP 완료 | Notification DB + 알림 벨 패널 + 휴가/워크플로우 이벤트 연동 ✓ |
 
 ## 현재 위치
 
-- **Phase**: P6 문서·증명서 MVP 완료 — 다음은 P7 보안 또는 P2 잔여 폴리시
+- **Phase**: P1~P8 전 Phase MVP 완료
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `11b1edc feat(document): P6 문서·증명서`
-- **마이그레이션**: 7개 모두 적용됨 (`0_init` ~ `7_document_certificate`)
+- **마지막 커밋**: `f47f9e9 feat(notification): P8 알림 시스템`
+- **마이그레이션**: 9개 모두 적용됨 (`0_init` ~ `9_notifications`)
 
 ## 다음 작업 후보
 
-### P7 보안 (다음 Phase)
-- CompanySecurityPolicy — 2FA 정책, IP 화이트리스트
-- AuditLog 강화
+### 잔여 폴리시 (선택)
+- **P2**: 부서 이동 (parentId + 순환 가드), PositionHistory, 직원 복직
+- **P1**: 권한 편집 UI (Checkbox/Tabs UI primitive 보강 필요)
 
-### P2 잔여 폴리시 (선택)
-- 부서 이동 (parentId + 순환 가드)
-- PositionHistory 시점 이력
-- 직원 복직 처리
-
-### P2 잔여 폴리시 (선택)
-- 부서 이동 (parentId + 순환 가드)
-- PositionHistory 시점 이력
-- 직원 복직 처리
-
-### P1 잔여
-- 권한 편집 UI (Checkbox/Tabs UI primitive 보강 필요)
+### 품질 개선 (선택)
+- UI 디자인 폴리시 — Flex 스타일 다듬기
+- Worker(BullMQ) — 휴가/알림 비동기 처리
+- FormTemplate 관리 UI (`/workflow/templates`)
+- CSV 일괄 가져오기 (BulkOperation)
+- 실제 2FA 강제 적용 (TOTP 연동)
 
 ## 최근 한 일
+
+### P8 알림 (2026-05-21 이번 세션)
+- `f47f9e9` P8 — Notification DB + notification 모듈 + 알림 벨 패널 + 휴가/워크플로우 이벤트 연동
+
+### P7 보안 (2026-05-21 이번 세션)
+- `eed7cdb` P7 — CompanySecurityPolicy DB + security 모듈 + /settings/security + /audit-log
 
 ### P6 문서·증명서 (2026-05-21 이번 세션)
 - `11b1edc` P6 — DB(CompanyDocument/CertificateIssue) + document 모듈 + /documents + /documents/certificates
