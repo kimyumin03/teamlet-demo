@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { NotificationItem } from "@teamlet/modules/notification";
 import { markReadAction, markAllReadAction } from "@/lib/actions/notification";
@@ -82,6 +83,15 @@ export function NotificationBell({
             )}
           </div>
 
+          <div className="border-b border-border px-4 py-2 text-right">
+            <Link
+              href="/notifications"
+              onClick={() => setOpen(false)}
+              className="text-xs text-foreground-muted hover:text-foreground"
+            >
+              전체 보기 →
+            </Link>
+          </div>
           <div className="max-h-80 overflow-y-auto">
             {items.length === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-foreground-muted">알림이 없어요</p>
