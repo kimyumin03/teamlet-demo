@@ -11,11 +11,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
     "@teamlet/db": "workspace:*",
     "@teamlet/modules": "workspace:*",
     "@teamlet/shared": "workspace:*",
     "@teamlet/ui": "workspace:*",
-    "@hookform/resolvers": "^3.9.1",
+    "cmdk": "^1.1.1",
     "lucide-react": "^0.468.0",
     "next": "^15.1.2",
     "next-auth": "5.0.0-beta.25",
