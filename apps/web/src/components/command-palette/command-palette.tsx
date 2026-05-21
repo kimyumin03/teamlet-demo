@@ -25,6 +25,7 @@ const NAV_ITEMS = [
       { label: "휴가 정책", href: "/settings/leave-policies", keyword: "leave policy 휴가정책" },
       { label: "권한 설정", href: "/settings/permissions", keyword: "permissions 권한" },
       { label: "보안 설정", href: "/settings/security", keyword: "security 보안" },
+      { label: "양식 관리", href: "/settings/form-templates", keyword: "form template 양식" },
     ],
   },
 ];

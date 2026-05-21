@@ -59,6 +59,9 @@ export default async function HomePage() {
         <Button asChild variant="secondary" size="sm">
           <Link href="/settings/holidays">공휴일</Link>
         </Button>
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/settings/form-templates">양식 관리</Link>
+        </Button>
       </nav>
       <form
         action={async () => {

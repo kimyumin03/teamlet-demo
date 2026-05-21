@@ -95,6 +95,29 @@ export const employeeUpdateSchema = z.object({
 });
 export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
 
+/** 양식 빌더 필드 정의 */
+export const fieldDefSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().trim().min(1, "필드명을 입력해 주세요").max(100),
+  type: z.enum(["text", "textarea", "number", "date", "select", "checkbox"]),
+  required: z.boolean().default(false),
+  placeholder: z.string().max(200).optional(),
+  options: z.array(z.string().max(100)).max(20).optional(),
+});
+
+export const formTemplateCreateSchema = z.object({
+  name: z.string().trim().min(1, "양식명을 입력해 주세요").max(100),
+  kind: z.enum(["GENERAL", "LEAVE_REQUEST", "INFO_CHANGE", "ANNOUNCEMENT"]),
+  description: z.string().trim().max(500).optional(),
+  fields: z.array(fieldDefSchema).max(30),
+});
+export type FormTemplateCreateSchemaInput = z.infer<typeof formTemplateCreateSchema>;
+
+export const formTemplateUpdateSchema = formTemplateCreateSchema.partial().extend({
+  isActive: z.boolean().optional(),
+});
+export type FormTemplateUpdateSchemaInput = z.infer<typeof formTemplateUpdateSchema>;
+
 /** 회사 정보 수정 */
 export const companyUpdateSchema = z.object({
   name: z.string().trim().min(2, "회사명을 입력해 주세요").max(100).optional(),
