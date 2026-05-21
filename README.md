@@ -44,7 +44,7 @@ pnpm dev              # http://localhost:3000
 
 > **환경 변수**: 루트 `.env` 파일 필요. `.env.example` 참고.  
 > `AUTH_SECRET`, `DATABASE_URL`, `TEAMLET_DEMO_AUTO_APPROVE`,  
-> `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` 설정.
+> `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SYSTEM_ADMIN_EMAILS` 설정.
 
 ## 구현 현황 (2026-05-21 기준)
 
@@ -52,31 +52,36 @@ pnpm dev              # http://localhost:3000
 
 | 도메인 | 주요 기능 |
 |---|---|
-| **인증/가입** | 이메일·비밀번호 로그인, Google OAuth, 회원가입, 회사 등록 신청, 회사코드 가입, **직원 초대 링크** (`/invite/[token]`), 로그인 잠금, 감사 로그 |
-| **권한** | 역할(Role) CRUD, 권한 카탈로그 (`member.directory.read` 등 키 체계), 역할 배정/해제, SUPER_ADMIN 부트스트랩, Scope 평가 |
+| **인증/가입** | 이메일·비밀번호 로그인 (IP/UA 기록·실패 잠금), Google OAuth, 회원가입, 회사 등록 신청, 회사코드 가입, **직원 초대 링크** (`/invite/[token]`) |
+| **권한** | 역할(Role) CRUD, 권한 카탈로그 (`<category>.<domain>.<action>` 키 체계), **역할 배정 UI + 권한 매트릭스 편집**, `isOrgHead` 동적 역할, Scope 평가 (ALL/DEPARTMENT/SELF), 도메인 권한 가드, SUPER_ADMIN 부트스트랩 |
+| **플랫폼 운영** | `/admin` 콘솔 — 회사 가입 신청 승인/반려, 전체 회사 목록, 운영 통계 |
 | **Core HR** | 구성원 디렉토리 (검색·부서·상태·고용형태 필터), 직원 상세 탭 (정보/휴가/결재/문서/권한), 부서 CRUD, 직책 관리, CSV 가져오기/내보내기 |
 | **휴가** | 휴가 종류 관리, 잔여·사용 집계, 신청/승인/반려/취소, 팀 캘린더, 정책(LeavePolicy) CRUD·배정, 수동 부여/조정 |
-| **워크플로우** | 양식 빌더 (동적 필드), 문서 기안 3단계 위저드, 결재선 지정, 승인/반려 액션 |
+| **워크플로우** | 양식 빌더 (동적 필드), 문서 기안 3단계 위저드, 순차 결재선, 승인/반려 액션 |
 | **채용** | 공고 CRUD·상태 필터, 전형 단계 관리, 후보자 목록/칸반 뷰, **후보자 상세** (단계이동·결과·메모) |
 | **문서·증명서** | 문서 보관소, 증명서 발급·인쇄 |
-| **보안** | 보안 정책, 감사 로그 (활동유형·이벤트 필터·텍스트 검색) |
+| **보안** | 보안 정책 CRUD, 감사 로그 (활동유형·이벤트 필터·텍스트 검색) |
 | **알림** | 알림 벨 패널, `/notifications` 전용 페이지 (탭·읽음 처리) |
 | **설정** | 회사 정보 수정, 공휴일 관리, 개인 프로필·비밀번호 변경 |
 | **UX** | ⌘K 커맨드 팔레트 (구성원 검색 + 전체 페이지 네비), 홈 대시보드 |
 
-### 🚧 미구현
+### 🚧 미구현 / 진행 중
 
 | 항목 | 비고 |
 |---|---|
-| Worker (BullMQ) | 휴가 자동 부여, 비동기 알림 — skeleton만 존재 |
+| Worker (BullMQ) | 휴가 자동 부여·소멸, 비동기 알림 — skeleton만 존재 |
 | 실시간 알림 | SSE 또는 WebSocket |
-| 2FA TOTP | DB 컬럼만 있음 |
+| 2FA / IP 제한 | 정책 저장·UI는 되나 로그인 강제 적용 미구현 |
+| 연차 자동 부여 | 정책 저장만, 현재 수동 부여만 동작 |
+| 인사 발령 이력 | Appointment/PositionHistory — 현재 `updateEmployee` 덮어쓰기 |
+| 파일 업로드·이메일 | S3 · Resend 실연동 미구현 |
 | 모바일 반응형 | 데스크톱 기준 구현 |
 
 ## 주요 설계 원칙
 
 - **Result 패턴**: 모든 도메인 함수 `Result<T>` 반환 (`ok(data)` / `err(errors.xxx())`)
 - **권한 키 컨벤션**: `<category>.<domain>.<action>` (예: `member.directory.read`)
+- **권한 가드**: 모든 mutation 진입점에서 `assertPermission` 호출 — RBAC + Scope
 - **Server Actions**: `toApiResponse()` 래퍼로 클라이언트에 전달
-- **멀티 테넌시**: `UserRole`은 `employeeId` 기준 (회사별 신분)
-- **데모 모드**: `TEAMLET_DEMO_AUTO_APPROVE=true` — 회사 신청 즉시 승인 (운영 금지)
+- **멀티 테넌시**: `UserRole`은 `employeeId` 기준 (회사별 신분). 플랫폼 운영자는 `SYSTEM_ADMIN_EMAILS`로 별도 식별
+- **데모 모드**: `TEAMLET_DEMO_AUTO_APPROVE=true` — 회사 신청 즉시 승인 (운영 금지, 운영 시 `/admin`에서 수동 검토)
