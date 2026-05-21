@@ -11,7 +11,7 @@
 | DB 스키마 + 시드 | ✅ P1~P5 + 확장 | 마이그레이션 12개 (`0_init` ~ `12_google_oauth`) |
 | Shared 패키지 | ✅ 스키마 확장 중 | schemas: 사원/정책/휴가/양식/회사/공휴일/프로필/비밀번호 |
 | UI 시스템 | 🟡 기초만 | theme + primitives 3 / patterns 3 |
-| **P1 인증/가입** | ✅ 완료 + 강화 | auth 모듈 + 화면 5개 + NextAuth + 데모 자가-승인 + Google OAuth |
+| **P1 인증/가입** | ✅ 완료 + 강화 | auth 모듈 + 화면 5개 + NextAuth + 데모 자가-승인 + Google OAuth + 초대 링크 |
 | **P1 권한** | ✅ 핵심 완료 | 평가/CRUD/매핑/UserRole/락아웃/부트스트랩 ✓ |
 | **P2 Core HR (구성원/조직/직책)** | ✅ 완료 | 탭 상세 + 확장 필드 + 상태 탭 필터 + 고용형태 필터 + CSV 일괄 등록 |
 | **P3 휴가** | ✅ UI 완료 | /leave + 신청/취소 + 관리자 승인/반려 + 수동 부여 + 팀 캘린더 ✓ |
@@ -39,7 +39,7 @@
 ## 다음 작업 후보 (우선순위 순)
 
 ### 🔴 HIGH — 실사용 갭
-1. **이메일 초대** — 구성원에게 초대 링크 발송 → 계정 연결 흐름 (현재 join-company 코드 입력만)
+1. ~~**이메일 초대**~~ ✅ — 초대 링크 생성 + `/invite/[token]` 수락 페이지 + callbackUrl 로그인/가입 연동
 2. **구성원 상세 강화** — 휴가 잔여/이력 탭, 결재 내역 탭
 
 ### 🟡 MEDIUM — Flex 대비 격차
@@ -52,6 +52,14 @@
 7. CSV 내보내기 (구성원 다운로드)
 8. 채용 후보자 상세 페이지 (이력서 첨부, 메모)
 9. 모바일 반응형 UI 개선
+
+## 최근 한 일 (2026-05-21 다음 세션)
+
+### 이메일 초대 흐름
+- `eb9ff5f` 직원 초대 링크 — `createEmployeeInvite` / `getInviteInfo` / `acceptEmployeeInvite` 모듈
+- `/invite/[token]` 수락 페이지 (미로그인→로그인/가입 선택, 로그인→수락 버튼)
+- `callbackUrl` 지원: login·signup page/action/form 연동
+- `EmployeeDetail.hasLinkedAccount` + 구성원 상세 "초대 링크 생성" 버튼
 
 ## 최근 한 일 (2026-05-21 이번 세션)
 
