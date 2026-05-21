@@ -33,6 +33,9 @@ export default async function HomePage() {
           <Link href="/leave">휴가</Link>
         </Button>
         <Button asChild variant="secondary" size="sm">
+          <Link href="/workflow">워크플로우</Link>
+        </Button>
+        <Button asChild variant="secondary" size="sm">
           <Link href="/settings/permissions">권한 설정</Link>
         </Button>
       </nav>
