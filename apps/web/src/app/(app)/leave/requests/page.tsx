@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronLeft, Inbox } from "lucide-react";
-import { listPendingLeaveRequests } from "@teamlet/modules/leave";
+import { listPendingLeaveRequests, listLeaveTypes } from "@teamlet/modules/leave";
+import { listEmployees } from "@teamlet/modules/employee";
 import { EmptyState, Button } from "@teamlet/ui";
 import { auth } from "@/auth";
 import { ApproveRejectButtons } from "@/components/leave/approve-reject-buttons";
+import { GrantLeaveButton } from "@/components/leave/grant-leave-button";
 
 export const dynamic = "force-dynamic";
 
@@ -17,21 +19,33 @@ export default async function LeaveRequestsPage() {
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const result = await listPendingLeaveRequests(session.user.employeeId);
+  const employeeId = session.user.employeeId;
+  const [result, employeesResult, typesResult] = await Promise.all([
+    listPendingLeaveRequests(employeeId),
+    listEmployees(employeeId),
+    listLeaveTypes(employeeId),
+  ]);
   const requests = result.ok ? result.data : [];
+  const employees = employeesResult.ok
+    ? employeesResult.data.filter((e) => e.employmentStatus === "ACTIVE" || e.employmentStatus === "PROBATION")
+    : [];
+  const leaveTypes = typesResult.ok ? typesResult.data : [];
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
-      <header className="mb-8 flex items-center gap-3">
-        <Button asChild variant="ghost" size="icon">
-          <Link href="/leave"><ChevronLeft /></Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">휴가 승인</h1>
-          <p className="mt-1 text-sm text-foreground-muted">
-            대기 중인 신청 {requests.length}건
-          </p>
+      <header className="mb-8 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button asChild variant="ghost" size="icon">
+            <Link href="/leave"><ChevronLeft /></Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">휴가 승인</h1>
+            <p className="mt-1 text-sm text-foreground-muted">
+              대기 중인 신청 {requests.length}건
+            </p>
+          </div>
         </div>
+        <GrantLeaveButton employees={employees} leaveTypes={leaveTypes} />
       </header>
 
       {!result.ok && (
