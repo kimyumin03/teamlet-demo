@@ -10,6 +10,7 @@ import { auth } from "@/auth";
 import { AddDepartmentButton } from "@/components/members/add-department-button";
 import { AddMemberButton } from "@/components/members/add-member-button";
 import { AddPositionButton } from "@/components/members/add-position-button";
+import { CsvImportButton } from "@/components/members/csv-import-button";
 import { DepartmentActions } from "@/components/members/department-actions";
 import { DepartmentSidebar } from "@/components/members/department-sidebar";
 import { MemberSearchInput } from "@/components/members/search-input";
@@ -140,6 +141,7 @@ export default async function MembersPage({
           <div className="w-56">
             <MemberSearchInput initialValue={query} />
           </div>
+          <CsvImportButton />
           <AddPositionButton />
           <AddDepartmentButton departments={departments} />
           <AddMemberButton

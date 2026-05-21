@@ -616,3 +616,5 @@ export async function createEmployee(
 
   return ok({ employeeId: employee.id });
 }
+
+export { bulkCreateEmployees, type BulkEmployeeRow, type BulkCreateResult } from "./bulk";
