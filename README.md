@@ -94,9 +94,9 @@ isOrgHead 권한 통합부터 시작해 Flex 갭 검토, 보안 가드 일괄 �
 
 ### 2026-05-22 (금) 예정
 
-- **[AI 지시 문서 탭]**
-  - 각 md 파일 output 개선
-  - Claude Code 외 AI 도구용 문서 작성법 서칭 및 적용
-- **[AI 도구 연결]**
-  - 연결한 AI 도구 테스트하며 안정성 개선
-  - Cursor · Gemini · Antigravity 연결 방법 서칭 및 연결
+- **인사 발령 이력 도입**
+  - Appointment·PositionHistory 스키마 설계 및 추가
+  - 부서이동·승진을 시점 이력으로 기록 (현재 컬럼 덮어쓰기 방식 대체)
+- **휴가–워크플로우 통합**
+  - 휴가 신청을 FormDocument 결재 인프라로 연결
+  - 휴가 종류별 결재선 지정 지원
