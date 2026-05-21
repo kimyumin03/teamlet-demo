@@ -16,6 +16,7 @@ import {
 import type { DepartmentNode } from "@teamlet/modules/department";
 import type { EmployeeDetail } from "@teamlet/modules/employee";
 import type { PositionItem } from "@teamlet/modules/position";
+import type { Gender, EmploymentType } from "@teamlet/db";
 import { updateEmployeeAction } from "@/lib/actions/employee";
 
 function toDateInput(d: Date | null): string {
@@ -41,9 +42,12 @@ export function EditMemberButton({
   const [companyEmail, setCompanyEmail] = useState(
     employee.companyEmail ?? "",
   );
-  const [personalEmail, setPersonalEmail] = useState(
-    employee.personalEmail ?? "",
-  );
+  const [personalEmail, setPersonalEmail] = useState(employee.personalEmail ?? "");
+  const [phone, setPhone] = useState(employee.phone ?? "");
+  const [birthDate, setBirthDate] = useState(toDateInput(employee.birthDate));
+  const [gender, setGender] = useState<Gender | "">(employee.gender ?? "");
+  const [employmentType, setEmploymentType] = useState<EmploymentType>(employee.employmentType);
+  const [probationEndDate, setProbationEndDate] = useState(toDateInput(employee.probationEndDate));
   const [hireDate, setHireDate] = useState(toDateInput(employee.hireDate));
   const [departmentId, setDepartmentId] = useState(
     employee.departmentId ?? "",
@@ -61,6 +65,11 @@ export function EditMemberButton({
         employeeNumber: employeeNumber || undefined,
         companyEmail: companyEmail || undefined,
         personalEmail: personalEmail || undefined,
+        phone: phone || undefined,
+        birthDate: birthDate || undefined,
+        gender: gender || undefined,
+        employmentType,
+        probationEndDate: probationEndDate || undefined,
         hireDate: hireDate || undefined,
         departmentId: departmentId || undefined,
         positionId: positionId || undefined,
@@ -158,19 +167,48 @@ export function EditMemberButton({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="edit-personal-email"
-              className="text-sm text-foreground-muted"
-            >
-              개인 이메일
-            </label>
-            <Input
-              id="edit-personal-email"
-              type="email"
-              maxLength={254}
-              value={personalEmail}
-              onChange={(e) => setPersonalEmail(e.target.value)}
-            />
+            <label htmlFor="edit-personal-email" className="text-sm text-foreground-muted">개인 이메일</label>
+            <Input id="edit-personal-email" type="email" maxLength={254} value={personalEmail} onChange={(e) => setPersonalEmail(e.target.value)} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-foreground-muted">연락처</label>
+              <Input maxLength={20} placeholder="010-0000-0000" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-foreground-muted">생년월일</label>
+              <Input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-foreground-muted">성별</label>
+              <select value={gender} onChange={(e) => setGender(e.target.value as Gender | "")} className="h-10 rounded-md border border-border bg-background-primary px-3 text-sm text-foreground focus-visible:outline-none">
+                <option value="">미지정</option>
+                <option value="MALE">남성</option>
+                <option value="FEMALE">여성</option>
+                <option value="OTHER">기타</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-foreground-muted">고용형태</label>
+              <select value={employmentType} onChange={(e) => setEmploymentType(e.target.value as EmploymentType)} className="h-10 rounded-md border border-border bg-background-primary px-3 text-sm text-foreground focus-visible:outline-none">
+                <option value="FULL_TIME">정규직</option>
+                <option value="PART_TIME">파트타임</option>
+                <option value="CONTRACT">계약직</option>
+                <option value="INTERN">인턴</option>
+                <option value="DISPATCH">파견</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-foreground-muted">수습 종료일</label>
+              <Input type="date" value={probationEndDate} onChange={(e) => setProbationEndDate(e.target.value)} />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

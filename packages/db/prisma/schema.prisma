@@ -23,6 +23,20 @@ datasource db {
 // Enums (docs/04 §3-2: PascalCase 키 + SCREAMING_SNAKE 값)
 // ─────────────────────────────────────────────────────────────
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  DISPATCH
+}
+
 enum MembershipStatus {
   PENDING
   ACTIVE
@@ -395,7 +409,13 @@ model Employee {
   employeeNumber   String?
   companyEmail     String?
   personalEmail    String?
+  phone            String?
+  birthDate        DateTime?
+  gender           Gender?
   hireDate         DateTime?
+  employmentType   EmploymentType   @default(FULL_TIME)
+  probationEndDate DateTime?
+  resignedAt       DateTime?
   employmentStatus EmploymentStatus @default(ACTIVE)
   // 데이터 소스 추적 (docs/03 §3 — AxHub bulk)
   dataSource       DataSource       @default(MANUAL)

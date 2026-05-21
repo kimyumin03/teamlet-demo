@@ -11,7 +11,7 @@
  */
 
 import { prisma } from "@teamlet/db";
-import type { EmploymentStatus, RoleType } from "@teamlet/db";
+import type { EmploymentStatus, RoleType, Gender, EmploymentType } from "@teamlet/db";
 import {
   employeeCreateSchema,
   employeeUpdateSchema,
@@ -146,15 +146,9 @@ export async function updateEmployee(
   const current = await prisma.employee.findUnique({
     where: { id: employeeId },
     select: {
-      id: true,
-      name: true,
-      employeeNumber: true,
-      companyEmail: true,
-      personalEmail: true,
-      hireDate: true,
-      departmentId: true,
-      positionId: true,
-      companyId: true,
+      id: true, name: true, employeeNumber: true, companyEmail: true,
+      personalEmail: true, phone: true, hireDate: true,
+      departmentId: true, positionId: true, companyId: true,
     },
   });
   if (!current || current.companyId !== actor.companyId) {
@@ -165,7 +159,12 @@ export async function updateEmployee(
   const employeeNumber = d.employeeNumber?.trim() || null;
   const companyEmail = d.companyEmail?.trim() || null;
   const personalEmail = d.personalEmail?.trim() || null;
+  const phone = d.phone?.trim() || null;
+  const gender = d.gender ?? null;
+  const employmentType = d.employmentType ?? "FULL_TIME";
   const hireDateRaw = d.hireDate?.trim() || null;
+  const birthDateRaw = d.birthDate?.trim() || null;
+  const probationEndDateRaw = d.probationEndDate?.trim() || null;
   const departmentId = d.departmentId?.trim() || null;
   const positionId = d.positionId?.trim() || null;
 
@@ -179,6 +178,14 @@ export async function updateEmployee(
   const hireDateResult = parseHireDate(hireDateRaw);
   if (!hireDateResult.ok) return hireDateResult;
   const hireDate = hireDateResult.data;
+
+  const birthDateResult = parseHireDate(birthDateRaw);
+  if (!birthDateResult.ok) return birthDateResult;
+  const birthDate = birthDateResult.data;
+
+  const probationEndDateResult = parseHireDate(probationEndDateRaw);
+  if (!probationEndDateResult.ok) return probationEndDateResult;
+  const probationEndDate = probationEndDateResult.data;
 
   if (departmentId) {
     const dept = await prisma.department.findUnique({
@@ -235,6 +242,11 @@ export async function updateEmployee(
       employeeNumber,
       companyEmail,
       personalEmail,
+      phone,
+      gender,
+      employmentType,
+      birthDate,
+      probationEndDate,
       hireDate,
       departmentId,
       positionId,
@@ -369,6 +381,13 @@ export type EmployeeRoleAssignment = {
 
 export type EmployeeDetail = EmployeeListItem & {
   personalEmail: string | null;
+  phone: string | null;
+  birthDate: Date | null;
+  gender: Gender | null;
+  employmentType: EmploymentType;
+  probationEndDate: Date | null;
+  resignedAt: Date | null;
+  leaveBalances: { leaveTypeName: string; remaining: number }[];
   createdAt: Date;
   roles: EmployeeRoleAssignment[];
 };
@@ -398,6 +417,12 @@ export async function getEmployee(
       employeeNumber: true,
       companyEmail: true,
       personalEmail: true,
+      phone: true,
+      birthDate: true,
+      gender: true,
+      employmentType: true,
+      probationEndDate: true,
+      resignedAt: true,
       hireDate: true,
       employmentStatus: true,
       isActive: true,
@@ -407,6 +432,14 @@ export async function getEmployee(
       createdAt: true,
       department: { select: { name: true } },
       position: { select: { name: true, isOrgHead: true } },
+      leaveBalances: {
+        select: {
+          grantedDays: true,
+          usedDays: true,
+          adjustedDays: true,
+          leaveType: { select: { name: true } },
+        },
+      },
       userRoles: {
         where: { isActive: true },
         orderBy: { assignedAt: "desc" },
@@ -436,6 +469,12 @@ export async function getEmployee(
     employeeNumber: emp.employeeNumber,
     companyEmail: emp.companyEmail,
     personalEmail: emp.personalEmail,
+    phone: emp.phone,
+    birthDate: emp.birthDate,
+    gender: emp.gender,
+    employmentType: emp.employmentType,
+    probationEndDate: emp.probationEndDate,
+    resignedAt: emp.resignedAt,
     hireDate: emp.hireDate,
     employmentStatus: emp.employmentStatus,
     isActive: emp.isActive,
@@ -443,6 +482,10 @@ export async function getEmployee(
     departmentName: emp.department?.name ?? null,
     positionId: emp.positionId,
     positionName: emp.position?.name ?? null,
+    leaveBalances: emp.leaveBalances.map((lb) => ({
+      leaveTypeName: lb.leaveType.name,
+      remaining: Number(lb.grantedDays) + Number(lb.adjustedDays) - Number(lb.usedDays),
+    })),
     createdAt: emp.createdAt,
     roles: emp.userRoles.map((ur) => ({
       userRoleId: ur.id,
