@@ -265,6 +265,7 @@ model Company {
   jobPostings       JobPosting[]
   companyDocuments  CompanyDocument[]
   securityPolicy    CompanySecurityPolicy?
+  notifications     Notification[]
   // 신청 승인 시 생성된 회사 역참조
   fromApplication CompanyApplication? @relation("CreatedCompany")
 
@@ -423,6 +424,7 @@ model Employee {
   uploadedDocuments    CompanyDocument[]  @relation("UploadedDocuments")
   issuedCertificates   CertificateIssue[] @relation("IssuedCertificates")
   certificateIssuances CertificateIssue[] @relation("CertificateIssuers")
+  notifications        Notification[]     @relation("ReceivedNotifications")
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
@@ -944,6 +946,42 @@ model CompanySecurityPolicy {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("company_security_policies")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 8 — 알림 시스템 (docs/03 §14)
+// ─────────────────────────────────────────────────────────────
+
+enum NotificationCategory {
+  APPROVAL
+  LEAVE
+  HR
+  ANNOUNCEMENT
+  SYSTEM_SECURITY
+}
+
+/// 인앱 알림.
+model Notification {
+  id                String               @id @default(cuid())
+  companyId         String
+  recipientEmployeeId String
+  category          NotificationCategory
+  eventKey          String
+  title             String
+  body              String
+  deepLink          String?
+  relatedTargetType String?
+  relatedTargetId   String?
+  isRead            Boolean              @default(false)
+  readAt            DateTime?
+  createdAt         DateTime             @default(now())
+  expiresAt         DateTime?
+
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  recipient Employee @relation("ReceivedNotifications", fields: [recipientEmployeeId], references: [id], onDelete: Cascade)
+
+  @@index([recipientEmployeeId, isRead, createdAt(sort: Desc)])
+  @@map("notifications")
 }
 
 // Phase 2~8 PLACEHOLDER (docs/03 — 구현 시 활성화)

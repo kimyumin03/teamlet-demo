@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@teamlet/db";
 import { createDocument, approveDocument, rejectDocument } from "@teamlet/modules/workflow";
 import type { FormDocumentKind } from "@teamlet/modules/workflow";
+import { createNotification } from "@teamlet/modules/notification";
 import { toApiResponse, type ApiResponse } from "@teamlet/shared";
 import { auth } from "@/auth";
 
@@ -43,7 +44,26 @@ export async function approveDocumentAction(
   comment?: string,
 ): Promise<ApiResponse<void>> {
   const { employeeId } = await requireEmployee();
-  return toApiResponse(await approveDocument(employeeId, lineId, comment));
+  const line = await prisma.approvalLine.findUnique({
+    where: { id: lineId },
+    select: { document: { select: { id: true, title: true, authorId: true, author: { select: { companyId: true } } } } },
+  });
+  const result = await approveDocument(employeeId, lineId, comment);
+  if (result.ok && line) {
+    const { document: doc } = line;
+    await createNotification({
+      companyId: doc.author.companyId,
+      recipientEmployeeId: doc.authorId,
+      category: "APPROVAL",
+      eventKey: "approval.approved",
+      title: `'${doc.title}' 문서가 승인됐어요`,
+      body: comment ? `승인 의견: ${comment}` : "결재가 완료됐어요.",
+      deepLink: `/workflow/documents/${doc.id}`,
+      relatedTargetType: "form_document",
+      relatedTargetId: doc.id,
+    }).catch(() => {});
+  }
+  return toApiResponse(result);
 }
 
 export async function rejectDocumentAction(
@@ -51,5 +71,24 @@ export async function rejectDocumentAction(
   comment?: string,
 ): Promise<ApiResponse<void>> {
   const { employeeId } = await requireEmployee();
-  return toApiResponse(await rejectDocument(employeeId, lineId, comment));
+  const line = await prisma.approvalLine.findUnique({
+    where: { id: lineId },
+    select: { document: { select: { id: true, title: true, authorId: true, author: { select: { companyId: true } } } } },
+  });
+  const result = await rejectDocument(employeeId, lineId, comment);
+  if (result.ok && line) {
+    const { document: doc } = line;
+    await createNotification({
+      companyId: doc.author.companyId,
+      recipientEmployeeId: doc.authorId,
+      category: "APPROVAL",
+      eventKey: "approval.rejected",
+      title: `'${doc.title}' 문서가 반려됐어요`,
+      body: comment ? `반려 사유: ${comment}` : "결재가 반려됐어요.",
+      deepLink: `/workflow/documents/${doc.id}`,
+      relatedTargetType: "form_document",
+      relatedTargetId: doc.id,
+    }).catch(() => {});
+  }
+  return toApiResponse(result);
 }
