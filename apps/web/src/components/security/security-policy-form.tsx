@@ -50,9 +50,22 @@ export function SecurityPolicyForm({ initialPolicy }: { initialPolicy: SecurityP
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        ⚠ 아래 정책은 저장되지만, 로그인·접근 시 <strong>강제 적용은 아직
+        준비 중</strong>이에요. 현재는 정책 값만 보관돼요 — 2FA·IP 제한이
+        실제로 동작한다고 가정하지 마세요.
+      </p>
+
       {/* 2FA 섹션 */}
       <section className="rounded-lg border border-border p-6">
-        <h2 className="mb-4 text-base font-medium text-foreground">2단계 인증 (2FA)</h2>
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-base font-medium text-foreground">
+            2단계 인증 (2FA)
+          </h2>
+          <span className="rounded bg-background-secondary px-1.5 py-0.5 text-[11px] text-foreground-muted">
+            준비 중
+          </span>
+        </div>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -110,7 +123,12 @@ export function SecurityPolicyForm({ initialPolicy }: { initialPolicy: SecurityP
 
       {/* IP 제한 섹션 */}
       <section className="rounded-lg border border-border p-6">
-        <h2 className="mb-4 text-base font-medium text-foreground">IP 접근 제한</h2>
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-base font-medium text-foreground">IP 접근 제한</h2>
+          <span className="rounded bg-background-secondary px-1.5 py-0.5 text-[11px] text-foreground-muted">
+            준비 중
+          </span>
+        </div>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>

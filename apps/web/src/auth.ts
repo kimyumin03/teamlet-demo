@@ -56,11 +56,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: "이메일", type: "email" },
         password: { label: "비밀번호", type: "password" },
       },
-      authorize: async (credentials) => {
+      authorize: async (credentials, request) => {
         const email = String(credentials?.email ?? "");
         const password = String(credentials?.password ?? "");
         if (!email || !password) return null;
-        const user = await authenticateUser(email, password);
+        // 로그인 시도 IP/UA 기록 — LoginAttempt 감사용
+        const headers = request?.headers;
+        const ip =
+          headers?.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          headers?.get("x-real-ip") ||
+          null;
+        const userAgent = headers?.get("user-agent") ?? null;
+        const user = await authenticateUser(email, password, { ip, userAgent });
         if (!user) return null;
         const ctx = await resolveLoginContext(user.id);
         return {

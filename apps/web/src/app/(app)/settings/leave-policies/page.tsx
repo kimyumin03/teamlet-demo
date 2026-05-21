@@ -24,6 +24,11 @@ export default async function LeavePoliciesPage() {
         <h1 className="text-xl font-semibold text-foreground">휴가 정책</h1>
         <p className="mt-0.5 text-sm text-foreground-muted">연차 부여 정책을 만들고 구성원에게 배정해요</p>
       </div>
+      <p className="mb-6 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        ⚠ 정책은 저장·배정되지만 <strong>자동 부여·소멸·이월은 아직 준비 중</strong>이에요.
+        현재 휴가 잔여는 관리자가 <strong>수동 부여</strong>(휴가 관리 → 수동 부여)한
+        만큼만 반영돼요.
+      </p>
       <LeavePoliciesClient initialPolicies={policies} leaveTypes={leaveTypes} />
     </div>
   );
