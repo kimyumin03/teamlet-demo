@@ -23,6 +23,7 @@ async function requireEmployee(): Promise<{ employeeId: string; companyId: strin
 export async function createDocumentAction(input: {
   title: string;
   kind: FormDocumentKind;
+  templateId?: string;
   approverIds: string[];
   formData?: Record<string, unknown>;
 }): Promise<ApiResponse<{ id: string }>> {
@@ -33,6 +34,7 @@ export async function createDocumentAction(input: {
       authorId: employeeId,
       title: input.title,
       kind: input.kind,
+      templateId: input.templateId,
       approverIds: input.approverIds,
       formData: input.formData,
     }),

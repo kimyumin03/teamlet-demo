@@ -4,133 +4,311 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Button, Dialog, DialogClose, DialogContent,
-  DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input,
+  DialogFooter, DialogHeader, DialogTitle, Input,
 } from "@teamlet/ui";
 import type { EmployeeListItem } from "@teamlet/modules/employee";
-import type { FormDocumentKind } from "@teamlet/modules/workflow";
+import type { FormTemplateItem, FieldDef } from "@teamlet/modules/workflow";
 import { createDocumentAction } from "@/lib/actions/workflow";
 
-const KIND_OPTIONS: { value: FormDocumentKind; label: string }[] = [
-  { value: "GENERAL", label: "일반" },
-  { value: "LEAVE_REQUEST", label: "휴가" },
-  { value: "INFO_CHANGE", label: "정보변경" },
-  { value: "ANNOUNCEMENT", label: "공지" },
-];
+const KIND_LABEL = {
+  GENERAL: "일반",
+  LEAVE_REQUEST: "휴가 신청",
+  INFO_CHANGE: "정보 변경",
+  ANNOUNCEMENT: "공지",
+} as const;
 
-export function CreateDocumentButton({
-  employees,
-}: {
+type Step = 1 | 2 | 3;
+
+type Props = {
   employees: Pick<EmployeeListItem, "id" | "name">[];
-}) {
+  templates: FormTemplateItem[];
+};
+
+export function CreateDocumentButton({ employees, templates }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<Step>(1);
+
+  // Step 1
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId) ?? null;
+
+  // Step 2
   const [title, setTitle] = useState("");
-  const [kind, setKind] = useState<FormDocumentKind>("GENERAL");
+  const [formData, setFormData] = useState<Record<string, string>>({});
+
+  // Step 3
   const [approverIds, setApproverIds] = useState<string[]>([""]);
+
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function reset() {
+    setStep(1);
+    setSelectedTemplateId(null);
     setTitle("");
-    setKind("GENERAL");
+    setFormData({});
     setApproverIds([""]);
     setError(null);
   }
 
-  function addApprover() {
-    setApproverIds((prev) => [...prev, ""]);
+  function handleOpen() { reset(); setOpen(true); }
+
+  // ── Step 1 → 2 ────────────────────────────────────────────
+  function handleSelectTemplate(id: string | null) {
+    setSelectedTemplateId(id);
+    setFormData({});
+    setStep(2);
   }
 
+  // ── Step 3 helpers ────────────────────────────────────────
+  function addApprover() { setApproverIds((p) => [...p, ""]); }
   function setApprover(idx: number, val: string) {
-    setApproverIds((prev) => prev.map((id, i) => (i === idx ? val : id)));
+    setApproverIds((p) => p.map((v, i) => (i === idx ? val : v)));
   }
-
   function removeApprover(idx: number) {
-    setApproverIds((prev) => prev.filter((_, i) => i !== idx));
+    setApproverIds((p) => p.filter((_, i) => i !== idx));
   }
 
+  // ── Submit ────────────────────────────────────────────────
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     const valid = approverIds.filter(Boolean);
     if (valid.length === 0) { setError("결재자를 한 명 이상 선택해야 해요"); return; }
     startTransition(async () => {
-      const res = await createDocumentAction({ title, kind, approverIds: valid });
+      const res = await createDocumentAction({
+        title: title.trim() || (selectedTemplate?.name ?? "새 문서"),
+        kind: selectedTemplate?.kind ?? "GENERAL",
+        templateId: selectedTemplateId ?? undefined,
+        approverIds: valid,
+        formData: Object.fromEntries(
+          Object.entries(formData).map(([k, v]) => [k, v]),
+        ),
+      });
       if (!res.ok) { setError(res.error.message); return; }
       reset();
       setOpen(false);
-      router.refresh();
+      router.push(`/workflow/documents/${res.data.id}`);
     });
   }
 
+  // ── Field renderer ────────────────────────────────────────
+  function renderField(field: FieldDef) {
+    const val = formData[field.id] ?? "";
+    const set = (v: string) => setFormData((p) => ({ ...p, [field.id]: v }));
+
+    return (
+      <div key={field.id} className="flex flex-col gap-1.5">
+        <label className="text-sm text-foreground-muted">
+          {field.label}
+          {field.required && <span className="ml-0.5 text-destructive-600">*</span>}
+        </label>
+        {field.type === "textarea" ? (
+          <textarea
+            required={field.required}
+            placeholder={field.placeholder}
+            rows={3}
+            value={val}
+            onChange={(e) => set(e.target.value)}
+            className="rounded-md border border-border bg-background-primary px-3 py-2 text-sm text-foreground resize-none focus-visible:outline-none focus-visible:border-border-focus"
+          />
+        ) : field.type === "select" ? (
+          <select
+            required={field.required}
+            value={val}
+            onChange={(e) => set(e.target.value)}
+            className="h-10 rounded-md border border-border bg-background-primary px-3 text-sm text-foreground focus-visible:outline-none"
+          >
+            <option value="">선택해 주세요</option>
+            {(field.options ?? []).map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        ) : field.type === "checkbox" ? (
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={val === "true"}
+              onChange={(e) => set(e.target.checked ? "true" : "false")}
+              className="h-4 w-4 rounded border-border"
+            />
+            {field.placeholder || field.label}
+          </label>
+        ) : (
+          <Input
+            type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
+            required={field.required}
+            placeholder={field.placeholder}
+            value={val}
+            onChange={(e) => set(e.target.value)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  const step2Valid = title.trim().length > 0 || (selectedTemplate !== null && (
+    selectedTemplate.fields.filter((f) => f.required).every((f) => (formData[f.id] ?? "").trim())
+  ));
+  const titlePlaceholder = selectedTemplate ? selectedTemplate.name : "문서 제목";
+
   return (
     <Dialog open={open} onOpenChange={(o) => { if (isPending) return; if (!o) reset(); setOpen(o); }}>
-      <Button onClick={() => setOpen(true)}>+ 문서 작성</Button>
-      <DialogContent>
+      <Button onClick={handleOpen}>+ 문서 작성</Button>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>결재 문서 작성</DialogTitle>
-          <DialogDescription>제목과 결재자를 입력해 주세요.</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-foreground-muted">제목</label>
-            <Input required maxLength={100} value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
+        {/* Step indicator */}
+        <div className="flex items-center gap-2 text-xs text-foreground-muted">
+          {(["양식 선택", "내용 입력", "결재선 지정"] as const).map((label, i) => (
+            <div key={label} className="flex items-center gap-2">
+              {i > 0 && <span>›</span>}
+              <span className={step === i + 1 ? "font-medium text-foreground" : ""}>{label}</span>
+            </div>
+          ))}
+        </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-foreground-muted">종류</label>
-            <select
-              value={kind}
-              onChange={(e) => setKind(e.target.value as FormDocumentKind)}
-              className="h-10 rounded-md border border-border bg-background-primary px-3 text-base text-foreground focus-visible:border-border-focus focus-visible:shadow-focus focus-visible:outline-none"
-            >
-              {KIND_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-
+        {/* ── STEP 1: 양식 선택 ── */}
+        {step === 1 && (
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-foreground-muted">결재선 (순서대로)</label>
-            {approverIds.map((id, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <span className="w-5 text-center text-xs text-foreground-subtle">{idx + 1}</span>
-                <select
-                  value={id}
-                  onChange={(e) => setApprover(idx, e.target.value)}
-                  className="flex-1 h-10 rounded-md border border-border bg-background-primary px-3 text-base text-foreground focus-visible:border-border-focus focus-visible:shadow-focus focus-visible:outline-none"
-                >
-                  <option value="">선택</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>{emp.name}</option>
-                  ))}
-                </select>
-                {approverIds.length > 1 && (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => removeApprover(idx)}>×</Button>
-                )}
+            <button
+              type="button"
+              onClick={() => handleSelectTemplate(null)}
+              className="flex items-center gap-3 rounded-lg border border-dashed border-border px-4 py-3 text-left text-sm text-foreground-muted hover:border-foreground-muted hover:text-foreground transition-colors"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-background-secondary text-base">✏️</span>
+              <div>
+                <p className="font-medium text-foreground">빈 문서</p>
+                <p className="text-xs">양식 없이 직접 작성</p>
               </div>
-            ))}
-            {approverIds.length < 5 && (
-              <Button type="button" variant="secondary" size="sm" onClick={addApprover}>
-                + 결재자 추가
-              </Button>
+            </button>
+
+            {templates.length > 0 && (
+              <>
+                <p className="mt-2 text-xs font-medium text-foreground-subtle uppercase tracking-wide">저장된 양식</p>
+                {templates.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => handleSelectTemplate(t.id)}
+                    className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 text-left text-sm hover:bg-background-secondary transition-colors"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-md bg-background-secondary text-xs font-medium text-foreground-muted">
+                      {KIND_LABEL[t.kind as keyof typeof KIND_LABEL]?.slice(0, 2) ?? "일반"}
+                    </span>
+                    <div>
+                      <p className="font-medium text-foreground">{t.name}</p>
+                      <p className="text-xs text-foreground-muted">
+                        {KIND_LABEL[t.kind as keyof typeof KIND_LABEL]} · 필드 {t.fields.length}개
+                        {t.description && ` · ${t.description}`}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
+
+            {templates.length === 0 && (
+              <p className="mt-1 text-xs text-foreground-subtle">
+                양식이 없어요.{" "}
+                <a href="/settings/form-templates" className="underline hover:no-underline">양식 관리</a>
+                에서 추가할 수 있어요.
+              </p>
             )}
           </div>
+        )}
 
-          {error && (
-            <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>
-          )}
+        {/* ── STEP 2: 내용 입력 ── */}
+        {step === 2 && (
+          <form id="step2" onSubmit={(e) => { e.preventDefault(); setStep(3); }} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-foreground-muted">
+                제목<span className="ml-0.5 text-destructive-600">*</span>
+              </label>
+              <Input
+                required
+                maxLength={100}
+                placeholder={titlePlaceholder}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                autoFocus
+              />
+            </div>
 
-          <DialogFooter>
+            {selectedTemplate && selectedTemplate.fields.length > 0 && (
+              <div className="flex flex-col gap-3">
+                {selectedTemplate.fields.map(renderField)}
+              </div>
+            )}
+          </form>
+        )}
+
+        {/* ── STEP 3: 결재선 ── */}
+        {step === 3 && (
+          <form id="step3" onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-foreground-muted">결재선 (순서대로)</label>
+              {approverIds.map((id, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="w-5 text-center text-xs text-foreground-subtle">{idx + 1}</span>
+                  <select
+                    value={id}
+                    onChange={(e) => setApprover(idx, e.target.value)}
+                    className="flex-1 h-10 rounded-md border border-border bg-background-primary px-3 text-sm text-foreground focus-visible:outline-none"
+                  >
+                    <option value="">결재자 선택</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>{emp.name}</option>
+                    ))}
+                  </select>
+                  {approverIds.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeApprover(idx)}
+                      className="px-2 text-foreground-muted hover:text-destructive-600"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+              {approverIds.length < 5 && (
+                <Button type="button" variant="secondary" onClick={addApprover}>
+                  + 결재자 추가
+                </Button>
+              )}
+            </div>
+
+            {error && (
+              <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>
+            )}
+          </form>
+        )}
+
+        <DialogFooter>
+          {step === 1 && (
             <DialogClose asChild>
-              <Button type="button" variant="secondary" disabled={isPending}>취소</Button>
+              <Button type="button" variant="secondary">취소</Button>
             </DialogClose>
-            <Button type="submit" disabled={isPending || !title.trim()}>
-              {isPending ? "제출 중…" : "제출"}
-            </Button>
-          </DialogFooter>
-        </form>
+          )}
+          {step === 2 && (
+            <>
+              <Button type="button" variant="secondary" onClick={() => setStep(1)}>이전</Button>
+              <Button type="submit" form="step2" disabled={!title.trim()}>다음</Button>
+            </>
+          )}
+          {step === 3 && (
+            <>
+              <Button type="button" variant="secondary" disabled={isPending} onClick={() => setStep(2)}>이전</Button>
+              <Button type="submit" form="step3" disabled={isPending}>
+                {isPending ? "제출 중…" : "제출"}
+              </Button>
+            </>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

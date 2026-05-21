@@ -1,6 +1,7 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
 import type { CreateDocumentInput, DocumentListItem, PendingApprovalItem, DocumentDetail } from "./types";
+import type { FieldDef } from "./template";
 
 export async function getDocument(
   employeeId: string,
@@ -10,6 +11,7 @@ export async function getDocument(
     where: { id: documentId },
     include: {
       author: { select: { name: true } },
+      template: { select: { fields: true } },
       approvalLines: {
         include: {
           approver: { select: { name: true } },
@@ -36,6 +38,7 @@ export async function getDocument(
     kind: doc.kind,
     status: doc.status,
     formData: doc.formData as Record<string, unknown>,
+    templateFields: doc.template ? (doc.template.fields as FieldDef[]) : null,
     authorName: doc.author.name,
     createdAt: doc.createdAt,
     approvalLines: doc.approvalLines.map((l) => ({

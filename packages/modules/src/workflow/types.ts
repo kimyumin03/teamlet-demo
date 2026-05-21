@@ -1,4 +1,5 @@
 import type { FormDocumentKind, FormDocumentStatus, ApprovalLineStatus } from "@teamlet/db";
+import type { FieldDef } from "./template";
 
 export type { FormDocumentKind, FormDocumentStatus, ApprovalLineStatus };
 
@@ -29,6 +30,7 @@ export type DocumentDetail = {
   kind: FormDocumentKind;
   status: FormDocumentStatus;
   formData: Record<string, unknown>;
+  templateFields: FieldDef[] | null;
   authorName: string;
   createdAt: Date;
   approvalLines: {

@@ -79,10 +79,30 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
           <div className="rounded-lg border border-border bg-background-primary p-4">
             {Object.keys(doc.formData).length === 0 ? (
               <p className="text-sm text-foreground-subtle">내용 없음</p>
+            ) : doc.templateFields ? (
+              <dl className="flex flex-col gap-3">
+                {doc.templateFields.map((field) => {
+                  const val = doc.formData[field.id];
+                  if (val === undefined || val === null || val === "") return null;
+                  return (
+                    <div key={field.id} className="flex flex-col gap-0.5">
+                      <dt className="text-xs text-foreground-subtle">{field.label}</dt>
+                      <dd className="text-sm text-foreground whitespace-pre-wrap">
+                        {field.type === "checkbox" ? (val === "true" ? "✓ 예" : "✗ 아니오") : String(val)}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
             ) : (
-              <pre className="whitespace-pre-wrap text-sm text-foreground">
-                {JSON.stringify(doc.formData, null, 2)}
-              </pre>
+              <dl className="flex flex-col gap-3">
+                {Object.entries(doc.formData).map(([k, v]) => (
+                  <div key={k} className="flex flex-col gap-0.5">
+                    <dt className="text-xs text-foreground-subtle">{k}</dt>
+                    <dd className="text-sm text-foreground whitespace-pre-wrap">{String(v)}</dd>
+                  </div>
+                ))}
+              </dl>
             )}
           </div>
         </section>

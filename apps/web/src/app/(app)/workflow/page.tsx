@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { FileText, Inbox } from "lucide-react";
-import { listMyDocuments, listPendingApprovals } from "@teamlet/modules/workflow";
+import { listMyDocuments, listPendingApprovals, listFormTemplates } from "@teamlet/modules/workflow";
 import type { DocumentListItem, PendingApprovalItem } from "@teamlet/modules/workflow";
 import { EmptyState } from "@teamlet/ui";
 import { listEmployees } from "@teamlet/modules/employee";
@@ -44,10 +44,11 @@ export default async function WorkflowPage() {
 
   const employeeId = session.user.employeeId;
 
-  const [myDocsResult, pendingResult, employeesResult] = await Promise.all([
+  const [myDocsResult, pendingResult, employeesResult, templatesResult] = await Promise.all([
     listMyDocuments(employeeId),
     listPendingApprovals(employeeId),
     listEmployees(employeeId),
+    listFormTemplates(employeeId),
   ]);
 
   const myDocs = myDocsResult.ok ? myDocsResult.data : [];
@@ -55,6 +56,7 @@ export default async function WorkflowPage() {
   const employees = employeesResult.ok
     ? employeesResult.data.filter((e) => e.id !== employeeId && e.employmentStatus === "ACTIVE")
     : [];
+  const templates = templatesResult.ok ? templatesResult.data.filter((t) => t.isActive) : [];
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
@@ -63,7 +65,7 @@ export default async function WorkflowPage() {
           <h1 className="text-2xl font-semibold text-foreground">워크플로우</h1>
           <p className="mt-1 text-sm text-foreground-muted">결재 문서 관리</p>
         </div>
-        <CreateDocumentButton employees={employees} />
+        <CreateDocumentButton employees={employees} templates={templates} />
       </header>
 
       {pending.length > 0 && (
