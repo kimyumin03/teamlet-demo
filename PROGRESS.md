@@ -12,11 +12,11 @@
 | Shared 패키지 | ✅ 스키마 확장 중 | schemas: 사원/정책/휴가/양식/회사/공휴일/프로필/비밀번호 |
 | UI 시스템 | 🟡 기초만 | theme + primitives 3 / patterns 3 |
 | **P1 인증/가입** | ✅ 완료 + 강화 | auth 모듈 + 화면 5개 + NextAuth + 데모 자가-승인 + Google OAuth + 초대 링크 |
-| **P1 권한** | ✅ 핵심 완료 | 평가/CRUD/매핑/UserRole/락아웃/부트스트랩 ✓ |
+| **P1 권한** | ✅ 완료 | 평가/CRUD/UserRole/락아웃/부트스트랩 + isOrgHead 동적역할 + 권한 운영 UI(배정·매트릭스) ✓ |
 | **P2 Core HR (구성원/조직/직책)** | ✅ 완료 | 탭 상세 + 확장 필드 + 상태 탭 필터 + 고용형태 필터 + CSV 일괄 등록 + 휴가·결재 탭 |
 | **P3 휴가** | ✅ UI 완료 | /leave + 신청/취소 + 관리자 승인/반려 + 수동 부여 + 팀 캘린더 ✓ |
 | **P3 휴가 정책** | ✅ 완료 | LeavePolicy DB + CRUD + 배정 UI (`/settings/leave-policies`) |
-| **P4 워크플로우** | ✅ MVP 완료 | /workflow + 3단계 위저드(양식→동적필드→결재선) + 문서 상세 ✓ |
+| **P4 워크플로우** | ✅ MVP 완료 | /workflow + 3단계 위저드(양식→동적필드→결재선) + 순차 결재 강제 ✓ |
 | **P4 양식 빌더** | ✅ 완료 | FormTemplate CRUD + 필드 편집 UI (`/settings/form-templates`) |
 | **P5 채용** | ✅ 강화 완료 | 공고 목록 + 상태 필터 + 후보자 목록/칸반/상세 + 메모 ✓ |
 | **구성원 CSV** | ✅ 완료 | 가져오기 + 내보내기 (`/api/members/export`) |
@@ -27,84 +27,77 @@
 | **개인 설정** | ✅ 완료 | /settings/profile — 프로필 수정 + 비밀번호 변경 |
 | **⌘K 커맨드 팔레트** | ✅ 완료 | 구성원 검색 + 전체 페이지 네비게이션 |
 | **홈 대시보드** | ✅ 완료 | 결재 대기 + 연차 잔여 + 최근 문서 + 알림 + 빠른 이동 |
+| 도메인 권한 가드 | ✅ 완료 | 휴가/채용/증명서/문서/설정 모듈 assertPermission 적용 |
+| 플랫폼 관리자 콘솔 | ⬜ 미구현 | 회사 가입 신청 승인 — 현재 데모 자동승인으로만 동작 |
 | Worker | ⬜ 빈 skeleton | BullMQ 미구현 |
 
 ## 현재 위치
 
-- **Phase**: P1~P8 + 설정/UX 확장 전반 완료
+- **Phase**: P1~P8 + 설정/UX + 보안 가드/권한 운영 UI 완료
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `f4c5003 feat(members): CSV 내보내기 — GET /api/members/export`
+- **마지막 커밋**: `35cb23f feat(permission): 역할 권한 매트릭스 편집 UI 추가`
 - **마이그레이션**: 12개 적용 (`0_init` ~ `12_google_oauth`, db push로 적용)
 
-## 다음 작업 후보 (우선순위 순)
+## 다음 작업 후보 (Flex 비교 검토 2026-05-21 반영)
 
-### 🔴 HIGH — 실사용 갭
-1. ~~**이메일 초대**~~ ✅ — 초대 링크 생성 + `/invite/[token]` 수락 페이지 + callbackUrl 로그인/가입 연동
-2. ~~**구성원 상세 강화**~~ ✅ — 휴가 탭 (잔여+이력) + 결재 탭 (기안 문서 목록)
+### 🔴 보안 — ✅ 완료
+- ~~도메인 권한 가드 일괄 추가~~ ✅ — 휴가/채용/증명서/문서/설정 `assertPermission`
+- ~~워크플로우 순차 결재 버그~~ ✅ — step 건너뛰기 차단
+- ~~권한 운영 UI~~ ✅ — 역할 배정(구성원 상세) + 권한 매트릭스(`/settings/permissions/[roleId]`)
 
-### 🟡 MEDIUM — Flex 대비 격차
-3. **Worker(BullMQ)** — 휴가 자동 부여, 비동기 알림
-4. **실시간 알림** — SSE 또는 WebSocket
-5. **Position.isOrgHead** 권한 평가 통합
+### 🟡 다음
+1. **플랫폼 관리자 콘솔** — 회사 가입 신청 승인·전체 관리 (진행 예정)
+2. **"착시" 제거** — 2FA·IP 제한·비밀번호 복잡도 정책이 저장만 되고 로그인에서 미적용
+3. **Depth 보강** — 인사 발령(Appointment/PositionHistory), 휴가-워크플로우 통합, 연차 자동부여 엔진
+4. **Worker(BullMQ)** — 휴가 자동 부여, 비동기 알림 / **실시간 알림** — SSE
 
 ### 🟢 LOW — 선택적 강화
-6. 2FA 실제 TOTP 연동
-7. CSV 내보내기 (구성원 다운로드)
-8. ~~채용 후보자 상세 페이지~~ ✅ — 기본정보 + 단계 + 메모 편집
-9. ~~CSV 내보내기~~ ✅ — `/api/members/export` (UTF-8 BOM, RFC 4180)
-10. 모바일 반응형 UI 개선
+- 2FA 실제 TOTP 연동
+- 채용 depth (지원서 양식·이력서 첨부·면접 일정·스코어카드)
+- 파일 업로드(S3)·이메일 발송 실연동
+- 모바일 반응형 (웹 우선이라 후순위)
 
-## 최근 한 일 (2026-05-21 다음 세션)
+## 최근 한 일
 
-### CSV 내보내기 + 채용 후보자 상세
+### 2026-05-21 보안 가드 + 권한 운영 UI 세션
+- `35cb23f` 권한 — 역할 권한 매트릭스 편집 UI (`/settings/permissions/[roleId]`, 범위 지정 포함)
+- `d7b0026` 권한 — 구성원 상세 "권한" 탭에 역할 배정/해제 UI
+- `00d5ae4` 보안 — 도메인 모듈 권한 가드 일괄 추가 (휴가/채용/증명서/문서/설정 `assertPermission` 누락 보완)
+- `7060246` 워크플로우 — 순차 결재 강제, step 건너뛰기 버그 수정
+- `9fe5a4d` 권한 — `Position.isOrgHead` → DYNAMIC_ORG_HEAD 권한 자동 주입 + DEPARTMENT scope 구현
+- Flex 대비 전체 갭 분석(4개 도메인 병렬 리뷰) 수행 → 다음 작업 우선순위 재정렬
+
+### 2026-05-21 CSV 내보내기 + 채용 후보자 상세
 - `f4c5003` 구성원 — CSV 내보내기 `/api/members/export` (UTF-8 BOM, RFC 4180)
-- `bf9fe1d` 채용 — 후보자 상세 `/recruit/postings/[id]/candidates/[candidateId]` + 메모 편집
-- `getCandidate` / `updateCandidateNote` 모듈 추가, 목록·칸반 이름 클릭 → 상세 링크
+- `bf9fe1d` 채용 — 후보자 상세 + 메모 편집
+- `c4e5733` 구성원 — 휴가 탭 (잔여 + 이력) + 결재 탭 (기안 문서 목록)
+- `eb9ff5f` 직원 초대 링크 — `/invite/[token]` 수락 + callbackUrl 로그인/가입 연동
 
-### 구성원 상세 휴가·결재 탭
-- `c4e5733` 구성원 — 휴가 탭 (잔여 카드 + 신청 이력) + 결재 탭 (기안 문서 목록)
-- `listEmployeeLeaveHistory` / `listEmployeeDocuments` 모듈 추가
-
-### 이메일 초대 흐름
-- `eb9ff5f` 직원 초대 링크 — `createEmployeeInvite` / `getInviteInfo` / `acceptEmployeeInvite` 모듈
-- `/invite/[token]` 수락 페이지 (미로그인→로그인/가입 선택, 로그인→수락 버튼)
-- `callbackUrl` 지원: login·signup page/action/form 연동
-- `EmployeeDetail.hasLinkedAccount` + 구성원 상세 "초대 링크 생성" 버튼
-
-## 최근 한 일 (2026-05-21 이번 세션)
-
-### Google OAuth + 개인 설정 + 채용/알림/감사로그 강화
-- `459332d` 채용 — 공고 상태 필터 탭 + 후보자 칸반 뷰 (목록/칸반 전환)
-- `18d4bed` 알림 — /notifications 전용 페이지 (전체/안읽음 탭, 읽음 처리)
-- `444d691` 감사 로그 — 활동유형·이벤트 필터 탭 + 텍스트 검색 추가
-- `71cf489` 구성원 — CSV 일괄 가져오기 (템플릿 다운로드 + 행별 결과)
-- `0a1fc6b` 휴가 — 팀 휴가 캘린더 월별 뷰 (/leave/calendar)
-- `3407158` 인증 — Google OAuth 로그인 추가 (로그인/회원가입 버튼)
-- `52638ab` 개인 설정 — /settings/profile (프로필 수정 + 비밀번호 변경) + Google OAuth 스키마
-- `c4de068` 구성원 — 재직/퇴직 상태 탭 + 고용형태 드롭다운 필터
-
-### 이전 세션 (2026-05-21 앞부분)
-- 홈 대시보드 — 결재 대기 + 연차 잔여 + 최근 문서 + 알림 + 빠른 이동
-- 워크플로우 3단계 위저드 — 양식 선택 → 동적 필드 → 결재선 지정
+### 2026-05-21 Google OAuth + 개인 설정 + 채용/알림/감사로그 강화
+- `459332d` 채용 공고 상태 필터 + 후보자 칸반 / `18d4bed` /notifications 전용 페이지
+- `444d691` 감사 로그 필터·검색 / `71cf489` 구성원 CSV 일괄 가져오기
+- `0a1fc6b` 팀 휴가 캘린더 / `3407158` Google OAuth / `52638ab` 개인 설정
 
 ### 그 이전
-- 양식 빌더, ⌘K 커맨드 팔레트, 회사 설정, 휴가 정책, 구성원 상세 탭 (P2 확장)
+- 양식 빌더, ⌘K 커맨드 팔레트, 회사 설정, 휴가 정책, 구성원 상세 탭, 홈 대시보드
 - P8 알림, P7 보안, P6 문서, P5 채용, P4 워크플로우, P3 휴가, P2 Core HR, P1 권한
 
 ## 알려진 미완/잔여
 
+- **플랫폼 관리자 콘솔 없음** — 회사 가입 승인이 `TEAMLET_DEMO_AUTO_APPROVE`로만 동작. 운영 전환 시 필수
+- **2FA / IP 제한 / 비밀번호 복잡도** — 정책 저장·UI는 되나 로그인 흐름에서 미적용 ("동작하는 척")
+- **인사 발령(Appointment/PositionHistory)** — 미구현, `updateEmployee` 컬럼 덮어쓰기로 이력 소실
+- **휴가 ↔ 워크플로우 분리** — docs "통합 결재 인프라" 원칙 미적용
+- **연차 자동 부여/소멸 엔진** — LeavePolicy 저장만, 실행 로직 없음
 - Worker(BullMQ) 빈 skeleton — 비동기 처리 미구현
-- `Position.isOrgHead` — DB 데이터만, 권한 평가 미통합
-- 권한 편집 UI — Checkbox/Tabs primitive 미구현으로 단순 select로만 동작
-- 채용 후보자 이력서 첨부 미구현 (메모만 가능)
+- 파일 업로드(S3)·이메일 발송 미연동 — `fileUrl` 수동 입력, 초대 링크 메일 미발송
 
 ## 알려진 이슈 / 메모
 
 - **UI 디자인 폴리시**: 기능 검증 완료 후 Flex 스타일로 디자인 다듬기 (기능 구현 우선)
 - **Docker Desktop 미설치/미시작 시**: 마이그레이션·DB 작업 전부 막힘. WSL2 활성화 필요.
-- **Google OAuth**: `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` `.env`에 설정됨. Google Cloud Console에서 리디렉션 URI 등록 필요 (`http://localhost:3000/api/auth/callback/google`)
-- **`.env` 파일 부재**: 루트에 `.env.example`만 있음. AUTH_SECRET + TEAMLET_DEMO_AUTO_APPROVE 설정 필요.
+- **Google OAuth**: `.env`에 키 설정됨. Google Cloud Console 리디렉션 URI 등록 필요 (`http://localhost:3000/api/auth/callback/google`)
 - 빌드는 **Turbopack 전용** (webpack prod 빌드는 Docker Desktop 소켓 EACCES 이슈)
 - 워크스페이스 상대 import는 **확장자 없이** (`.js` 금지)
 - 권한 키 컨벤션: `<category>.<domain>.<action>` (예: `member.directory.read`)
@@ -122,4 +115,6 @@ pnpm db:migrate          # 마이그레이션 적용 (DB 필요)
 pnpm db:seed             # 권한 카탈로그 시드
 pnpm dev                 # web + worker (http://localhost:3000)
 pnpm docker:down         # 컨테이너 종료
+pnpm --filter web typecheck        # 웹 앱 타입 체크
+pnpm --filter @teamlet/modules typecheck   # 모듈 타입 체크
 ```
