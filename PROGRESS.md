@@ -13,12 +13,12 @@
 | UI 시스템 | 🟡 기초만 | theme + primitives 3 / patterns 3 |
 | **P1 인증/가입** | ✅ 완료 + 강화 | auth 모듈 + 화면 5개 + NextAuth + 데모 자가-승인 + Google OAuth + 초대 링크 |
 | **P1 권한** | ✅ 핵심 완료 | 평가/CRUD/매핑/UserRole/락아웃/부트스트랩 ✓ |
-| **P2 Core HR (구성원/조직/직책)** | ✅ 완료 | 탭 상세 + 확장 필드 + 상태 탭 필터 + 고용형태 필터 + CSV 일괄 등록 |
+| **P2 Core HR (구성원/조직/직책)** | ✅ 완료 | 탭 상세 + 확장 필드 + 상태 탭 필터 + 고용형태 필터 + CSV 일괄 등록 + 휴가·결재 탭 |
 | **P3 휴가** | ✅ UI 완료 | /leave + 신청/취소 + 관리자 승인/반려 + 수동 부여 + 팀 캘린더 ✓ |
 | **P3 휴가 정책** | ✅ 완료 | LeavePolicy DB + CRUD + 배정 UI (`/settings/leave-policies`) |
 | **P4 워크플로우** | ✅ MVP 완료 | /workflow + 3단계 위저드(양식→동적필드→결재선) + 문서 상세 ✓ |
 | **P4 양식 빌더** | ✅ 완료 | FormTemplate CRUD + 필드 편집 UI (`/settings/form-templates`) |
-| **P5 채용** | ✅ 강화 완료 | 공고 목록 + 상태 필터 + 후보자 목록/칸반 뷰 ✓ |
+| **P5 채용** | ✅ 강화 완료 | 공고 목록 + 상태 필터 + 후보자 목록/칸반/상세 + 메모 ✓ |
 | **P6 문서·증명서** | ✅ MVP 완료 | /documents 보관소 + /documents/certificates 발급/인쇄 ✓ |
 | **P7 보안** | ✅ 강화 완료 | 보안 정책 + 감사 로그 (유형/이벤트 필터 + 텍스트 검색) ✓ |
 | **P8 알림** | ✅ 강화 완료 | 알림 벨 패널 + /notifications 전용 페이지 (탭/읽음 처리) ✓ |
@@ -33,14 +33,14 @@
 - **Phase**: P1~P8 + 설정/UX 확장 전반 완료
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `459332d feat(recruit): 공고 상태 필터 + 후보자 칸반 뷰`
+- **마지막 커밋**: `bf9fe1d feat(recruit): 후보자 상세 페이지 + 메모 기능`
 - **마이그레이션**: 12개 적용 (`0_init` ~ `12_google_oauth`, db push로 적용)
 
 ## 다음 작업 후보 (우선순위 순)
 
 ### 🔴 HIGH — 실사용 갭
 1. ~~**이메일 초대**~~ ✅ — 초대 링크 생성 + `/invite/[token]` 수락 페이지 + callbackUrl 로그인/가입 연동
-2. **구성원 상세 강화** — 휴가 잔여/이력 탭, 결재 내역 탭
+2. ~~**구성원 상세 강화**~~ ✅ — 휴가 탭 (잔여+이력) + 결재 탭 (기안 문서 목록)
 
 ### 🟡 MEDIUM — Flex 대비 격차
 3. **Worker(BullMQ)** — 휴가 자동 부여, 비동기 알림
@@ -50,10 +50,18 @@
 ### 🟢 LOW — 선택적 강화
 6. 2FA 실제 TOTP 연동
 7. CSV 내보내기 (구성원 다운로드)
-8. 채용 후보자 상세 페이지 (이력서 첨부, 메모)
+8. ~~채용 후보자 상세 페이지~~ ✅ — 기본정보 + 단계 + 메모 편집
 9. 모바일 반응형 UI 개선
 
 ## 최근 한 일 (2026-05-21 다음 세션)
+
+### 채용 후보자 상세 페이지
+- `bf9fe1d` 채용 — 후보자 상세 `/recruit/postings/[id]/candidates/[candidateId]` + 메모 편집
+- `getCandidate` / `updateCandidateNote` 모듈 추가, 목록·칸반 이름 클릭 → 상세 링크
+
+### 구성원 상세 휴가·결재 탭
+- `c4e5733` 구성원 — 휴가 탭 (잔여 카드 + 신청 이력) + 결재 탭 (기안 문서 목록)
+- `listEmployeeLeaveHistory` / `listEmployeeDocuments` 모듈 추가
 
 ### 이메일 초대 흐름
 - `eb9ff5f` 직원 초대 링크 — `createEmployeeInvite` / `getInviteInfo` / `acceptEmployeeInvite` 모듈
@@ -86,7 +94,7 @@
 - Worker(BullMQ) 빈 skeleton — 비동기 처리 미구현
 - `Position.isOrgHead` — DB 데이터만, 권한 평가 미통합
 - 권한 편집 UI — Checkbox/Tabs primitive 미구현으로 단순 select로만 동작
-- 채용 후보자 상세 페이지 없음 (이름/이메일 클릭 시 이동 없음)
+- 채용 후보자 이력서 첨부 미구현 (메모만 가능)
 
 ## 알려진 이슈 / 메모
 
