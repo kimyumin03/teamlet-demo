@@ -42,6 +42,12 @@ export default async function HomePage() {
           <Link href="/documents">문서 보관소</Link>
         </Button>
         <Button asChild variant="secondary" size="sm">
+          <Link href="/settings/security">보안 설정</Link>
+        </Button>
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/audit-log">감사 로그</Link>
+        </Button>
+        <Button asChild variant="secondary" size="sm">
           <Link href="/settings/permissions">권한 설정</Link>
         </Button>
       </nav>

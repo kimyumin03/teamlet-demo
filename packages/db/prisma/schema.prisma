@@ -264,6 +264,7 @@ model Company {
   formDocuments   FormDocument[]
   jobPostings       JobPosting[]
   companyDocuments  CompanyDocument[]
+  securityPolicy    CompanySecurityPolicy?
   // 신청 승인 시 생성된 회사 역참조
   fromApplication CompanyApplication? @relation("CreatedCompany")
 
@@ -918,6 +919,33 @@ model CertificateIssue {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Phase 7 — 보안 정책 (docs/03 §8)
+// ─────────────────────────────────────────────────────────────
+
+enum MfaMethod {
+  OTP
+  SMS
+  EMAIL
+}
+
+/// 회사 보안·인증 정책 (회사 단일).
+model CompanySecurityPolicy {
+  id                    String    @id @default(cuid())
+  companyId             String    @unique
+  mfaEnabled            Boolean   @default(false)
+  mfaMethod             MfaMethod @default(OTP)
+  mfaExemptIps          String[]  @default([])
+  ipRestrictionEnabled  Boolean   @default(false)
+  allowedIps            String[]  @default([])
+  applyToSuperAdmin     Boolean   @default(false)
+  updatedAt             DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("company_security_policies")
+}
+
 // Phase 2~8 PLACEHOLDER (docs/03 — 구현 시 활성화)
 // Phase 2 Core HR : PositionHistory, EmploymentContractHistory,
 //   SalaryContractHistory, Appointment/AppointmentTarget,

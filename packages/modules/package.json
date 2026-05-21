@@ -15,7 +15,8 @@
     "./leave": "./src/leave/index.ts",
     "./workflow": "./src/workflow/index.ts",
     "./recruit": "./src/recruit/index.ts",
-    "./document": "./src/document/index.ts"
+    "./document": "./src/document/index.ts",
+    "./security": "./src/security/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
