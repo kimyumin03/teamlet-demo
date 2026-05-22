@@ -3,7 +3,7 @@
 > 세션 시작 시 이 파일을 먼저 읽고, 작업이 끝나면 **다음에 할 일** 섹션을 업데이트하세요.
 > 상세 스펙은 `CLAUDE.md` + `/docs` 참조.
 
-## 전체 진행도 (2026-05-21 기준)
+## 전체 진행도 (2026-05-22 기준)
 
 | 영역 | 상태 | 비고 |
 |---|---|---|
@@ -13,7 +13,7 @@
 | UI 시스템 | 🟡 기초만 | theme + primitives 3 / patterns 3 |
 | **P1 인증/가입** | ✅ 완료 + 강화 | auth 모듈 + 화면 5개 + NextAuth + 데모 자가-승인 + Google OAuth + 초대 링크 + 로그인 IP/UA 기록 |
 | **P1 권한** | ✅ 완료 | 평가/CRUD/UserRole/락아웃/부트스트랩 + isOrgHead 동적역할 + 권한 운영 UI(배정·매트릭스) ✓ |
-| **P2 Core HR (구성원/조직/직책)** | ✅ 완료 | 탭 상세 + 확장 필드 + 상태 탭 필터 + 고용형태 필터 + CSV 일괄 등록 + 휴가·결재 탭 |
+| **P2 Core HR (구성원/조직/직책)** | ✅ 완료 | 탭 상세 + 확장 필드 + 상태/고용형태 필터 + CSV 일괄 등록 + 휴가·결재 탭 + **인사 발령 이력 탭** |
 | **P3 휴가** | ✅ UI 완료 | /leave + 신청/취소 + 관리자 승인/반려 + 수동 부여 + 팀 캘린더 ✓ |
 | **P3 휴가 정책** | 🟡 저장만 | LeavePolicy DB + CRUD + 배정 UI ✓ / 자동 부여·소멸 엔진 미구현 |
 | **P4 워크플로우** | ✅ MVP 완료 | /workflow + 3단계 위저드 + 순차 결재 강제 ✓ |
@@ -33,11 +33,11 @@
 
 ## 현재 위치
 
-- **Phase**: P1~P8 + 설정/UX + 보안 가드/권한 운영 UI/플랫폼 콘솔 완료
+- **Phase**: P1~P8 + 설정/UX + 보안 가드/권한 운영 UI/플랫폼 콘솔 + 인사 발령 이력
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `d327ee4 fix(security): 착시 제거 — 로그인 IP/UA 실기록 + 미적용 정책 "준비 중" 표기`
-- **마이그레이션**: 12개 적용 (`0_init` ~ `12_google_oauth`, db push로 적용)
+- **마지막 커밋**: `c64e7a2 docs(readme): 05-21 작업 로그 간략화` — ⚠️ 이후 변경 **미커밋** (인사 발령 + README 정직화)
+- **마이그레이션**: 12개 + `appointments` 테이블 — db push 적용, 마이그레이션 파일 없음 (google_oauth 와 동일 방식)
 
 ## 다음 작업 후보 (Flex 비교 검토 2026-05-21 반영)
 
@@ -47,9 +47,10 @@
 - 권한 운영 UI — 역할 배정(구성원 상세) + 권한 매트릭스(`/settings/permissions/[roleId]`)
 - 플랫폼 운영 콘솔 — `/admin` 회사 신청 승인/반려
 - 착시 제거 — 로그인 IP/UA 실기록 + 2FA·IP·연차 정책 "준비 중" 표기
+- 인사 발령 이력 — `Appointment` 모델 + 발령 등록/이력 탭 (updateEmployee 덮어쓰기 제거, Anti-Pattern #1 해소)
 
 ### 🟡 다음
-1. **Depth 보강** — 인사 발령(Appointment/PositionHistory), 휴가-워크플로우 통합, 연차 자동부여 엔진
+1. **Depth 보강 (잔여)** — 휴가-워크플로우 통합, 연차 자동부여 엔진
 2. **2FA / IP 제한 실적용** — TOTP(otplib·UserMFA 모델) / IP 화이트리스트 강제 (락아웃 안전장치 포함)
 3. **Worker(BullMQ)** — 휴가 자동 부여·소멸, 비동기 알림 / **실시간 알림** — SSE
 
@@ -59,6 +60,13 @@
 - 모바일 반응형 (웹 우선이라 후순위)
 
 ## 최근 한 일
+
+### 2026-05-22 인사 발령 이력 + README 정직화
+- 인사 발령 — `Appointment` 모델/모듈(`createAppointment`·`listAppointments`·`getEmployeePositionAt`) + 구성원 상세 발령 탭 UI
+- `updateEmployee` 가 부서·직책 직접 덮어쓰기 중단 → 발령 경유 (Anti-Pattern #1 해소). EditMember 에서 부서·직책 입력 제거
+- README `구현 현황` 정직화 — "완료" 단정 제거 + 🎯 최소 기능 scope(인증·구성원·휴가) 명시
+- 최소 scope 검증 착수: 타입체크·빌드(코드) 통과 확인. 런타임은 좀비 dev 서버의 포트 점유로 보류 → 추후 재개
+- ⚠️ 위 변경 전부 **미커밋** 상태
 
 ### 2026-05-21 보안 가드 + 권한 운영 UI + 플랫폼 콘솔 세션
 - `d327ee4` 보안 — 착시 제거: 로그인 IP/UA 실기록 + 2FA·IP·연차 정책 "준비 중" 표기
@@ -87,7 +95,7 @@
 
 - **2FA / IP 제한** — 정책 저장·UI는 되나 로그인 강제 적용 미구현 (UI에 "준비 중" 표기됨)
 - **연차 자동 부여/소멸 엔진** — LeavePolicy 저장만, 실행 로직 없음 (수동 부여만 동작, UI 표기됨)
-- **인사 발령(Appointment/PositionHistory)** — 미구현, `updateEmployee` 컬럼 덮어쓰기로 이력 소실
+- **인사 발령** — 신규 입사 시 HIRE 발령 자동 시드 미적용 (첫 발령 등록 전까지 발령 탭 비어 있음). 런타임 동작 미검증
 - **휴가 ↔ 워크플로우 분리** — docs "통합 결재 인프라" 원칙 미적용
 - Worker(BullMQ) 빈 skeleton — 비동기 처리 미구현
 - 파일 업로드(S3)·이메일 발송 미연동 — `fileUrl` 수동 입력, 초대 링크 메일 미발송
@@ -100,6 +108,7 @@
 - **플랫폼 관리자**: `SYSTEM_ADMIN_EMAILS` 환경변수에 이메일 등록 → 해당 계정으로 `/admin` 접근
 - **Google OAuth**: `.env`에 키 설정됨. Google Cloud Console 리디렉션 URI 등록 필요 (`http://localhost:3000/api/auth/callback/google`)
 - 빌드는 **Turbopack 전용** (webpack prod 빌드는 Docker Desktop 소켓 EACCES 이슈)
+- **`next build` standalone 패키징 실패** — `output: "standalone"` 의 node_modules 심볼릭 링크가 Windows 권한으로 막힘. 코드 컴파일·정적 생성은 정상, dev 는 무관. 배포 패키징 시 Windows Developer Mode 활성화 필요
 - 워크스페이스 상대 import는 **확장자 없이** (`.js` 금지)
 - 권한 키 컨벤션: `<category>.<domain>.<action>` (예: `member.directory.read`)
 - `UserRole`은 `employeeId` 기준 (User가 아님 — 회사별 신분)
