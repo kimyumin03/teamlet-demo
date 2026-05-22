@@ -36,7 +36,7 @@
 - **Phase**: P1~P8 + UX 고도화(구성원/어드민) + Flex 레퍼런스 기반 리디자인 진행 중
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `e774f9c feat: 플랫폼 어드민 콘솔 UI 개편 + 사용자 관리 페이지`
+- **마지막 커밋**: `37e1a1f docs: 2026-05-22 세션2 진행 내역 정리`
 - **dev 서버**: `http://localhost:3001` (포트 3001 고정)
 - **마이그레이션**: 12개 + `appointments` 테이블 — db push 적용
 
