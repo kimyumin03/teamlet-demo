@@ -25,9 +25,10 @@ export type { HolidayItem } from "./holiday";
 export {
   listCompanyApplications,
   listAllCompanies,
+  listAllUsers,
   getPlatformStats,
 } from "./platform";
-export type { CompanyApplicationItem, CompanyAdminItem } from "./platform";
+export type { CompanyApplicationItem, CompanyAdminItem, PlatformUserItem } from "./platform";
 
 /** 로그인 후 라우팅 판단용 — 사용자의 회사 멤버십 요약 */
 export async function getMembershipSummary(userId: string): Promise<{

@@ -91,6 +91,39 @@ export async function listAllCompanies(): Promise<CompanyAdminItem[]> {
   }));
 }
 
+export type PlatformUserItem = {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  companyCount: number;
+  createdAt: Date;
+};
+
+/** 플랫폼 전체 사용자 목록. */
+export async function listAllUsers(): Promise<PlatformUserItem[]> {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      emailVerified: true,
+      createdAt: true,
+      _count: { select: { memberships: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return users.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    emailVerified: u.emailVerified,
+    companyCount: u._count.memberships,
+    createdAt: u.createdAt,
+  }));
+}
+
 /** 플랫폼 대시보드 요약 통계. */
 export async function getPlatformStats(): Promise<{
   pendingApplications: number;

@@ -1,10 +1,8 @@
-import Link from "next/link";
+import { auth, signOut } from "@/auth";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
+import { getPlatformStats } from "@teamlet/modules/tenancy";
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
 
-/**
- * 플랫폼 운영 콘솔 레이아웃. `requirePlatformAdmin` 가드 —
- * 비관리자는 진입 시 redirect. 회사 앱 `(app)` 레이아웃과 분리.
- */
 export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({
@@ -13,45 +11,47 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const admin = await requirePlatformAdmin();
+  const stats = await getPlatformStats();
 
   return (
-    <div className="min-h-screen bg-background-secondary">
-      <header className="border-b border-border bg-background-primary">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-6">
-            <Link
-              href="/admin"
-              className="text-sm font-semibold text-foreground"
-            >
-              Teamlet 운영 콘솔
-            </Link>
-            <nav className="flex gap-4 text-sm">
-              <Link
-                href="/admin/applications"
-                className="text-foreground-muted hover:text-foreground"
-              >
-                회사 신청
-              </Link>
-              <Link
-                href="/admin/companies"
-                className="text-foreground-muted hover:text-foreground"
-              >
-                회사 목록
-              </Link>
-            </nav>
+    <div className="flex min-h-screen bg-zinc-50">
+      <AdminSidebar
+        adminName={admin.name}
+        adminEmail={admin.email}
+        pendingCount={stats.pendingApplications}
+      />
+
+      <div className="flex flex-1 flex-col min-w-0">
+        {/* 상단 바 */}
+        <header className="flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-6">
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <span className="font-medium text-zinc-700">Teamlet 운영 콘솔</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-foreground-muted">{admin.name}</span>
-            <Link
-              href="/home"
-              className="text-sm text-foreground-subtle hover:text-foreground"
+            {stats.pendingApplications > 0 && (
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                신청 대기 {stats.pendingApplications}건
+              </span>
+            )}
+            <span className="text-xs text-zinc-400">{admin.email}</span>
+            <form
+              action={async () => {
+                "use server";
+                await signOut({ redirectTo: "/login" });
+              }}
             >
-              앱으로 →
-            </Link>
+              <button
+                type="submit"
+                className="rounded px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition-colors"
+              >
+                로그아웃
+              </button>
+            </form>
           </div>
-        </div>
-      </header>
-      {children}
+        </header>
+
+        <main className="flex-1 p-8">{children}</main>
+      </div>
     </div>
   );
 }
