@@ -8,10 +8,11 @@ import {
   deleteLeavePolicy,
   assignLeavePolicy,
   removeLeavePolicy,
+  runAnnualLeaveGrant,
 } from "@teamlet/modules/leave";
 import { leavePolicyCreateSchema, leavePolicyUpdateSchema, toApiResponse, type ApiResponse } from "@teamlet/shared";
 import { auth } from "@/auth";
-import type { LeavePolicyItem } from "@teamlet/modules/leave";
+import type { LeavePolicyItem, AutoGrantResult } from "@teamlet/modules/leave";
 
 async function requireEmployee(): Promise<string> {
   const session = await auth();
@@ -65,4 +66,12 @@ export async function removeLeavePolicyAssignmentAction(
 ): Promise<ApiResponse<void>> {
   const employeeId = await requireEmployee();
   return toApiResponse(await removeLeavePolicy(employeeId, assignmentId));
+}
+
+/** 연차 자동부여 실행 — `leave.policy.manage` 가드 (모듈 내부). 멱등. */
+export async function runAnnualLeaveGrantAction(
+  year: number,
+): Promise<ApiResponse<AutoGrantResult>> {
+  const employeeId = await requireEmployee();
+  return toApiResponse(await runAnnualLeaveGrant(employeeId, year));
 }
