@@ -375,7 +375,7 @@ export type EmployeeDetail = EmployeeListItem & {
   employmentType: EmploymentType;
   probationEndDate: Date | null;
   resignedAt: Date | null;
-  leaveBalances: { leaveTypeName: string; remaining: number }[];
+  leaveBalances: { leaveTypeName: string; granted: number; adjusted: number; used: number; remaining: number }[];
   createdAt: Date;
   roles: EmployeeRoleAssignment[];
   hasLinkedAccount: boolean;
@@ -474,6 +474,9 @@ export async function getEmployee(
     positionName: emp.position?.name ?? null,
     leaveBalances: emp.leaveBalances.map((lb) => ({
       leaveTypeName: lb.leaveType.name,
+      granted: Number(lb.grantedDays),
+      adjusted: Number(lb.adjustedDays),
+      used: Number(lb.usedDays),
       remaining: Number(lb.grantedDays) + Number(lb.adjustedDays) - Number(lb.usedDays),
     })),
     createdAt: emp.createdAt,

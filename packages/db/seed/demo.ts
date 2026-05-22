@@ -63,6 +63,13 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
 
   const pw = await hashPw(DEMO_PW);
 
+  // ── 0. 플랫폼 운영자 (회사 신청 승인권자 — /admin 콘솔) ───────────
+  await prisma.user.upsert({
+    where: { email: "platform@teamlet.test" },
+    create: { email: "platform@teamlet.test", name: "플랫폼관리자", passwordHash: pw, emailVerified: true },
+    update: {},
+  });
+
   // ── 1. 유저 ─────────────────────────────────────────────────────
   const [adminU, hrU, empU] = await Promise.all([
     prisma.user.upsert({
