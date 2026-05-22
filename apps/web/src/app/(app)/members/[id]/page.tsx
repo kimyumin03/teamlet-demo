@@ -2,18 +2,20 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { listDepartments } from "@teamlet/modules/department";
 import { getEmployee, type EmployeeDetail } from "@teamlet/modules/employee";
+import { listAppointments, type AppointmentItem } from "@teamlet/modules/appointment";
 import { listPositions } from "@teamlet/modules/position";
 import { listEmployeeLeaveHistory } from "@teamlet/modules/leave";
 import { listEmployeeDocuments } from "@teamlet/modules/workflow";
 import { listRoles, type RoleListItem } from "@teamlet/modules/permission";
 import type { LeaveRequestItem } from "@teamlet/modules/leave";
 import type { DocumentListItem } from "@teamlet/modules/workflow";
-import { ChevronLeft } from "lucide-react";
+import { ArrowRight, ChevronLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { DeactivateEmployeeButton } from "@/components/members/deactivate-button";
 import { EditMemberButton } from "@/components/members/edit-member-button";
 import { InviteLinkButton } from "@/components/members/invite-link-button";
 import { MemberRolesManager } from "@/components/members/member-roles-manager";
+import { RegisterAppointmentButton } from "@/components/members/register-appointment-button";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +65,7 @@ const DOC_STATUS_CLASS: Record<string, string> = {
 
 const TABS = [
   { key: "info", label: "정보" },
+  { key: "appointment", label: "발령" },
   { key: "leave", label: "휴가" },
   { key: "workflow", label: "결재" },
   { key: "documents", label: "문서·증명서" },
@@ -109,13 +112,14 @@ export default async function MemberDetailPage({
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const [empResult, deptResult, posResult, leaveResult, workflowResult, rolesResult] = await Promise.all([
+  const [empResult, deptResult, posResult, leaveResult, workflowResult, rolesResult, appointmentResult] = await Promise.all([
     getEmployee(session.user.employeeId, id),
     listDepartments(session.user.employeeId),
     listPositions(session.user.employeeId),
     listEmployeeLeaveHistory(session.user.employeeId, id),
     listEmployeeDocuments(session.user.employeeId, id),
     listRoles(session.user.employeeId),
+    listAppointments(session.user.employeeId, id),
   ]);
 
   if (!empResult.ok) {
@@ -135,6 +139,7 @@ export default async function MemberDetailPage({
   const leaveHistory: LeaveRequestItem[] = leaveResult.ok ? leaveResult.data : [];
   const workflowDocs: DocumentListItem[] = workflowResult.ok ? workflowResult.data : [];
   const assignableRoles: RoleListItem[] = rolesResult.ok ? rolesResult.data : [];
+  const appointments: AppointmentItem[] = appointmentResult.ok ? appointmentResult.data : [];
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
@@ -160,7 +165,7 @@ export default async function MemberDetailPage({
         {emp.isActive && (
           <div className="flex flex-wrap items-center gap-2">
             {!emp.hasLinkedAccount && <InviteLinkButton employeeId={emp.id} />}
-            <EditMemberButton employee={emp} departments={departments} positions={positions} />
+            <EditMemberButton employee={emp} />
             <DeactivateEmployeeButton employeeId={emp.id} employeeName={emp.name} redirectAfter="/members" />
           </div>
         )}
@@ -225,6 +230,80 @@ export default async function MemberDetailPage({
             </section>
           )}
         </div>
+      )}
+
+      {/* 발령 탭 */}
+      {activeTab === "appointment" && (
+        <section className="rounded-lg border border-border bg-background-primary p-5">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-medium text-foreground">인사 발령 이력</h2>
+              <p className="mt-0.5 text-xs text-foreground-subtle">
+                현재 — {emp.departmentName ?? "미배정"}
+                {" · "}
+                {emp.positionName ?? "직책 미지정"}
+              </p>
+            </div>
+            {emp.isActive && (
+              <RegisterAppointmentButton
+                employeeId={emp.id}
+                currentDepartmentId={emp.departmentId}
+                currentPositionId={emp.positionId}
+                departments={departments}
+                positions={positions}
+              />
+            )}
+          </div>
+
+          {appointments.length === 0 ? (
+            <p className="text-sm text-foreground-muted">
+              발령 이력이 없어요. 부서·직책 변경 시 발령을 등록하면 이력으로 남아요.
+            </p>
+          ) : (
+            <ol className="flex flex-col gap-2">
+              {appointments.map((a) => (
+                <li
+                  key={a.id}
+                  className="rounded-md border border-border bg-background-secondary px-4 py-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="rounded-md bg-background-primary px-2 py-0.5 text-xs font-medium text-foreground">
+                      {a.kindLabel}
+                    </span>
+                    <span className="text-xs text-foreground-subtle">
+                      {formatDate(a.effectiveDate)} 발령
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-col gap-1 text-sm">
+                    {a.fromDepartmentName !== a.toDepartmentName && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-9 shrink-0 text-xs text-foreground-subtle">부서</span>
+                        <span className="text-foreground-muted">{a.fromDepartmentName ?? "미배정"}</span>
+                        <ArrowRight className="size-3.5 shrink-0 text-foreground-subtle" />
+                        <span className="text-foreground">{a.toDepartmentName ?? "미배정"}</span>
+                      </div>
+                    )}
+                    {a.fromPositionName !== a.toPositionName && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-9 shrink-0 text-xs text-foreground-subtle">직책</span>
+                        <span className="text-foreground-muted">{a.fromPositionName ?? "미지정"}</span>
+                        <ArrowRight className="size-3.5 shrink-0 text-foreground-subtle" />
+                        <span className="text-foreground">{a.toPositionName ?? "미지정"}</span>
+                      </div>
+                    )}
+                  </div>
+                  {a.memo && (
+                    <p className="mt-2 text-xs text-foreground-subtle">{a.memo}</p>
+                  )}
+                  <p className="mt-2 text-xs text-foreground-subtle">
+                    {a.appointedByName ? `${a.appointedByName} · ` : ""}
+                    {formatDate(a.createdAt)} 등록
+                  </p>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
       )}
 
       {/* 휴가 탭 */}

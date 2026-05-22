@@ -306,6 +306,7 @@ model Company {
   securityPolicy    CompanySecurityPolicy?
   notifications     Notification[]
   leavePolicies     LeavePolicy[]
+  appointments      Appointment[]
   // 신청 승인 시 생성된 회사 역참조
   fromApplication CompanyApplication? @relation("CreatedCompany")
 
@@ -472,6 +473,7 @@ model Employee {
   certificateIssuances CertificateIssue[] @relation("CertificateIssuers")
   notifications           Notification[]           @relation("ReceivedNotifications")
   leavePolicyAssignments  LeavePolicyAssignment[]
+  appointments            Appointment[]
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
@@ -497,6 +499,43 @@ model Position {
   @@unique([companyId, name])
   @@index([companyId, isActive])
   @@map("positions")
+}
+
+/// 인사 발령 — 직원의 부서·직책 변경을 시점별 이력으로 기록 (docs/03 §1, Anti-Pattern #1).
+/// Employee.departmentId / positionId 는 이 테이블의 최신 row 를 반영하는 비정규화 캐시.
+/// 각 row 는 불변 — 변경은 항상 새 발령 추가. UPDATE 로 직책/부서를 덮어쓰지 않는다.
+model Appointment {
+  id                 String          @id @default(cuid())
+  companyId          String
+  employeeId         String
+  kind               AppointmentKind
+  effectiveDate      DateTime        // 발령일 (날짜 의미)
+  fromDepartmentId   String?
+  fromDepartmentName String?         // 발령 시점 라벨 스냅샷 (부서 개명·삭제 대비)
+  toDepartmentId     String?
+  toDepartmentName   String?
+  fromPositionId     String?
+  fromPositionName   String?
+  toPositionId       String?
+  toPositionName     String?
+  memo               String?
+  appointedById      String?         // 발령 처리자 (Employee.id)
+  appointedByName    String?
+  createdAt          DateTime        @default(now())
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, employeeId, effectiveDate])
+  @@map("appointments")
+}
+
+enum AppointmentKind {
+  HIRE            // 입사 (최초 배정)
+  TRANSFER        // 부서 이동
+  PROMOTION       // 승진
+  POSITION_CHANGE // 직책 변경
+  REASSIGN        // 부서·직책 동시 변경
 }
 
 // ─────────────────────────────────────────────────────────────

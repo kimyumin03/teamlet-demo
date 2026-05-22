@@ -140,6 +140,9 @@ function parseHireDate(raw: string | null): Result<Date | null> {
 /**
  * 직원 정보 수정. `member.directory.manage` 가드. 모든 필드 전체 교체 패턴
  * (클라이언트가 default 값 채워서 보냄). 빈 문자열은 필드 지우기 의미.
+ *
+ * 부서·직책은 여기서 다루지 않음 — 시점 이력 보존을 위해 발령(Appointment) 경유
+ * (`@teamlet/modules/appointment` createAppointment). Anti-Pattern #1.
  */
 export async function updateEmployee(
   actorEmployeeId: string,
@@ -184,8 +187,6 @@ export async function updateEmployee(
   const hireDateRaw = d.hireDate?.trim() || null;
   const birthDateRaw = d.birthDate?.trim() || null;
   const probationEndDateRaw = d.probationEndDate?.trim() || null;
-  const departmentId = d.departmentId?.trim() || null;
-  const positionId = d.positionId?.trim() || null;
 
   if (companyEmail && !EMAIL_RE.test(companyEmail)) {
     return err(errors.validation("올바른 회사 이메일 형식이 아니에요"));
@@ -206,32 +207,6 @@ export async function updateEmployee(
   if (!probationEndDateResult.ok) return probationEndDateResult;
   const probationEndDate = probationEndDateResult.data;
 
-  if (departmentId) {
-    const dept = await prisma.department.findUnique({
-      where: { id: departmentId },
-      select: { companyId: true, isActive: true },
-    });
-    if (!dept || dept.companyId !== actor.companyId) {
-      return err(errors.notFound("부서를 찾을 수 없어요"));
-    }
-    if (!dept.isActive) {
-      return err(errors.conflict("비활성 부서엔 배정할 수 없어요"));
-    }
-  }
-
-  if (positionId) {
-    const pos = await prisma.position.findUnique({
-      where: { id: positionId },
-      select: { companyId: true, isActive: true },
-    });
-    if (!pos || pos.companyId !== actor.companyId) {
-      return err(errors.notFound("직책을 찾을 수 없어요"));
-    }
-    if (!pos.isActive) {
-      return err(errors.conflict("비활성 직책엔 배정할 수 없어요"));
-    }
-  }
-
   if (companyEmail && companyEmail !== current.companyEmail) {
     const dup = await prisma.employee.findFirst({
       where: {
@@ -250,8 +225,6 @@ export async function updateEmployee(
     companyEmail: current.companyEmail,
     personalEmail: current.personalEmail,
     hireDate: current.hireDate,
-    departmentId: current.departmentId,
-    positionId: current.positionId,
   };
 
   const updated = await prisma.employee.update({
@@ -267,8 +240,6 @@ export async function updateEmployee(
       birthDate,
       probationEndDate,
       hireDate,
-      departmentId,
-      positionId,
     },
     select: { id: true, name: true },
   });
@@ -289,8 +260,6 @@ export async function updateEmployee(
       companyEmail,
       personalEmail,
       hireDate,
-      departmentId,
-      positionId,
     },
   });
 

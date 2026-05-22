@@ -13,9 +13,7 @@ import {
   DialogTitle,
   Input,
 } from "@teamlet/ui";
-import type { DepartmentNode } from "@teamlet/modules/department";
 import type { EmployeeDetail } from "@teamlet/modules/employee";
-import type { PositionItem } from "@teamlet/modules/position";
 import type { Gender, EmploymentType } from "@teamlet/db";
 import { updateEmployeeAction } from "@/lib/actions/employee";
 
@@ -24,15 +22,7 @@ function toDateInput(d: Date | null): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function EditMemberButton({
-  employee,
-  departments,
-  positions,
-}: {
-  employee: EmployeeDetail;
-  departments: DepartmentNode[];
-  positions: PositionItem[];
-}) {
+export function EditMemberButton({ employee }: { employee: EmployeeDetail }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(employee.name);
@@ -49,10 +39,6 @@ export function EditMemberButton({
   const [employmentType, setEmploymentType] = useState<EmploymentType>(employee.employmentType);
   const [probationEndDate, setProbationEndDate] = useState(toDateInput(employee.probationEndDate));
   const [hireDate, setHireDate] = useState(toDateInput(employee.hireDate));
-  const [departmentId, setDepartmentId] = useState(
-    employee.departmentId ?? "",
-  );
-  const [positionId, setPositionId] = useState(employee.positionId ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -71,8 +57,6 @@ export function EditMemberButton({
         employmentType,
         probationEndDate: probationEndDate || undefined,
         hireDate: hireDate || undefined,
-        departmentId: departmentId || undefined,
-        positionId: positionId || undefined,
       });
       if (!res.ok) {
         setError(res.error.message);
@@ -211,51 +195,11 @@ export function EditMemberButton({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="edit-dept"
-                className="text-sm text-foreground-muted"
-              >
-                부서
-              </label>
-              <select
-                id="edit-dept"
-                value={departmentId}
-                onChange={(e) => setDepartmentId(e.target.value)}
-                className="h-10 rounded-md border border-border bg-background-primary px-3 text-base text-foreground focus-visible:border-border-focus focus-visible:shadow-focus focus-visible:outline-none"
-              >
-                <option value="">미배정</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="edit-pos"
-                className="text-sm text-foreground-muted"
-              >
-                직책
-              </label>
-              <select
-                id="edit-pos"
-                value={positionId}
-                onChange={(e) => setPositionId(e.target.value)}
-                className="h-10 rounded-md border border-border bg-background-primary px-3 text-base text-foreground focus-visible:border-border-focus focus-visible:shadow-focus focus-visible:outline-none"
-              >
-                <option value="">미지정</option>
-                {positions.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                    {p.isOrgHead ? " (조직장)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <p className="rounded-md bg-background-secondary px-3 py-2 text-xs text-foreground-muted">
+            부서·직책은 이력 보존을 위해{" "}
+            <strong className="font-medium text-foreground">발령</strong> 탭에서
+            변경해요.
+          </p>
 
           {error && (
             <p

@@ -95,6 +95,20 @@ export const employeeUpdateSchema = z.object({
 });
 export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
 
+/**
+ * 인사 발령 등록 (docs/03 §1 Appointment). 직원의 부서·직책 변경을 시점 이력으로 기록.
+ * HIRE 는 시스템 생성 — 수동 등록 대상에서 제외. 빈 부서/직책은 모듈에서 null(미배정) 변환.
+ */
+export const appointmentCreateSchema = z.object({
+  employeeId: z.string().min(1, "대상 구성원이 필요해요"),
+  kind: z.enum(["TRANSFER", "PROMOTION", "POSITION_CHANGE", "REASSIGN"]),
+  effectiveDate: z.string().trim().min(1, "발령일을 입력해 주세요"),
+  departmentId: z.string().optional(),
+  positionId: z.string().optional(),
+  memo: z.string().trim().max(500).optional(),
+});
+export type AppointmentCreateInput = z.infer<typeof appointmentCreateSchema>;
+
 /** 양식 빌더 필드 정의 */
 export const fieldDefSchema = z.object({
   id: z.string().min(1),
