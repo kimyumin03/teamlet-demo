@@ -181,6 +181,24 @@ export async function listEmployeeDocuments(
   );
 }
 
+export async function listApproverCandidates(
+  actorEmployeeId: string,
+): Promise<Result<{ id: string; name: string }[]>> {
+  const actor = await prisma.employee.findUnique({
+    where: { id: actorEmployeeId },
+    select: { companyId: true },
+  });
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const employees = await prisma.employee.findMany({
+    where: { companyId: actor.companyId, isActive: true, id: { not: actorEmployeeId } },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
+  return ok(employees);
+}
+
 export async function listPendingApprovals(
   employeeId: string,
 ): Promise<Result<PendingApprovalItem[]>> {

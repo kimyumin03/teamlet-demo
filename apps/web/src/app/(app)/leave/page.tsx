@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CalendarOff } from "lucide-react";
 import { getLeaveBalances, listLeaveTypes, listMyLeaveRequests } from "@teamlet/modules/leave";
+import { listApproverCandidates } from "@teamlet/modules/workflow";
 import type { LeaveRequestItem } from "@teamlet/modules/leave";
 import { EmptyState, Button } from "@teamlet/ui";
 import { auth } from "@/auth";
@@ -38,15 +39,17 @@ export default async function LeavePage() {
   const employeeId = session.user.employeeId;
   const year = new Date().getFullYear();
 
-  const [balancesResult, typesResult, requestsResult] = await Promise.all([
+  const [balancesResult, typesResult, requestsResult, approversResult] = await Promise.all([
     getLeaveBalances(employeeId, year),
     listLeaveTypes(employeeId),
     listMyLeaveRequests(employeeId),
+    listApproverCandidates(employeeId),
   ]);
 
   const balances = balancesResult.ok ? balancesResult.data : [];
   const leaveTypes = typesResult.ok ? typesResult.data : [];
   const requests = requestsResult.ok ? requestsResult.data : [];
+  const approverCandidates = approversResult.ok ? approversResult.data : [];
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
@@ -62,7 +65,7 @@ export default async function LeavePage() {
           <Button asChild variant="secondary" size="sm">
             <Link href="/leave/requests">승인 관리</Link>
           </Button>
-          <LeaveRequestButton leaveTypes={leaveTypes} />
+          <LeaveRequestButton leaveTypes={leaveTypes} approverCandidates={approverCandidates} />
         </div>
       </header>
 

@@ -754,12 +754,15 @@ model LeaveRequest {
   reviewNote  String?
   reviewedAt  DateTime?
   reviewedBy  String?
+  // 통합 결재 인프라 링크 — 휴가 신청은 FormDocument(LEAVE_REQUEST) 결재선을 거친다.
+  formDocumentId String?         @unique
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 
   employee          Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   leaveType         LeaveType          @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
   leaveTransactions LeaveTransaction[]
+  formDocument      FormDocument?      @relation(fields: [formDocumentId], references: [id], onDelete: SetNull)
 
   @@index([employeeId, status])
   @@index([leaveTypeId])
@@ -893,6 +896,7 @@ model FormDocument {
   author        Employee       @relation("AuthoredDocuments", fields: [authorId], references: [id])
   approvalLines ApprovalLine[]
   actions       ApprovalAction[]
+  leaveRequest  LeaveRequest?
 
   @@index([companyId, status])
   @@index([authorId, status])

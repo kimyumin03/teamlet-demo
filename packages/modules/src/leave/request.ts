@@ -31,6 +31,7 @@ export async function listPendingLeaveRequests(
         ...(scopedDeptIds ? { departmentId: { in: scopedDeptIds } } : {}),
       },
       status: "PENDING",
+      formDocumentId: null,
     },
     include: {
       employee: { select: { name: true } },
@@ -129,13 +130,37 @@ export async function listEmployeeLeaveHistory(
 export async function requestLeave(
   input: RequestLeaveInput,
 ): Promise<Result<{ id: string }>> {
-  const { employeeId, leaveTypeId, startDate, endDate, days, reason } = input;
+  const { employeeId, leaveTypeId, approverId, startDate, endDate, days, reason } =
+    input;
+
+  if (approverId === employeeId) {
+    return err(errors.validation("본인을 결재자로 지정할 수 없어요"));
+  }
+
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { companyId: true },
+  });
+  if (!employee) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
 
   const leaveType = await prisma.leaveType.findUnique({
     where: { id: leaveTypeId },
-    select: { isActive: true },
+    select: { isActive: true, name: true, companyId: true },
   });
-  if (!leaveType?.isActive) return err(errors.validation("비활성 휴가 종류예요"));
+  if (!leaveType?.isActive || leaveType.companyId !== employee.companyId) {
+    return err(errors.validation("비활성 휴가 종류예요"));
+  }
+
+  const approver = await prisma.employee.findUnique({
+    where: { id: approverId },
+    select: { companyId: true, isActive: true },
+  });
+  if (!approver || approver.companyId !== employee.companyId) {
+    return err(errors.notFound("결재자를 찾을 수 없어요"));
+  }
+  if (!approver.isActive) {
+    return err(errors.validation("비활성 구성원은 결재자로 지정할 수 없어요"));
+  }
 
   const year = startDate.getFullYear();
   const balance = await prisma.leaveBalance.findUnique({
@@ -150,12 +175,124 @@ export async function requestLeave(
   if (remaining < days)
     return err(errors.validation(`잔여 휴가가 부족해요 (잔여 ${remaining}일, 신청 ${days}일)`));
 
-  const req = await prisma.leaveRequest.create({
-    data: { employeeId, leaveTypeId, startDate, endDate, days, reason: reason ?? "" },
-    select: { id: true },
+  const startStr = startDate.toISOString().slice(0, 10);
+  const endStr = endDate.toISOString().slice(0, 10);
+  const title = `휴가 신청 — ${leaveType.name} ${startStr}~${endStr} (${days}일)`;
+
+  // 휴가 신청 = FormDocument(LEAVE_REQUEST) + 결재선 — 통합 결재 인프라 경유.
+  // 최종 승인/반려는 워크플로우 approveDocument/rejectDocument 가 finalize 를 호출.
+  const created = await prisma.$transaction(async (tx) => {
+    const doc = await tx.formDocument.create({
+      data: {
+        companyId: employee.companyId,
+        authorId: employeeId,
+        title,
+        kind: "LEAVE_REQUEST",
+        formData: {
+          leaveTypeId,
+          leaveTypeName: leaveType.name,
+          startDate: startStr,
+          endDate: endStr,
+          days,
+          reason: reason ?? "",
+        },
+        status: "IN_PROGRESS",
+      },
+      select: { id: true },
+    });
+    await tx.approvalLine.create({
+      data: { documentId: doc.id, step: 1, approverId, status: "PENDING" },
+    });
+    return tx.leaveRequest.create({
+      data: {
+        employeeId,
+        leaveTypeId,
+        startDate,
+        endDate,
+        days,
+        reason: reason ?? "",
+        formDocumentId: doc.id,
+      },
+      select: { id: true },
+    });
   });
 
-  return ok(req);
+  return ok(created);
+}
+
+/**
+ * 휴가 결재 문서가 최종 승인됐을 때 휴가 효과 적용 — 워크플로우 approveDocument 가 호출.
+ * 멱등 — LeaveRequest 가 PENDING 일 때만 동작.
+ */
+export async function finalizeLeaveFromApprovedDocument(
+  documentId: string,
+): Promise<void> {
+  const req = await prisma.leaveRequest.findUnique({
+    where: { formDocumentId: documentId },
+    select: {
+      id: true,
+      employeeId: true,
+      leaveTypeId: true,
+      days: true,
+      status: true,
+      startDate: true,
+    },
+  });
+  if (!req || req.status !== "PENDING") return;
+
+  const year = req.startDate.getFullYear();
+  await prisma.$transaction([
+    prisma.leaveRequest.update({
+      where: { id: req.id },
+      data: { status: "APPROVED", reviewedAt: new Date() },
+    }),
+    prisma.leaveTransaction.create({
+      data: {
+        employeeId: req.employeeId,
+        leaveTypeId: req.leaveTypeId,
+        category: "ANNUAL",
+        txType: "USE",
+        days: -Number(req.days),
+        reason: "휴가 사용",
+        leaveRequestId: req.id,
+      },
+    }),
+    prisma.leaveBalance.upsert({
+      where: {
+        employeeId_leaveTypeId_year: {
+          employeeId: req.employeeId,
+          leaveTypeId: req.leaveTypeId,
+          year,
+        },
+      },
+      create: {
+        employeeId: req.employeeId,
+        leaveTypeId: req.leaveTypeId,
+        year,
+        usedDays: Number(req.days),
+      },
+      update: { usedDays: { increment: Number(req.days) } },
+    }),
+  ]);
+}
+
+/**
+ * 휴가 결재 문서가 반려됐을 때 휴가 신청 상태 반영 — 워크플로우 rejectDocument 가 호출.
+ * 멱등 — LeaveRequest 가 PENDING 일 때만 동작.
+ */
+export async function finalizeLeaveFromRejectedDocument(
+  documentId: string,
+): Promise<void> {
+  const req = await prisma.leaveRequest.findUnique({
+    where: { formDocumentId: documentId },
+    select: { id: true, status: true },
+  });
+  if (!req || req.status !== "PENDING") return;
+
+  await prisma.leaveRequest.update({
+    where: { id: req.id },
+    data: { status: "REJECTED", reviewedAt: new Date() },
+  });
 }
 
 export async function approveLeave(
@@ -171,10 +308,13 @@ export async function approveLeave(
       days: true,
       status: true,
       startDate: true,
+      formDocumentId: true,
       employee: { select: { departmentId: true } },
     },
   });
   if (!req) return err(errors.notFound("휴가 신청을 찾을 수 없어요"));
+  if (req.formDocumentId)
+    return err(errors.validation("이 휴가 신청은 결재함에서 처리해 주세요"));
   if (req.status !== "PENDING") return err(errors.validation("대기 중인 신청만 승인할 수 있어요"));
 
   try {
@@ -225,10 +365,13 @@ export async function rejectLeave(
     select: {
       status: true,
       employeeId: true,
+      formDocumentId: true,
       employee: { select: { departmentId: true } },
     },
   });
   if (!req) return err(errors.notFound("휴가 신청을 찾을 수 없어요"));
+  if (req.formDocumentId)
+    return err(errors.validation("이 휴가 신청은 결재함에서 처리해 주세요"));
   if (req.status !== "PENDING") return err(errors.validation("대기 중인 신청만 반려할 수 있어요"));
 
   try {
@@ -254,7 +397,7 @@ export async function cancelLeave(
 ): Promise<Result<void>> {
   const req = await prisma.leaveRequest.findUnique({
     where: { id: requestId },
-    select: { employeeId: true, leaveTypeId: true, days: true, status: true, startDate: true },
+    select: { employeeId: true, leaveTypeId: true, days: true, status: true, startDate: true, formDocumentId: true },
   });
   if (!req) return err(errors.notFound("휴가 신청을 찾을 수 없어요"));
   if (req.employeeId !== employeeId) return err(errors.forbidden("본인 신청만 취소할 수 있어요"));
@@ -269,6 +412,9 @@ export async function cancelLeave(
       where: { id: requestId },
       data: { status: "CANCELLED" },
     }),
+    ...(req.formDocumentId
+      ? [prisma.formDocument.update({ where: { id: req.formDocumentId }, data: { status: "CANCELLED" } })]
+      : []),
     ...(wasApproved
       ? [
           prisma.leaveTransaction.create({

@@ -16,6 +16,7 @@ async function requireEmployee(): Promise<string> {
 
 export async function requestLeaveAction(input: {
   leaveTypeId: string;
+  approverId: string;
   startDate: string;
   endDate: string;
   days: number;
@@ -26,6 +27,7 @@ export async function requestLeaveAction(input: {
     await requestLeave({
       employeeId,
       leaveTypeId: input.leaveTypeId,
+      approverId: input.approverId,
       startDate: new Date(input.startDate),
       endDate: new Date(input.endDate),
       days: input.days,

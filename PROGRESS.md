@@ -50,10 +50,12 @@
 - 인사 발령 이력 — `Appointment` 모델 + 발령 등록/이력 탭 (updateEmployee 덮어쓰기 제거, Anti-Pattern #1 해소)
 - 연차 자동부여 엔진(MVP) — 정책 기반 멱등 부여 + 첫 해 월할 비례, 관리자 수동 실행
 
+### ✅ 완료 (추가)
+- 휴가-워크플로우 통합 Bridge — `LeaveRequest.formDocumentId` FK + `requestLeave`가 FormDocument/ApprovalLine 동시 생성 + `approveDocument`/`rejectDocument` 최종 승인 시 `finalizeLeave*` 자동 호출 + 결재자 선택 UI
+
 ### 🟡 다음
-1. **Depth 보강 (잔여)** — 휴가-워크플로우 통합
-2. **2FA / IP 제한 실적용** — TOTP(otplib·UserMFA 모델) / IP 화이트리스트 강제 (락아웃 안전장치 포함)
-3. **Worker(BullMQ)** — 휴가 자동 부여·소멸, 비동기 알림 / **실시간 알림** — SSE
+1. **2FA / IP 제한 실적용** — TOTP(otplib·UserMFA 모델) / IP 화이트리스트 강제 (락아웃 안전장치 포함)
+2. **Worker(BullMQ)** — 휴가 자동 부여·소멸, 비동기 알림 / **실시간 알림** — SSE
 
 ### 🟢 LOW — 선택적 강화
 - 채용 depth (지원서 양식·이력서 첨부·면접 일정·스코어카드)
@@ -61,6 +63,16 @@
 - 모바일 반응형 (웹 우선이라 후순위)
 
 ## 최근 한 일
+
+### 2026-05-22 휴가-워크플로우 통합 Bridge
+- `LeaveRequest.formDocumentId @unique` FK — schema + `db push` 완료
+- `requestLeave`: FormDocument(LEAVE_REQUEST) + ApprovalLine(step 1) + LeaveRequest 를 하나의 `$transaction`으로 생성
+- `finalizeLeaveFromApprovedDocument` / `finalizeLeaveFromRejectedDocument` — 결재 완료 시 LeaveRequest 상태 + 잔여일 처리
+- `approveDocument` / `rejectDocument`: LEAVE_REQUEST 문서 최종 처리 시 finalize 자동 호출
+- `approveLeave` / `rejectLeave`: formDocumentId 있으면 "결재함에서 처리" 가드 추가
+- `listApproverCandidates` — 동일 회사 활성 구성원 (권한 불필요)
+- `/leave` 페이지 + 신청 폼 — 결재자 선택 `<select>` 추가
+- ⚠️ 런타임 미검증 (타입체크만 통과)
 
 ### 2026-05-22 인사 발령 + 연차 자동부여 + README 정직화
 - 인사 발령 — `Appointment` 모델/모듈 + 구성원 발령 탭. updateEmployee 덮어쓰기 제거 (Anti-Pattern #1) → `69745c6`

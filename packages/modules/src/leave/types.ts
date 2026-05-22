@@ -22,6 +22,8 @@ export type GrantLeaveInput = {
 export type RequestLeaveInput = {
   employeeId: string;
   leaveTypeId: string;
+  /** 결재자 — 휴가 신청은 통합 결재 인프라(FormDocument)를 거친다. */
+  approverId: string;
   startDate: Date;
   endDate: Date;
   days: number;

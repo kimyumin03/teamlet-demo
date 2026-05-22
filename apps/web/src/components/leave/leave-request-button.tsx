@@ -16,10 +16,19 @@ import {
 import type { LeaveTypeItem } from "@teamlet/modules/leave";
 import { requestLeaveAction } from "@/lib/actions/leave";
 
-export function LeaveRequestButton({ leaveTypes }: { leaveTypes: LeaveTypeItem[] }) {
+type ApproverCandidate = { id: string; name: string };
+
+export function LeaveRequestButton({
+  leaveTypes,
+  approverCandidates,
+}: {
+  leaveTypes: LeaveTypeItem[];
+  approverCandidates: ApproverCandidate[];
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [leaveTypeId, setLeaveTypeId] = useState("");
+  const [approverId, setApproverId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [days, setDays] = useState("");
@@ -29,6 +38,7 @@ export function LeaveRequestButton({ leaveTypes }: { leaveTypes: LeaveTypeItem[]
 
   function reset() {
     setLeaveTypeId("");
+    setApproverId("");
     setStartDate("");
     setEndDate("");
     setDays("");
@@ -47,6 +57,7 @@ export function LeaveRequestButton({ leaveTypes }: { leaveTypes: LeaveTypeItem[]
     startTransition(async () => {
       const res = await requestLeaveAction({
         leaveTypeId,
+        approverId,
         startDate,
         endDate,
         days: daysNum,
@@ -95,6 +106,26 @@ export function LeaveRequestButton({ leaveTypes }: { leaveTypes: LeaveTypeItem[]
                 <option key={t.id} value={t.id}>
                   {t.name}
                   {t.grantAmount ? ` (최대 ${t.grantAmount}일)` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="leave-approver" className="text-sm text-foreground-muted">
+              결재자
+            </label>
+            <select
+              id="leave-approver"
+              required
+              value={approverId}
+              onChange={(e) => setApproverId(e.target.value)}
+              className="h-10 rounded-md border border-border bg-background-primary px-3 text-base text-foreground focus-visible:border-border-focus focus-visible:shadow-focus focus-visible:outline-none"
+            >
+              <option value="">선택해 주세요</option>
+              {approverCandidates.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
                 </option>
               ))}
             </select>
@@ -170,7 +201,7 @@ export function LeaveRequestButton({ leaveTypes }: { leaveTypes: LeaveTypeItem[]
                 취소
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={isPending || !leaveTypeId || !startDate || !endDate || !days}>
+            <Button type="submit" disabled={isPending || !leaveTypeId || !approverId || !startDate || !endDate || !days}>
               {isPending ? "신청 중…" : "신청"}
             </Button>
           </DialogFooter>
