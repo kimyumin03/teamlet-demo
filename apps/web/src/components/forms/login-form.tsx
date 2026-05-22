@@ -39,6 +39,22 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
         />
       </div>
 
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="mfaCode" className="text-sm text-foreground-muted">
+          인증 코드{" "}
+          <span className="text-foreground-subtle">(2FA 설정 시 입력)</span>
+        </label>
+        <Input
+          id="mfaCode"
+          name="mfaCode"
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          placeholder="000000"
+        />
+      </div>
+
       {state.error && (
         <p
           role="alert"

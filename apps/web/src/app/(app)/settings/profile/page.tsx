@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getUserProfile } from "@teamlet/modules/auth";
+import { getMfaStatus } from "@teamlet/modules/security";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { ChangePasswordForm } from "@/components/settings/change-password-form";
+import { MfaSetupSection } from "@/components/settings/mfa-setup-section";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +12,10 @@ export default async function ProfileSettingsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const result = await getUserProfile(session.user.id);
+  const [result, mfaStatus] = await Promise.all([
+    getUserProfile(session.user.id),
+    getMfaStatus(session.user.id),
+  ]);
   if (!result.ok) redirect("/home");
 
   const profile = result.data;
@@ -36,6 +41,8 @@ export default async function ProfileSettingsPage() {
           <h2 className="mb-4 text-sm font-medium text-foreground">비밀번호 변경</h2>
           <ChangePasswordForm hasPassword={profile.hasPassword} />
         </section>
+
+        <MfaSetupSection initial={mfaStatus} />
       </div>
     </div>
   );

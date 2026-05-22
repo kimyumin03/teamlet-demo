@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 import { authenticateUser } from "@teamlet/modules/auth";
 import { findOrCreateGoogleUser } from "@teamlet/modules/auth";
 import { resolveLoginContext } from "@teamlet/modules/tenancy";
+import { verifyMfaCode } from "@teamlet/modules/security";
 import { authConfig } from "./auth.config";
 
 /**
@@ -55,10 +56,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: { label: "이메일", type: "email" },
         password: { label: "비밀번호", type: "password" },
+        mfaCode: { label: "인증 코드", type: "text" },
       },
       authorize: async (credentials, request) => {
         const email = String(credentials?.email ?? "");
         const password = String(credentials?.password ?? "");
+        const mfaCode = String(credentials?.mfaCode ?? "") || undefined;
         if (!email || !password) return null;
         // 로그인 시도 IP/UA 기록 — LoginAttempt 감사용
         const headers = request?.headers;
@@ -69,6 +72,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const userAgent = headers?.get("user-agent") ?? null;
         const user = await authenticateUser(email, password, { ip, userAgent });
         if (!user) return null;
+        // 2FA 검증 — MFA 비활성 사용자는 항상 통과
+        const mfaOk = await verifyMfaCode(user.id, mfaCode);
+        if (!mfaOk) return null;
         const ctx = await resolveLoginContext(user.id);
         return {
           id: user.id,

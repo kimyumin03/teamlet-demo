@@ -24,13 +24,14 @@ export async function loginAction(
 ): Promise<ActionState> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const mfaCode = String(formData.get("mfaCode") ?? "") || undefined;
   const redirectTo = safeCallbackUrl(formData.get("callbackUrl") as string | null);
   try {
-    await signIn("credentials", { email, password, redirectTo });
+    await signIn("credentials", { email, password, mfaCode, redirectTo });
     return { error: null };
   } catch (e) {
     if (e instanceof AuthError) {
-      return { error: "이메일 또는 비밀번호가 올바르지 않아요" };
+      return { error: "이메일, 비밀번호 또는 인증 코드가 올바르지 않아요" };
     }
     throw e;
   }

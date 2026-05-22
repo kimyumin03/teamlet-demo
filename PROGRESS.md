@@ -21,7 +21,7 @@
 | **P5 채용** | ✅ 강화 완료 | 공고 목록 + 상태 필터 + 후보자 목록/칸반/상세 + 메모 ✓ |
 | **구성원 CSV** | ✅ 완료 | 가져오기 + 내보내기 (`/api/members/export`) |
 | **P6 문서·증명서** | ✅ MVP 완료 | /documents 보관소 + /documents/certificates 발급/인쇄 ✓ |
-| **P7 보안** | 🟡 부분 | 보안 정책 CRUD + 감사 로그 ✓ / 2FA·IP 제한은 정책 저장만(강제 미적용) |
+| **P7 보안** | 🟡 강화 | 보안 정책 CRUD + 감사 로그 ✓ / **TOTP 2FA 개인 설정·로그인 검증 구현** / IP 제한은 정책 저장만(강제 미적용) |
 | **P8 알림** | ✅ 강화 완료 | 알림 벨 패널 + /notifications 전용 페이지 (탭/읽음 처리) ✓ |
 | **회사 설정** | ✅ 완료 | 회사 정보 수정 + 공휴일 관리 |
 | **개인 설정** | ✅ 완료 | /settings/profile — 프로필 수정 + 비밀번호 변경 |
@@ -52,9 +52,11 @@
 
 ### ✅ 완료 (추가)
 - 휴가-워크플로우 통합 Bridge — `LeaveRequest.formDocumentId` FK + `requestLeave`가 FormDocument/ApprovalLine 동시 생성 + `approveDocument`/`rejectDocument` 최종 승인 시 `finalizeLeave*` 자동 호출 + 결재자 선택 UI
+- 신규 직원 등록 시 HIRE 발령 자동 생성
+- **TOTP 2FA** — `UserMFA` 모델 + `otplib` + 개인 설정 QR 설정 흐름 + 로그인 `mfaCode` 검증
 
 ### 🟡 다음
-1. **2FA / IP 제한 실적용** — TOTP(otplib·UserMFA 모델) / IP 화이트리스트 강제 (락아웃 안전장치 포함)
+1. **IP 제한 실적용** — IP 화이트리스트 강제 (락아웃 안전장치 포함)
 2. **Worker(BullMQ)** — 휴가 자동 부여·소멸, 비동기 알림 / **실시간 알림** — SSE
 
 ### 🟢 LOW — 선택적 강화
