@@ -536,10 +536,11 @@ export async function createEmployee(
     hireDate = parsedDate;
   }
 
+  let deptName: string | null = null;
   if (departmentId) {
     const dept = await prisma.department.findUnique({
       where: { id: departmentId },
-      select: { companyId: true, isActive: true },
+      select: { companyId: true, isActive: true, name: true },
     });
     if (!dept || dept.companyId !== actor.companyId) {
       return err(errors.notFound("부서를 찾을 수 없어요"));
@@ -547,12 +548,14 @@ export async function createEmployee(
     if (!dept.isActive) {
       return err(errors.conflict("비활성 부서엔 배정할 수 없어요"));
     }
+    deptName = dept.name;
   }
 
+  let posName: string | null = null;
   if (positionId) {
     const pos = await prisma.position.findUnique({
       where: { id: positionId },
-      select: { companyId: true, isActive: true },
+      select: { companyId: true, isActive: true, name: true },
     });
     if (!pos || pos.companyId !== actor.companyId) {
       return err(errors.notFound("직책을 찾을 수 없어요"));
@@ -560,6 +563,7 @@ export async function createEmployee(
     if (!pos.isActive) {
       return err(errors.conflict("비활성 직책엔 배정할 수 없어요"));
     }
+    posName = pos.name;
   }
 
   if (companyEmail) {
@@ -570,17 +574,39 @@ export async function createEmployee(
     if (dup) return err(errors.conflict("이미 사용 중인 회사 이메일이에요"));
   }
 
-  const employee = await prisma.employee.create({
-    data: {
-      companyId: actor.companyId,
-      departmentId,
-      positionId,
-      name: d.name,
-      employeeNumber,
-      companyEmail,
-      hireDate,
-      employmentStatus: "ACTIVE",
-    },
+  const actorEmp = await prisma.employee.findUnique({
+    where: { id: actorEmployeeId },
+    select: { name: true },
+  });
+
+  const employee = await prisma.$transaction(async (tx) => {
+    const created = await tx.employee.create({
+      data: {
+        companyId: actor.companyId,
+        departmentId,
+        positionId,
+        name: d.name,
+        employeeNumber,
+        companyEmail,
+        hireDate,
+        employmentStatus: "ACTIVE",
+      },
+    });
+    await tx.appointment.create({
+      data: {
+        companyId: actor.companyId,
+        employeeId: created.id,
+        kind: "HIRE",
+        effectiveDate: hireDate ?? new Date(),
+        toDepartmentId: departmentId,
+        toDepartmentName: deptName,
+        toPositionId: positionId,
+        toPositionName: posName,
+        appointedById: actorEmployeeId,
+        appointedByName: actorEmp?.name ?? null,
+      },
+    });
+    return created;
   });
 
   await recordAudit({
