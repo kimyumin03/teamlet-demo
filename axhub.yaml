@@ -3,14 +3,14 @@ version: 1
 app:
     name: teamlet
     slug: teamlet
-    framework: nextjs
+    framework: docker
+    subdomain: teamlet
+    domain_id: 1
 runtime:
     port: 3000
     health_check: /api/auth/session
 build:
-    install: pnpm install --frozen-lockfile
-    build: pnpm --filter web build
-    start: pnpm --filter web start
+    dockerfile: Dockerfile
 deploy:
     target: auto
     environments:
