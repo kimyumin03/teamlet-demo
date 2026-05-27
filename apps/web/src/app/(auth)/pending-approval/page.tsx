@@ -41,17 +41,18 @@ export default async function PendingApprovalPage() {
 
         <div className="flex flex-col gap-2 w-full">
           <Link
-            href="/register-company"
+            href="/join-company"
+            replace
             className="flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
           >
-            다시 신청하기
+            다시 선택하기
           </Link>
           <form action={logoutAction}>
             <button
               type="submit"
               className="flex w-full items-center justify-center rounded-lg border border-border px-4 py-2.5 text-sm text-foreground-muted hover:bg-background-secondary transition-colors"
             >
-              로그아웃 후 로그인으로
+              로그아웃하기
             </button>
           </form>
         </div>
