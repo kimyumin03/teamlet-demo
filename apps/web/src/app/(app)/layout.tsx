@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
+import { isPlatformAdminEmail } from "@/lib/platform-admin";
+import { getMembershipSummary } from "@teamlet/modules/tenancy";
 import { listNotifications, countUnreadNotifications } from "@teamlet/modules/notification";
 import { NotificationBell } from "@/components/notification/notification-bell";
 import { CommandPalette } from "@/components/command-palette/command-palette";
@@ -10,8 +12,15 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
+  if (isPlatformAdminEmail(session.user.email)) redirect("/admin");
 
   const employeeId = session.user.employeeId;
+
+  // 회사 없는 사용자: pending/rejected 여부에 따라 분기
+  if (!employeeId) {
+    const summary = await getMembershipSummary(session.user.id);
+    if (summary.pending > 0 || summary.rejected) redirect("/pending-approval");
+  }
 
   const [notifResult, unreadCount] = employeeId
     ? await Promise.all([
@@ -23,16 +32,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const notifications = notifResult.ok ? notifResult.data : [];
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* 사이드바 */}
       <AppSidebar
         userName={session.user.name ?? ""}
         userEmail={session.user.email ?? ""}
         hasCompany={!!employeeId}
+        logoutAction={async () => {
+          "use server";
+          await signOut({ redirectTo: "/login" });
+        }}
       />
 
       {/* 메인 영역 */}
-      <div className="flex flex-1 flex-col min-w-0">
+      <div className="flex flex-1 flex-col min-w-0 overflow-y-auto">
         {/* 상단 헤더 */}
         <header className="sticky top-0 z-40 flex h-12 items-center justify-between border-b border-border bg-background-primary px-4">
           {employeeId && <CommandPaletteTrigger />}
@@ -49,19 +62,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             >
               {session.user.name?.charAt(0).toUpperCase() ?? "?"}
             </Link>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/login" });
-              }}
-            >
-              <button
-                type="submit"
-                className="rounded px-2 py-1 text-xs text-foreground-subtle hover:bg-background-secondary hover:text-foreground transition-colors"
-              >
-                로그아웃
-              </button>
-            </form>
           </div>
         </header>
 

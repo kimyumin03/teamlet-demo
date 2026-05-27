@@ -34,7 +34,7 @@ async function hashPw(plain: string): Promise<string> {
 }
 
 const DEMO_PW = "Test1234!";
-const COMPANY_CODE = "DEMO0001";
+const COMPANY_CODE = "DEMO-0001";
 const BUSINESS_NUMBER = "000-00-00000";
 const LEAVE_KEY = "annual_demo";
 
@@ -43,6 +43,7 @@ const DEFAULT_ROLE_KEYS = [
   "member.directory.read",
   "leave.balance.read",
   "workflow.document.read",
+  "company.basic_info.read",
 ];
 
 /** 조직장 역할 권한 키 목록 */

@@ -8,7 +8,7 @@ import { joinByCodeAction, type ActionState } from "@/lib/actions/tenancy";
 
 const initial: ActionState = { error: null };
 
-export function JoinCompanyOptions() {
+export function JoinCompanyOptions({ logoutAction }: { logoutAction: () => Promise<void> }) {
   const [mode, setMode] = useState<"menu" | "code">("menu");
   const [state, formAction, isPending] = useActionState(
     joinByCodeAction,
@@ -55,13 +55,20 @@ export function JoinCompanyOptions() {
         <Button type="submit" disabled={isPending} className="w-full">
           {isPending ? "신청 중…" : "가입 신청"}
         </Button>
-        <button
-          type="button"
-          onClick={() => setMode("menu")}
-          className="text-sm text-foreground-muted hover:text-foreground"
-        >
-          ← 다른 방법 선택
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setMode("menu")}
+            className="text-sm text-foreground-muted hover:text-foreground transition-colors"
+          >
+            ← 다른 방법 선택
+          </button>
+          <form action={logoutAction}>
+            <button type="submit" className="text-sm text-foreground-subtle hover:text-foreground transition-colors">
+              뒤로가기
+            </button>
+          </form>
+        </div>
       </form>
     );
   }
@@ -71,6 +78,11 @@ export function JoinCompanyOptions() {
       <p className="text-sm text-foreground-muted">
         어떤 회사에 가입하시겠어요?
       </p>
+      <form action={logoutAction}>
+        <button type="submit" className="self-start text-sm text-foreground-subtle hover:text-foreground transition-colors">
+          ← 뒤로가기
+        </button>
+      </form>
 
       <Link
         href="/register-company"

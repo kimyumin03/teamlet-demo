@@ -6,12 +6,14 @@ declare module "next-auth" {
       id: string;
       companyId: string | null;
       employeeId: string | null;
+      mfaPending?: boolean;
     } & DefaultSession["user"];
   }
 
   interface User {
     companyId?: string | null;
     employeeId?: string | null;
+    mfaPending?: boolean;
   }
 }
 
@@ -20,5 +22,6 @@ declare module "next-auth/jwt" {
     userId?: string;
     companyId?: string | null;
     employeeId?: string | null;
+    mfaPending?: boolean;
   }
 }

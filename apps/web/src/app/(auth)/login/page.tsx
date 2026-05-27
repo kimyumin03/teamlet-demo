@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { isPlatformAdminEmail } from "@/lib/platform-admin";
 import { LoginForm } from "@/components/forms/login-form";
 
 export default async function LoginPage({
@@ -9,7 +10,10 @@ export default async function LoginPage({
 }) {
   const session = await auth();
   const { callbackUrl } = await searchParams;
-  if (session?.user) redirect(callbackUrl ?? "/home");
+  if (session?.user) {
+    if (isPlatformAdminEmail(session.user.email)) redirect("/admin");
+    else redirect(callbackUrl ?? "/home");
+  }
 
   return (
     <div className="flex flex-col gap-5">

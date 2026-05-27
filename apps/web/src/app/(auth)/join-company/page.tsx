@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { auth, signOut } from "@/auth";
 import { getMembershipSummary } from "@teamlet/modules/tenancy";
 import { JoinCompanyOptions } from "@/components/forms/join-company-options";
 
@@ -19,7 +19,12 @@ export default async function JoinCompanyPage() {
           가입할 회사를 선택하거나 새 회사를 등록하세요.
         </p>
       </div>
-      <JoinCompanyOptions />
+      <JoinCompanyOptions
+        logoutAction={async () => {
+          "use server";
+          await signOut({ redirectTo: "/login" });
+        }}
+      />
     </div>
   );
 }

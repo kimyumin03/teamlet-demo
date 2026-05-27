@@ -13,22 +13,37 @@ export const authConfig = {
     authorized({ auth, request }) {
       const isLoggedIn = !!auth?.user;
       const { pathname } = request.nextUrl;
-      // (auth) 그룹 + 정적/인증 API 는 항상 허용
+      const mfaPending = !!(auth?.user as Record<string, unknown> | undefined)?.mfaPending;
+
       const isPublic =
         pathname === "/login" ||
         pathname === "/signup" ||
+        pathname === "/admin-key" ||
         pathname === "/join-company" ||
         pathname === "/register-company" ||
         pathname === "/pending-approval" ||
         pathname.startsWith("/api/auth");
       if (isPublic) return true;
-      return isLoggedIn;
+
+      if (!isLoggedIn) return false;
+
+      // 2FA 미완료 → /2fa 만 허용
+      if (mfaPending && pathname !== "/2fa") {
+        return Response.redirect(new URL("/2fa", request.nextUrl));
+      }
+      // 2FA 불필요한데 /2fa 접근 → 홈으로
+      if (!mfaPending && pathname === "/2fa") {
+        return Response.redirect(new URL("/home", request.nextUrl));
+      }
+
+      return true;
     },
     jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
         token.companyId = user.companyId ?? null;
         token.employeeId = user.employeeId ?? null;
+        token.mfaPending = user.mfaPending ?? false;
       }
       return token;
     },
@@ -37,6 +52,7 @@ export const authConfig = {
         session.user.id = token.userId as string;
         session.user.companyId = (token.companyId as string | null) ?? null;
         session.user.employeeId = (token.employeeId as string | null) ?? null;
+        session.user.mfaPending = (token.mfaPending as boolean | undefined) ?? false;
       }
       return session;
     },

@@ -1,10 +1,12 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
-import { authenticateUser } from "@teamlet/modules/auth";
+import { findUserByEmail } from "@teamlet/modules/auth";
 import { findOrCreateGoogleUser } from "@teamlet/modules/auth";
 import { resolveLoginContext } from "@teamlet/modules/tenancy";
-import { verifyMfaCode } from "@teamlet/modules/security";
+import { getMfaStatus } from "@teamlet/modules/security";
+import { isPlatformAdminEmail } from "@/lib/platform-admin";
+import { verifyMfaToken } from "@/lib/mfa-token";
 import { authConfig } from "./auth.config";
 
 /**
@@ -21,6 +23,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.userId = user.id;
         token.companyId = (user as Record<string, unknown>).companyId as string | null ?? null;
         token.employeeId = (user as Record<string, unknown>).employeeId as string | null ?? null;
+        token.mfaPending = (user as Record<string, unknown>).mfaPending as boolean ?? false;
       }
 
       // Google 로그인: DB 사용자 찾거나 생성 후 컨텍스트 결정
@@ -55,33 +58,49 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Credentials({
       credentials: {
         email: { label: "이메일", type: "email" },
-        password: { label: "비밀번호", type: "password" },
-        mfaCode: { label: "인증 코드", type: "text" },
+        adminKey: { label: "관리자 비밀키", type: "password" },
+        mfaToken: { label: "MFA 토큰", type: "text" },
       },
-      authorize: async (credentials, request) => {
-        const email = String(credentials?.email ?? "");
-        const password = String(credentials?.password ?? "");
-        const mfaCode = String(credentials?.mfaCode ?? "") || undefined;
-        if (!email || !password) return null;
-        // 로그인 시도 IP/UA 기록 — LoginAttempt 감사용
-        const headers = request?.headers;
-        const ip =
-          headers?.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-          headers?.get("x-real-ip") ||
-          null;
-        const userAgent = headers?.get("user-agent") ?? null;
-        const user = await authenticateUser(email, password, { ip, userAgent });
+      authorize: async (credentials) => {
+        const email = String(credentials?.email ?? "").trim();
+        const adminKey = String(credentials?.adminKey ?? "").trim();
+        const mfaToken = String(credentials?.mfaToken ?? "").trim();
+        if (!email) return null;
+
+        const user = await findUserByEmail(email);
         if (!user) return null;
-        // 2FA 검증 — MFA 비활성 사용자는 항상 통과
-        const mfaOk = await verifyMfaCode(user.id, mfaCode);
-        if (!mfaOk) return null;
-        const ctx = await resolveLoginContext(user.id);
+
+        // TOTP 검증 완료 후 재인증 경로 — 서명된 단기 토큰으로 mfaPending 해제
+        if (mfaToken) {
+          if (!verifyMfaToken(mfaToken, user.id)) return null;
+          const ctx = await resolveLoginContext(user.id);
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            companyId: ctx?.companyId ?? null,
+            employeeId: ctx?.employeeId ?? null,
+            mfaPending: false,
+          };
+        }
+
+        // 플랫폼 관리자: 비밀키 필수 검증
+        if (isPlatformAdminEmail(email)) {
+          const secret = process.env.PLATFORM_ADMIN_SECRET;
+          if (!secret || adminKey !== secret) return null;
+        }
+
+        const [ctx, mfaStatus] = await Promise.all([
+          resolveLoginContext(user.id),
+          getMfaStatus(user.id),
+        ]);
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           companyId: ctx?.companyId ?? null,
           employeeId: ctx?.employeeId ?? null,
+          mfaPending: mfaStatus.isEnabled,
         };
       },
     }),

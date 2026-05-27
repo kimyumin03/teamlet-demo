@@ -13,10 +13,13 @@ import {
   err,
   errors,
 } from "@teamlet/shared";
+import { createNotification } from "../notification/notification";
 import { recordAudit } from "../audit/index";
 import { approveCompanyApplication } from "./approval";
 
 export { approveCompanyApplication, rejectCompanyApplication } from "./approval";
+export { listPendingMemberships, approveMembership, rejectMembership } from "./membership";
+export type { PendingMemberItem } from "./membership";
 export type { ApprovalResult } from "./approval";
 export { getCompanyInfo, updateCompanyInfo } from "./company";
 export type { CompanyInfo, CompanyUpdateInput } from "./company";
@@ -30,20 +33,38 @@ export {
 } from "./platform";
 export type { CompanyApplicationItem, CompanyAdminItem, PlatformUserItem } from "./platform";
 
-/** 로그인 후 라우팅 판단용 — 사용자의 회사 멤버십 요약 */
+/** 로그인 후 라우팅 판단용 — 사용자의 회사 멤버십 요약.
+ *  pending: UserCompanyMembership(PENDING) + CompanyApplication(PENDING) 합산
+ *  rejected: 가장 최근 반려된 CompanyApplication (사유 포함) */
 export async function getMembershipSummary(userId: string): Promise<{
   active: { companyId: string; employeeId: string | null }[];
   pending: number;
+  rejected: { companyName: string; reviewMemo: string | null } | null;
 }> {
-  const memberships = await prisma.userCompanyMembership.findMany({
-    where: { userId },
-    select: { companyId: true, employeeId: true, status: true },
-  });
+  const [memberships, pendingAppCount, rejectedApp] = await Promise.all([
+    prisma.userCompanyMembership.findMany({
+      where: { userId },
+      select: { companyId: true, employeeId: true, status: true, company: { select: { name: true } } },
+    }),
+    prisma.companyApplication.count({
+      where: { applicantUserId: userId, status: "PENDING" },
+    }),
+    prisma.companyApplication.findFirst({
+      where: { applicantUserId: userId, status: "REJECTED" },
+      select: { companyName: true, reviewMemo: true },
+      orderBy: { reviewedAt: "desc" },
+    }),
+  ]);
+
+  const rejectedMembership = memberships.find((m) => m.status === "REJECTED");
+
   return {
     active: memberships
       .filter((m) => m.status === "ACTIVE")
       .map((m) => ({ companyId: m.companyId, employeeId: m.employeeId })),
-    pending: memberships.filter((m) => m.status === "PENDING").length,
+    pending: memberships.filter((m) => m.status === "PENDING").length + pendingAppCount,
+    rejected: rejectedApp
+      ?? (rejectedMembership ? { companyName: rejectedMembership.company.name, reviewMemo: null } : null),
   };
 }
 
@@ -107,6 +128,7 @@ export async function submitCompanyApplication(
       companySize: d.companySize,
       industry: d.industry,
       memo: d.memo ?? null,
+      documentUrl: d.documentUrl ?? null,
     },
   });
 
@@ -199,6 +221,30 @@ export async function submitJoinByCode(
     ip: ctx.ip,
     userAgent: ctx.userAgent,
   });
+
+  // 회사 관리자에게 알림 전송 (실패해도 가입 신청 자체는 성공)
+  try {
+    const adminRoles = await prisma.userRole.findMany({
+      where: {
+        employee: { companyId: company.id, status: "ACTIVE" },
+        role: { name: "ADMIN" },
+      },
+      select: { employeeId: true },
+    });
+    await Promise.all(
+      adminRoles.map((ar) =>
+        createNotification({
+          companyId: company.id,
+          recipientEmployeeId: ar.employeeId,
+          category: "SYSTEM_SECURITY",
+          eventKey: "system.member.join",
+          title: "새 구성원 가입 신청",
+          body: "새 구성원이 회사 가입을 신청했어요.",
+          deepLink: "/members",
+        }),
+      ),
+    );
+  } catch {}
 
   return ok({ joinRequestId: result.id, companyName: company.name });
 }
