@@ -124,7 +124,7 @@ export async function bulkCreateEmployees(
           hireDate,
           departmentId,
           positionId,
-          employmentType: employmentType as any,
+          employmentType: employmentType as import("@prisma/client").EmploymentType,
         },
       });
       results.push({ row: rowNum, name, ok: true });

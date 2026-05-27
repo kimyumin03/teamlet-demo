@@ -244,7 +244,7 @@ export async function submitJoinByCode(
         }),
       ),
     );
-  } catch {}
+  } catch { /* 알림 실패는 가입 신청 결과에 영향 없음 */ }
 
   return ok({ joinRequestId: result.id, companyName: company.name });
 }
