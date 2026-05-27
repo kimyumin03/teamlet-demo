@@ -45,7 +45,7 @@ export function NotificationBell({
       try {
         const payload = JSON.parse(e.data) as { unreadCount: number };
         setLiveCount(payload.unreadCount);
-      } catch {}
+      } catch { /* SSE 파싱 실패는 무시 */ }
     };
     es.onerror = () => es.close();
     return () => es.close();
