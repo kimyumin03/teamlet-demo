@@ -9,11 +9,14 @@ export async function approveDocument(
 ): Promise<Result<void>> {
   const line = await prisma.approvalLine.findUnique({
     where: { id: lineId },
-    select: { id: true, documentId: true, step: true, approverId: true, status: true, document: { select: { kind: true } } },
+    select: { id: true, documentId: true, step: true, approverId: true, status: true, document: { select: { kind: true, status: true } } },
   });
   if (!line) return err(errors.notFound("결재 항목을 찾을 수 없어요"));
   if (line.approverId !== actorId) return err(errors.forbidden("본인 결재 항목만 처리할 수 있어요"));
   if (line.status !== "PENDING") return err(errors.validation("대기 중인 항목만 처리할 수 있어요"));
+  if (line.document.status === "CANCELLED" || line.document.status === "REJECTED") {
+    return err(errors.validation("이미 종료된 문서예요"));
+  }
 
   // 순차 결재 강제 — 이전 단계가 모두 승인돼야 처리 가능
   const priorUnapproved = await prisma.approvalLine.count({
@@ -65,11 +68,14 @@ export async function rejectDocument(
 ): Promise<Result<void>> {
   const line = await prisma.approvalLine.findUnique({
     where: { id: lineId },
-    select: { id: true, documentId: true, approverId: true, status: true, document: { select: { kind: true } } },
+    select: { id: true, documentId: true, approverId: true, status: true, document: { select: { kind: true, status: true } } },
   });
   if (!line) return err(errors.notFound("결재 항목을 찾을 수 없어요"));
   if (line.approverId !== actorId) return err(errors.forbidden("본인 결재 항목만 처리할 수 있어요"));
   if (line.status !== "PENDING") return err(errors.validation("대기 중인 항목만 처리할 수 있어요"));
+  if (line.document.status === "CANCELLED" || line.document.status === "REJECTED") {
+    return err(errors.validation("이미 종료된 문서예요"));
+  }
 
   await prisma.$transaction([
     prisma.approvalLine.update({

@@ -59,3 +59,35 @@ export type LeaveRequestItem = {
   reviewNote: string | null;
   createdAt: Date;
 };
+
+export type CompanyLeaveBalanceRow = {
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string | null;
+  departmentName: string | null;
+  positionName: string | null;
+  hireDate: Date | null;
+  balances: {
+    leaveTypeId: string;
+    leaveTypeKey: string;
+    leaveTypeName: string;
+    grantedDays: number;
+    usedDays: number;
+    adjustedDays: number;
+    remainingDays: number;
+  }[];
+};
+
+export type CompanyLeaveRequestItem = {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  departmentName: string | null;
+  leaveTypeName: string;
+  startDate: Date;
+  endDate: Date;
+  days: number;
+  reason: string;
+  status: LeaveRequestStatus;
+  createdAt: Date;
+};

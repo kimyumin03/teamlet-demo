@@ -17,6 +17,7 @@ export type CompanyApplicationItem = {
   companySize: string;
   industry: string;
   memo: string | null;
+  documentUrl: string | null;
   status: ApplicationStatus;
   applicantName: string;
   applicantEmail: string;
@@ -45,6 +46,7 @@ export async function listCompanyApplications(
     companySize: a.companySize,
     industry: a.industry,
     memo: a.memo,
+    documentUrl: a.documentUrl,
     status: a.status,
     applicantName: a.applicant.name,
     applicantEmail: a.applicant.email,

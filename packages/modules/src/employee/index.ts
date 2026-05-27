@@ -635,3 +635,13 @@ export async function createEmployee(
 }
 
 export { bulkCreateEmployees, type BulkEmployeeRow, type BulkCreateResult } from "./bulk";
+export {
+  listCareerHistories, createCareerHistory, updateCareerHistory, deleteCareerHistory,
+  listEducationHistories, createEducationHistory, updateEducationHistory, deleteEducationHistory,
+  listFamilyMembers, createFamilyMember, updateFamilyMember, deleteFamilyMember,
+} from "./career";
+export type {
+  CareerHistoryItem, CareerHistoryInput,
+  EducationHistoryItem, EducationHistoryInput,
+  FamilyMemberItem, FamilyMemberInput,
+} from "./career";

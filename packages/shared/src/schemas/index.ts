@@ -18,20 +18,13 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
-export const signupSchema = z
-  .object({
-    name: z.string().min(2, "이름을 입력해 주세요").max(50),
-    email: z.string().email("올바른 이메일 형식이 아니에요"),
-    phone: z
-      .string()
-      .regex(/^01[016789]\d{7,8}$/, "휴대폰 번호 형식이 아니에요"),
-    password: passwordSchema,
-    passwordConfirm: z.string(),
-  })
-  .refine((v) => v.password === v.passwordConfirm, {
-    message: "비밀번호가 일치하지 않아요",
-    path: ["passwordConfirm"],
-  });
+export const signupSchema = z.object({
+  name: z.string().min(2, "이름을 입력해 주세요").max(50),
+  email: z.string().email("올바른 이메일 형식이 아니에요"),
+  phone: z
+    .string()
+    .regex(/^01[016789]\d{7,8}$/, "휴대폰 번호 형식이 아니에요"),
+});
 export type SignupInput = z.infer<typeof signupSchema>;
 
 /** 회사코드로 가입 (docs/06 §1.2 join-company 옵션 2) */
@@ -244,5 +237,6 @@ export const companyApplicationSchema = z.object({
   companySize: z.enum(["1-10", "11-50", "51-200", "201-1000", "1000+"]),
   industry: z.string().min(1, "업종을 선택해 주세요").max(50),
   memo: z.string().max(1000).optional(),
+  documentUrl: z.string().max(500).optional(),
 });
 export type CompanyApplicationInput = z.infer<typeof companyApplicationSchema>;

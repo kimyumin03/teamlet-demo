@@ -1,10 +1,12 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
-import { catchDomainErr } from "../permission/_actor";
+import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
-import type { GrantLeaveInput, LeaveBalanceSummary, LeaveTypeItem } from "./types";
+import { getEffectivePermissions } from "../permission/effective";
+import type { GrantLeaveInput, LeaveBalanceSummary, LeaveTypeItem, CompanyLeaveBalanceRow } from "./types";
 
 const ADJUST_EXECUTE = "leave.adjust.execute";
+const BALANCE_MANAGE = "leave.balance.manage";
 
 export async function listLeaveTypes(
   employeeId: string,
@@ -94,6 +96,192 @@ export async function grantLeave(
   ]);
 
   return ok(undefined);
+}
+
+export async function listCompanyLeaveBalances(
+  actorEmployeeId: string,
+  year: number,
+): Promise<Result<CompanyLeaveBalanceRow[]>> {
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const perms = await getEffectivePermissions(actorEmployeeId);
+  if (!perms.has(BALANCE_MANAGE)) return err(errors.forbidden("휴가 현황을 볼 권한이 없어요"));
+
+  const leaveTypes = await prisma.leaveType.findMany({
+    where: { companyId: actor.companyId, isActive: true },
+    select: { id: true, key: true, name: true },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  const employees = await prisma.employee.findMany({
+    where: { companyId: actor.companyId, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      employeeNumber: true,
+      hireDate: true,
+      department: { select: { name: true } },
+      position: { select: { name: true } },
+      leaveBalances: {
+        where: { year },
+        select: { leaveTypeId: true, grantedDays: true, usedDays: true, adjustedDays: true },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  return ok(
+    employees.map((emp) => ({
+      employeeId: emp.id,
+      employeeName: emp.name,
+      employeeNumber: emp.employeeNumber,
+      departmentName: emp.department?.name ?? null,
+      positionName: emp.position?.name ?? null,
+      hireDate: emp.hireDate,
+      balances: leaveTypes.map((lt) => {
+        const bal = emp.leaveBalances.find((b) => b.leaveTypeId === lt.id);
+        const granted = bal ? Number(bal.grantedDays) : 0;
+        const used = bal ? Number(bal.usedDays) : 0;
+        const adjusted = bal ? Number(bal.adjustedDays) : 0;
+        return {
+          leaveTypeId: lt.id,
+          leaveTypeKey: lt.key,
+          leaveTypeName: lt.name,
+          grantedDays: granted,
+          usedDays: used,
+          adjustedDays: adjusted,
+          remainingDays: granted - used + adjusted,
+        };
+      }),
+    })),
+  );
+}
+
+/** 연도 말 연차 소멸·이월 처리 (manual trigger).
+ *  - 해당 연도 잔여 일수가 0 초과인 잔액에 대해 EXPIRE 트랜잭션 생성.
+ *  - 정책에 carryoverMaxDays 가 있으면 min(잔여, carryover) 만큼 다음 연도 GRANT.
+ *  - 동일 연도·직원·유형에 EXPIRE 이미 있으면 스킵 (멱등).
+ */
+export async function processLeaveExpiry(
+  actorEmployeeId: string,
+  year: number,
+): Promise<Result<{ expired: number; carriedOver: number }>> {
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const perms = await getEffectivePermissions(actorEmployeeId);
+  if (!perms.has(BALANCE_MANAGE)) return err(errors.forbidden("연차 소멸을 실행할 권한이 없어요"));
+
+  // 해당 연도 잔액 + 정책 배정 한꺼번에 조회
+  const balances = await prisma.leaveBalance.findMany({
+    where: {
+      employee: { companyId: actor.companyId, isActive: true },
+      year,
+    },
+    include: {
+      employee: {
+        select: {
+          id: true,
+          hireDate: true,
+          leavePolicyAssignments: {
+            include: { policy: { select: { leaveTypeId: true, expiryMonths: true, carryoverMaxDays: true, grantMode: true, fiscalStartMonth: true } } },
+            orderBy: { effectiveDate: "desc" },
+          },
+        },
+      },
+    },
+  });
+
+  let expired = 0;
+  let carriedOver = 0;
+  const now = new Date();
+
+  for (const bal of balances) {
+    const remaining = Number(bal.grantedDays) + Number(bal.adjustedDays) - Number(bal.usedDays);
+    if (remaining <= 0) continue;
+
+    // 이미 EXPIRE 처리됐는지 확인
+    const alreadyExpired = await prisma.leaveTransaction.findFirst({
+      where: { employeeId: bal.employeeId, leaveTypeId: bal.leaveTypeId, txType: "EXPIRE" },
+      select: { id: true },
+    });
+    if (alreadyExpired) continue;
+
+    // 해당 휴가 유형의 정책 찾기
+    const assignment = bal.employee.leavePolicyAssignments.find(
+      (a) => a.policy.leaveTypeId === bal.leaveTypeId,
+    );
+    if (!assignment) continue;
+
+    const { expiryMonths, carryoverMaxDays, grantMode, fiscalStartMonth } = assignment.policy;
+
+    // 소멸 기준일 계산
+    let expiryDate: Date;
+    if (grantMode === "HIRE_DATE" && bal.employee.hireDate) {
+      const hd = new Date(bal.employee.hireDate);
+      expiryDate = new Date(hd);
+      expiryDate.setFullYear(year);
+      expiryDate.setMonth(expiryDate.getMonth() + expiryMonths);
+    } else {
+      // FISCAL_YEAR: 회계연도 시작월 + expiryMonths
+      expiryDate = new Date(year, fiscalStartMonth - 1 + expiryMonths, 1);
+    }
+
+    if (now < expiryDate) continue;
+
+    const carryover = carryoverMaxDays ? Math.min(remaining, Number(carryoverMaxDays)) : 0;
+    const expireAmount = remaining - carryover;
+
+    const ops = [];
+
+    if (expireAmount > 0) {
+      ops.push(
+        prisma.leaveTransaction.create({
+          data: {
+            employeeId: bal.employeeId,
+            leaveTypeId: bal.leaveTypeId,
+            category: "ADJUSTMENT",
+            txType: "EXPIRE",
+            days: -expireAmount,
+            reason: `${year}년 연차 소멸`,
+            actorId: actorEmployeeId,
+          },
+        }),
+        prisma.leaveBalance.update({
+          where: { id: bal.id },
+          data: { adjustedDays: { decrement: expireAmount } },
+        }),
+      );
+      expired++;
+    }
+
+    if (carryover > 0) {
+      ops.push(
+        prisma.leaveTransaction.create({
+          data: {
+            employeeId: bal.employeeId,
+            leaveTypeId: bal.leaveTypeId,
+            category: "ADJUSTMENT",
+            txType: "GRANT",
+            days: carryover,
+            reason: `${year}년 → ${year + 1}년 이월`,
+            actorId: actorEmployeeId,
+          },
+        }),
+        prisma.leaveBalance.upsert({
+          where: { employeeId_leaveTypeId_year: { employeeId: bal.employeeId, leaveTypeId: bal.leaveTypeId, year: year + 1 } },
+          create: { employeeId: bal.employeeId, leaveTypeId: bal.leaveTypeId, year: year + 1, grantedDays: carryover },
+          update: { grantedDays: { increment: carryover } },
+        }),
+      );
+      carriedOver++;
+    }
+
+    if (ops.length > 0) await prisma.$transaction(ops);
+  }
+
+  return ok({ expired, carriedOver });
 }
 
 export async function adjustLeave(

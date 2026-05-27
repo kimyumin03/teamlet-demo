@@ -10,6 +10,13 @@ import { listRoles, type RoleListItem } from "@teamlet/modules/permission";
 import type { LeaveRequestItem } from "@teamlet/modules/leave";
 import type { DocumentListItem } from "@teamlet/modules/workflow";
 import { auth } from "@/auth";
+import {
+  listCareerHistories, listEducationHistories, listFamilyMembers,
+  type CareerHistoryItem, type EducationHistoryItem, type FamilyMemberItem,
+} from "@teamlet/modules/employee";
+import { CareerTab } from "./_components/career-tab";
+import { EducationTab } from "./_components/education-tab";
+import { FamilyTab } from "./_components/family-tab";
 import { DeactivateEmployeeButton } from "@/components/members/deactivate-button";
 import { EditMemberButton } from "@/components/members/edit-member-button";
 import { InviteLinkButton } from "@/components/members/invite-link-button";
@@ -66,6 +73,9 @@ const TABS = [
   { key: "appointment", label: "발령 이력" },
   { key: "leave", label: "휴가" },
   { key: "workflow", label: "결재 문서" },
+  { key: "career", label: "경력" },
+  { key: "education", label: "학력" },
+  { key: "family", label: "가족" },
   { key: "roles", label: "권한" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
@@ -111,7 +121,8 @@ export default async function MemberDetailPage({
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const [empResult, deptResult, posResult, leaveResult, workflowResult, rolesResult, apptResult] =
+  const [empResult, deptResult, posResult, leaveResult, workflowResult, rolesResult, apptResult,
+         careerResult, educationResult, familyResult] =
     await Promise.all([
       getEmployee(session.user.employeeId, id),
       listDepartments(session.user.employeeId),
@@ -120,6 +131,9 @@ export default async function MemberDetailPage({
       listEmployeeDocuments(session.user.employeeId, id),
       listRoles(session.user.employeeId),
       listAppointments(session.user.employeeId, id),
+      listCareerHistories(session.user.employeeId, id),
+      listEducationHistories(session.user.employeeId, id),
+      listFamilyMembers(session.user.employeeId, id),
     ]);
 
   if (!empResult.ok) {
@@ -140,6 +154,10 @@ export default async function MemberDetailPage({
   const workflowDocs: DocumentListItem[] = workflowResult.ok ? workflowResult.data : [];
   const assignableRoles: RoleListItem[] = rolesResult.ok ? rolesResult.data : [];
   const appointments: AppointmentItem[] = apptResult.ok ? apptResult.data : [];
+  const careerItems: CareerHistoryItem[] = careerResult.ok ? careerResult.data : [];
+  const educationItems: EducationHistoryItem[] = educationResult.ok ? educationResult.data : [];
+  const familyItems: FamilyMemberItem[] = familyResult.ok ? familyResult.data : [];
+  const canEditProfile = emp.isActive;
 
   return (
     <div className="flex h-full flex-col">
@@ -447,6 +465,21 @@ export default async function MemberDetailPage({
               </table>
             )}
           </div>
+        )}
+
+        {/* ── 경력 탭 ── */}
+        {activeTab === "career" && (
+          <CareerTab employeeId={emp.id} items={careerItems} canEdit={canEditProfile} />
+        )}
+
+        {/* ── 학력 탭 ── */}
+        {activeTab === "education" && (
+          <EducationTab employeeId={emp.id} items={educationItems} canEdit={canEditProfile} />
+        )}
+
+        {/* ── 가족 탭 ── */}
+        {activeTab === "family" && (
+          <FamilyTab employeeId={emp.id} items={familyItems} canEdit={canEditProfile} />
         )}
 
         {/* ── 권한 탭 ── */}

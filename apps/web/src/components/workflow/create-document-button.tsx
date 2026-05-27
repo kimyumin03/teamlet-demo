@@ -39,6 +39,7 @@ export function CreateDocumentButton({ employees, templates }: Props) {
 
   // Step 3
   const [approverIds, setApproverIds] = useState<string[]>([""]);
+  const [ccIds, setCcIds] = useState<string[]>([]);
 
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -49,6 +50,7 @@ export function CreateDocumentButton({ employees, templates }: Props) {
     setTitle("");
     setFormData({});
     setApproverIds([""]);
+    setCcIds([]);
     setError(null);
   }
 
@@ -82,6 +84,7 @@ export function CreateDocumentButton({ employees, templates }: Props) {
         kind: selectedTemplate?.kind ?? "GENERAL",
         templateId: selectedTemplateId ?? undefined,
         approverIds: valid,
+        ccRecipientIds: ccIds.filter(Boolean),
         formData: Object.fromEntries(
           Object.entries(formData).map(([k, v]) => [k, v]),
         ),
@@ -280,6 +283,43 @@ export function CreateDocumentButton({ employees, templates }: Props) {
                   + 결재자 추가
                 </Button>
               )}
+            </div>
+
+            {/* 참조자 (선택) */}
+            <div className="flex flex-col gap-2 pt-2 border-t border-border">
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-foreground-muted">참조자 <span className="text-foreground-subtle">(선택)</span></label>
+                {ccIds.length < 5 && (
+                  <button
+                    type="button"
+                    onClick={() => setCcIds((p) => [...p, ""])}
+                    className="text-xs text-foreground-muted hover:text-foreground"
+                  >
+                    + 추가
+                  </button>
+                )}
+              </div>
+              {ccIds.map((id, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <select
+                    value={id}
+                    onChange={(e) => setCcIds((p) => p.map((v, i) => (i === idx ? e.target.value : v)))}
+                    className="flex-1 h-9 rounded-md border border-border bg-background-primary px-3 text-sm text-foreground focus-visible:outline-none"
+                  >
+                    <option value="">참조자 선택</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>{emp.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setCcIds((p) => p.filter((_, i) => i !== idx))}
+                    className="px-2 text-foreground-muted hover:text-destructive-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
             </div>
 
             {error && (

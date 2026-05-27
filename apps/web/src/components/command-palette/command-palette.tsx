@@ -9,23 +9,13 @@ const NAV_ITEMS = [
   {
     group: "페이지",
     items: [
-      { label: "구성원 목록", href: "/members", keyword: "members 구성원" },
-      { label: "휴가 관리", href: "/leave", keyword: "leave 휴가" },
+      { label: "홈", href: "/home", keyword: "home 홈" },
+      { label: "구성원", href: "/members", keyword: "members 구성원" },
+      { label: "휴가", href: "/leave", keyword: "leave 휴가" },
       { label: "워크플로우", href: "/workflow", keyword: "workflow 결재" },
+      { label: "휴가 관리", href: "/hr/leave", keyword: "hr leave 휴가관리" },
       { label: "채용", href: "/recruit", keyword: "recruit 채용" },
-      { label: "문서 보관소", href: "/documents", keyword: "documents 문서" },
-      { label: "감사 로그", href: "/audit-log", keyword: "audit 감사" },
-    ],
-  },
-  {
-    group: "설정",
-    items: [
-      { label: "회사 정보", href: "/settings/company", keyword: "company 회사" },
-      { label: "공휴일 관리", href: "/settings/holidays", keyword: "holidays 공휴일" },
-      { label: "휴가 정책", href: "/settings/leave-policies", keyword: "leave policy 휴가정책" },
-      { label: "권한 설정", href: "/settings/permissions", keyword: "permissions 권한" },
-      { label: "보안 설정", href: "/settings/security", keyword: "security 보안" },
-      { label: "양식 관리", href: "/settings/form-templates", keyword: "form template 양식" },
+      { label: "문서", href: "/documents", keyword: "documents 문서" },
     ],
   },
 ];
@@ -100,6 +90,16 @@ export function CommandPalette() {
             {isPending && (
               <span className="shrink-0 text-xs text-foreground-subtle">검색 중…</span>
             )}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="shrink-0 rounded p-1 text-foreground-subtle hover:bg-background-secondary hover:text-foreground transition-colors"
+              aria-label="닫기"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+              </svg>
+            </button>
           </div>
 
           <Command.List className="max-h-80 overflow-y-auto p-2">

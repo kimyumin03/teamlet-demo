@@ -3,7 +3,7 @@ import { ok, err, errors, type Result } from "@teamlet/shared";
 import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
 import { getEffectivePermissions } from "../permission/effective";
-import type { RequestLeaveInput, LeaveRequestItem, PendingLeaveRequestItem } from "./types";
+import type { RequestLeaveInput, LeaveRequestItem, PendingLeaveRequestItem, CompanyLeaveRequestItem } from "./types";
 
 const BALANCE_READ = "leave.balance.read";
 const BALANCE_MANAGE = "leave.balance.manage";
@@ -168,9 +168,21 @@ export async function requestLeave(
     select: { grantedDays: true, usedDays: true, adjustedDays: true },
   });
 
+  // 승인 대기 중인 신청도 잔여에서 차감 — 중복 초과 신청 방지
+  const pendingAgg = await prisma.leaveRequest.aggregate({
+    where: {
+      employeeId,
+      leaveTypeId,
+      status: "PENDING",
+      startDate: { gte: new Date(`${year}-01-01`), lt: new Date(`${year + 1}-01-01`) },
+    },
+    _sum: { days: true },
+  });
+  const pendingDays = Number(pendingAgg._sum.days ?? 0);
+
   const remaining = balance
-    ? Number(balance.grantedDays) - Number(balance.usedDays) + Number(balance.adjustedDays)
-    : 0;
+    ? Number(balance.grantedDays) - Number(balance.usedDays) - pendingDays + Number(balance.adjustedDays)
+    : -pendingDays;
 
   if (remaining < days)
     return err(errors.validation(`잔여 휴가가 부족해요 (잔여 ${remaining}일, 신청 ${days}일)`));
@@ -391,6 +403,53 @@ export async function rejectLeave(
   return ok(undefined);
 }
 
+export async function listCompanyLeaveRequests(
+  actorEmployeeId: string,
+): Promise<Result<CompanyLeaveRequestItem[]>> {
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const perms = await getEffectivePermissions(actorEmployeeId);
+  const perm = perms.get(BALANCE_MANAGE);
+  if (!perm) return err(errors.forbidden("휴가 내역을 볼 권한이 없어요"));
+
+  const scopedDeptIds =
+    perm.scopeType === "DEPARTMENT" && perm.departmentIds.length > 0
+      ? perm.departmentIds
+      : null;
+
+  const requests = await prisma.leaveRequest.findMany({
+    where: {
+      employee: {
+        companyId: actor.companyId,
+        ...(scopedDeptIds ? { departmentId: { in: scopedDeptIds } } : {}),
+      },
+    },
+    include: {
+      employee: { select: { name: true, department: { select: { name: true } } } },
+      leaveType: { select: { name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 500,
+  });
+
+  return ok(
+    requests.map((r) => ({
+      id: r.id,
+      employeeId: r.employeeId,
+      employeeName: r.employee.name,
+      departmentName: r.employee.department?.name ?? null,
+      leaveTypeName: r.leaveType.name,
+      startDate: r.startDate,
+      endDate: r.endDate,
+      days: Number(r.days),
+      reason: r.reason,
+      status: r.status,
+      createdAt: r.createdAt,
+    })),
+  );
+}
+
 export async function cancelLeave(
   requestId: string,
   employeeId: string,
@@ -413,7 +472,13 @@ export async function cancelLeave(
       data: { status: "CANCELLED" },
     }),
     ...(req.formDocumentId
-      ? [prisma.formDocument.update({ where: { id: req.formDocumentId }, data: { status: "CANCELLED" } })]
+      ? [
+          prisma.formDocument.update({ where: { id: req.formDocumentId }, data: { status: "CANCELLED" } }),
+          prisma.approvalLine.updateMany({
+            where: { documentId: req.formDocumentId, status: "PENDING" },
+            data: { status: "REJECTED" },
+          }),
+        ]
       : []),
     ...(wasApproved
       ? [

@@ -1,5 +1,8 @@
 "use server";
 
+import { writeFile } from "fs/promises";
+import { randomBytes } from "crypto";
+import path from "path";
 import { redirect } from "next/navigation";
 import {
   submitJoinByCode,
@@ -13,6 +16,24 @@ async function requireUserId(): Promise<string> {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   return session.user.id;
+}
+
+const ALLOWED_MIME = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+
+async function saveApplicationDocument(file: File): Promise<string> {
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
+  const filename = `${randomBytes(16).toString("hex")}.${ext}`;
+  const uploadDir = path.join(process.cwd(), "public", "uploads", "applications");
+  const filePath = path.join(uploadDir, filename);
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await writeFile(filePath, buffer);
+  return `/uploads/applications/${filename}`;
 }
 
 /** 회사코드로 가입 신청 (docs/06 §1.2 옵션 2) */
@@ -35,6 +56,23 @@ export async function companyApplicationAction(
   formData: FormData,
 ): Promise<ActionState> {
   const userId = await requireUserId();
+
+  let documentUrl: string | undefined;
+  const docFile = formData.get("document");
+  if (docFile instanceof File && docFile.size > 0) {
+    if (!ALLOWED_MIME.has(docFile.type)) {
+      return { error: "PDF, JPG, PNG, WEBP 파일만 업로드할 수 있어요" };
+    }
+    if (docFile.size > MAX_SIZE) {
+      return { error: "파일 크기는 10MB 이하여야 해요" };
+    }
+    try {
+      documentUrl = await saveApplicationDocument(docFile);
+    } catch {
+      return { error: "파일 업로드에 실패했어요. 다시 시도해 주세요." };
+    }
+  }
+
   const result = await submitCompanyApplication(userId, {
     companyName: String(formData.get("companyName") ?? ""),
     businessNumber: String(formData.get("businessNumber") ?? ""),
@@ -45,8 +83,8 @@ export async function companyApplicationAction(
     ) as "1-10" | "11-50" | "51-200" | "201-1000" | "1000+",
     industry: String(formData.get("industry") ?? ""),
     memo: String(formData.get("memo") ?? "") || undefined,
+    documentUrl,
   });
   if (!result.ok) return { error: result.error.message };
-  // 데모 모드 자가-승인 시 홈으로. 일반 흐름은 검토 대기 페이지로.
   redirect(result.data.autoApproved ? "/home" : "/pending-approval");
 }

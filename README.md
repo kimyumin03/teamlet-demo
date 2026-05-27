@@ -43,17 +43,32 @@ pnpm dev              # http://localhost:3000
 
 > **앱 서버**: `http://localhost:3001` (포트 3001 고정)
 
-**데모 계정** (비밀번호: `Test1234!`)
+**데모 계정** — 이메일만으로 로그인 (비밀번호 없음)
 
-| 계정 | 역할 | 확인 시나리오 |
+| 계정 | 역할 | 비고 |
 |---|---|---|
-| `admin@teamlet.test` | 최고 관리자 + 조직장 | 결재함 → emp 휴가 승인, 구성원 관리 |
-| `hr@teamlet.test` | 팀원 (DEFAULT) | 휴가 14일 잔여 (과거 1일 사용) |
-| `emp@teamlet.test` | 팀원 (DEFAULT) | 연차 1건 결재 대기 중 |
-| `platform@teamlet.test` | 플랫폼 총관리자 | `/admin` 콘솔 — 회사 신청 승인, 사용자 관리 |
+| `admin@teamlet.test` | 최고 관리자 | 구성원 관리, 휴가 결재, 회사코드 가입 승인 |
+| `hr@teamlet.test` | 팀원 (DEFAULT) | 휴가 14일 잔여 |
+| `emp@teamlet.test` | 팀원 (DEFAULT) | 연차 1건 결재 대기 |
+| `platform@teamlet.test` | 플랫폼 관리자 | `/admin-key` 에서 비밀키(`teamlet-admin-2024`) 입력 후 접속 |
 
-> **환경 변수**: `apps/web/.env.local` 필요. `.env.example` 참고.  
-> **플랫폼 관리자**: `SYSTEM_ADMIN_EMAILS=platform@teamlet.test` (`.env.local` 설정됨)
+> **데모 회사코드**: `DEMO-0001`  
+> **환경 변수**: `apps/web/.env.local` 필요. `.env.example` 참고.
+
+## 도메인 구조
+
+| 도메인 | 경로 | 주요 기능 |
+|---|---|---|
+| 인증/가입 | `/login` `/signup` `/join-company` `/register-company` | 이메일 전용 로그인, 회사코드 가입, 회사 등록 신청 |
+| 홈 | `/home` | 결재 대기 · 휴가 잔여 · 팀 캘린더 |
+| 구성원 | `/members` | 디렉토리 · 상세 · 조직도 · CSV |
+| 휴가 | `/leave` | 신청 · 승인 · 잔여 현황 |
+| 전자결재 | `/workflow` | 결재함 · 양식 · 순차 결재 |
+| 채용 | `/recruitment` | 공고 · 후보자 칸반 |
+| 문서 | `/documents` | 문서 보관 · 증명서 발급 |
+| HR 관리 | `/hr/leave` | 전사 휴가 현황 · 맞춤 부여 |
+| 설정 | `/settings/*` | 프로필 · 역할 · 권한 · 정책 |
+| 플랫폼 관리 | `/admin` | 회사 신청 승인 · 사용자 관리 (비밀키 2단계 인증) |
 
 ## 구현 현황
 
@@ -93,4 +108,25 @@ pnpm dev              # http://localhost:3000
 - **권한 가드**: 모든 mutation에서 `assertPermission` — RBAC + Scope
 - **멀티 테넌시**: `UserRole`은 `employeeId` 기준 (회사별 신분)
 - **Anti-Pattern**: `updateEmployee` 직접 호출 금지 — 항상 `Appointment` 경유
-- **데모 모드**: `TEAMLET_DEMO_AUTO_APPROVE=true` — 회사 신청 즉시 승인 (운영 시 비활성)
+- **데모 모드**: `TEAMLET_DEMO_AUTO_APPROVE=false` — 플랫폼 관리자가 수동 검토
+
+---
+
+## 데일리 스크럼
+
+### 2026-05-26
+
+**오늘 한 일**
+- 인증 간소화: 이메일 전용 로그인 (비밀번호·2FA 제거)
+- 회원가입 비밀번호 제거 — 이름·이메일·연락처만 입력, 자동 로그인
+- 플랫폼 관리자 2단계 인증 — `/admin-key` 비밀키 페이지 구현
+- 회사 등록 신청에 사업자 증빙 서류 파일 업로드 추가 (PDF/JPG/PNG, 10MB)
+- 회사 가입 화면 뒤로가기 버튼 추가
+- DB 초기화 + 재시드 (데모 회사코드 `DEMO-0001`)
+
+**내일 할 일**
+- 로그인·가입·회사코드 가입 전체 흐름 런타임 검증
+- 비밀번호 설정 관련 페이지 정리 (settings/security 비밀번호 변경 UI 재검토)
+- 회사코드 가입 → 최고 관리자 승인 흐름 end-to-end 검증 (`/members` 앰버 배너)
+- 플랫폼 관리자 콘솔 문서 업로드 링크 동작 확인
+- 개인 설정(`/settings/profile`) 에서 이메일·연락처 수정 UI 점검

@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requestLeave, approveLeave, rejectLeave, cancelLeave, grantLeave } from "@teamlet/modules/leave";
+import { requestLeave, approveLeave, rejectLeave, cancelLeave, grantLeave, processLeaveExpiry } from "@teamlet/modules/leave";
 import { createNotification } from "@teamlet/modules/notification";
 import { toApiResponse, type ApiResponse } from "@teamlet/shared";
 import { auth } from "@/auth";
@@ -106,4 +106,11 @@ export async function grantLeaveAction(input: {
       reason: input.reason,
     }),
   );
+}
+
+export async function processLeaveExpiryAction(
+  year: number,
+): Promise<ApiResponse<{ expired: number; carriedOver: number }>> {
+  const actorId = await requireEmployee();
+  return toApiResponse(await processLeaveExpiry(actorId, year));
 }

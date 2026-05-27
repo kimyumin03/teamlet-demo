@@ -4,9 +4,11 @@ import { Suspense } from "react";
 import { listDepartments } from "@teamlet/modules/department";
 import { listEmployees, type EmployeeListItem } from "@teamlet/modules/employee";
 import { listPositions } from "@teamlet/modules/position";
+import { listPendingMemberships } from "@teamlet/modules/tenancy";
 import { auth } from "@/auth";
 import { AddDepartmentButton } from "@/components/members/add-department-button";
 import { AddMemberButton } from "@/components/members/add-member-button";
+import { PendingJoinPanel } from "@/components/members/pending-join-panel";
 import { AddPositionButton } from "@/components/members/add-position-button";
 import { CsvImportButton } from "@/components/members/csv-import-button";
 import { DepartmentActions } from "@/components/members/department-actions";
@@ -89,11 +91,14 @@ export default async function MembersPage({
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const [employeesResult, departmentsResult, positionsResult] = await Promise.all([
+  const [employeesResult, departmentsResult, positionsResult, pendingResult] = await Promise.all([
     listEmployees(session.user.employeeId),
     listDepartments(session.user.employeeId),
     listPositions(session.user.employeeId),
+    listPendingMemberships(session.user.employeeId),
   ]);
+
+  const pendingMembers = pendingResult.ok ? pendingResult.data : [];
 
   if (!employeesResult.ok) {
     return (
@@ -137,6 +142,7 @@ export default async function MembersPage({
 
   return (
     <div className="flex h-full flex-col">
+      {pendingMembers.length > 0 && <PendingJoinPanel items={pendingMembers} />}
       {/* 페이지 헤더 */}
       <div className="border-b border-border bg-background-primary px-6 py-4">
         <div className="flex items-center justify-between">
@@ -167,6 +173,22 @@ export default async function MembersPage({
               defaultDepartmentId={selected && selected !== UNASSIGNED ? selected : null}
             />
           </div>
+        </div>
+
+        {/* 뷰 탭: 구성원 목록 / 조직도 */}
+        <div className="mt-3 flex gap-1 border-b border-border">
+          <Link
+            href="/members"
+            className="border-b-2 border-foreground -mb-px px-4 py-2 text-sm font-medium text-foreground transition-colors"
+          >
+            구성원 목록
+          </Link>
+          <Link
+            href="/members/org-chart"
+            className="border-b-2 border-transparent -mb-px px-4 py-2 text-sm text-foreground-muted hover:text-foreground transition-colors"
+          >
+            조직도
+          </Link>
         </div>
 
         {/* 상태 탭 */}

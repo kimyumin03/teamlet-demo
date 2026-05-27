@@ -11,6 +11,17 @@ export type CreateDocumentInput = {
   templateId?: string;
   formData?: Record<string, unknown>;
   approverIds: string[];
+  ccRecipientIds?: string[];
+};
+
+export type CcDocumentItem = {
+  id: string;
+  title: string;
+  kind: FormDocumentKind;
+  status: FormDocumentStatus;
+  authorName: string;
+  createdAt: Date;
+  totalSteps: number;
 };
 
 export type DocumentListItem = {
@@ -33,6 +44,7 @@ export type DocumentDetail = {
   templateFields: FieldDef[] | null;
   authorName: string;
   createdAt: Date;
+  ccRecipients: { employeeId: string; name: string }[];
   approvalLines: {
     id: string;
     step: number;

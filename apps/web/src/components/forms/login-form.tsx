@@ -27,34 +27,6 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
             placeholder="you@company.com"
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="password" className="text-sm text-foreground-muted">
-            비밀번호
-          </label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="mfaCode" className="text-sm text-foreground-muted">
-            인증 코드{" "}
-            <span className="text-foreground-subtle">(2FA 설정 시 입력)</span>
-          </label>
-          <Input
-            id="mfaCode"
-            name="mfaCode"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            placeholder="000000"
-          />
-        </div>
 
         {state.error && (
           <p
@@ -70,11 +42,11 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
         </Button>
       </form>
 
-      <div className="flex items-center justify-between text-sm text-foreground-muted">
+      <div className="text-center text-sm text-foreground-muted">
+        계정이 없으신가요?{" "}
         <Link href="/signup" className="hover:text-foreground">
           회원가입
         </Link>
-        <span className="text-foreground-subtle">비밀번호 찾기</span>
       </div>
 
       <div className="flex items-center gap-3">

@@ -122,6 +122,21 @@ export function ApplicationsClient({
                   />
                 </dl>
 
+                {app.documentUrl && (
+                  <a
+                    href={app.documentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 flex items-center gap-1.5 text-sm text-primary hover:underline"
+                  >
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4 shrink-0">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v-13A1.5 1.5 0 0 1 4.5 2h7.379a1.5 1.5 0 0 1 1.06.44l2.622 2.62A1.5 1.5 0 0 1 16 6.122V16.5A1.5 1.5 0 0 1 14.5 18h-10A1.5 1.5 0 0 1 3 16.5Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 12.5 10 9.5l3 3M10 9.5V15" />
+                    </svg>
+                    사업자 증빙 서류 보기
+                  </a>
+                )}
+
                 {app.memo && (
                   <p className="mt-3 rounded-md bg-background-secondary px-3 py-2 text-sm text-foreground-muted">
                     {app.memo}

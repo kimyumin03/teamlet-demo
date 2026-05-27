@@ -13,3 +13,4 @@ export * as appointment from "./appointment/index";
 export * as department from "./department/index";
 export * as position from "./position/index";
 export * as leave from "./leave/index";
+export * as announcement from "./announcement/index";

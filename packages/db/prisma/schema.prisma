@@ -322,6 +322,8 @@ model Company {
   notifications     Notification[]
   leavePolicies     LeavePolicy[]
   appointments      Appointment[]
+  announcements     Announcement[]
+  approvalPolicies  ApprovalPolicy[]
   // 신청 승인 시 생성된 회사 역참조
   fromApplication CompanyApplication? @relation("CreatedCompany")
 
@@ -361,6 +363,7 @@ model CompanyApplication {
   companySize        String
   industry           String
   memo               String?
+  documentUrl        String?
   status             ApplicationStatus @default(PENDING)
   reviewerUserId     String?
   reviewedAt         DateTime?
@@ -481,6 +484,8 @@ model Employee {
   authoredDocuments FormDocument[]     @relation("AuthoredDocuments")
   approvalLines     ApprovalLine[]     @relation("ApprovalLines")
   approvalActions   ApprovalAction[]   @relation("ApprovalActions")
+  ccDocuments       DocumentCcRecipient[] @relation("CcDocuments")
+  announcements     Announcement[]        @relation("AuthoredAnnouncements")
   managedPostings      JobPosting[]       @relation("ManagedPostings")
   managedCandidates    Candidate[]        @relation("ManagedCandidates")
   uploadedDocuments    CompanyDocument[]  @relation("UploadedDocuments")
@@ -489,6 +494,9 @@ model Employee {
   notifications           Notification[]           @relation("ReceivedNotifications")
   leavePolicyAssignments  LeavePolicyAssignment[]
   appointments            Appointment[]
+  careerHistories         CareerHistory[]
+  educationHistories      EducationHistory[]
+  familyMembers           FamilyMember[]
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
@@ -912,10 +920,26 @@ model FormDocument {
   approvalLines ApprovalLine[]
   actions       ApprovalAction[]
   leaveRequest  LeaveRequest?
+  ccRecipients  DocumentCcRecipient[]
 
   @@index([companyId, status])
   @@index([authorId, status])
   @@map("form_documents")
+}
+
+/// 결재 문서 참조자 (열람만, 결재 권한 없음).
+model DocumentCcRecipient {
+  id         String   @id @default(cuid())
+  documentId String
+  employeeId String
+  createdAt  DateTime @default(now())
+
+  document   FormDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  employee   Employee     @relation("CcDocuments", fields: [employeeId], references: [id])
+
+  @@unique([documentId, employeeId])
+  @@index([employeeId])
+  @@map("document_cc_recipients")
 }
 
 /// 결재 단계 인스턴스 (문서별 순서대로 생성).
@@ -1132,6 +1156,67 @@ model Notification {
   @@map("notifications")
 }
 
+/// 회사 공지사항.
+model Announcement {
+  id        String   @id @default(cuid())
+  companyId String
+  authorId  String
+  title     String
+  content   String   @db.Text
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  author  Employee @relation("AuthoredAnnouncements", fields: [authorId], references: [id])
+
+  @@index([companyId, isPinned, createdAt(sort: Desc)])
+  @@map("announcements")
+}
+
+// ─────────────────────────────────────────────────────────────
+// 결재 정책 — 문서 종류별 자동 결재선 설정
+// ─────────────────────────────────────────────────────────────
+
+enum ApproverType {
+  SPECIFIC_PERSON  // 특정 인물 (approverId 필수)
+  DIRECT_MANAGER   // 직속 상관 (동적)
+  DEPARTMENT_HEAD  // 부서장 (동적)
+  ORG_HEAD         // 조직장 (동적)
+}
+
+/// 문서 종류별 결재 정책.
+model ApprovalPolicy {
+  id          String           @id @default(cuid())
+  companyId   String
+  name        String
+  category    FormDocumentKind @default(GENERAL)
+  description String           @default("")
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  company Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  steps   ApprovalPolicyStep[]
+
+  @@index([companyId, isActive])
+  @@map("approval_policies")
+}
+
+/// 결재 정책 단계별 결재자.
+model ApprovalPolicyStep {
+  id           String       @id @default(cuid())
+  policyId     String
+  step         Int
+  approverType ApproverType @default(SPECIFIC_PERSON)
+  approverId   String?
+
+  policy ApprovalPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@unique([policyId, step])
+  @@map("approval_policy_steps")
+}
+
 // Phase 2~8 PLACEHOLDER (docs/03 — 구현 시 활성화)
 // Phase 2 Core HR : PositionHistory, EmploymentContractHistory,
 //   SalaryContractHistory, Appointment/AppointmentTarget,
@@ -1149,3 +1234,72 @@ model Notification {
 //   AIIntentLog, Recognition/Feedback, BulkOperation/BulkOperationRow,
 //   AxHubSyncConfig, IntegrationConfig
 // ─────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────
+// Phase 7 — 구성원 확장 프로필 (경력/교육/가족)
+// ─────────────────────────────────────────────────────────────
+
+enum EducationDegree {
+  HIGH_SCHOOL
+  ASSOCIATE
+  BACHELOR
+  MASTER
+  DOCTOR
+  ETC
+}
+
+/// 구성원 경력 사항
+model CareerHistory {
+  id          String    @id @default(cuid())
+  employeeId  String
+  companyName String
+  position    String
+  department  String    @default("")
+  startDate   DateTime
+  endDate     DateTime?
+  description String    @default("")
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("career_histories")
+}
+
+/// 구성원 학력 사항
+model EducationHistory {
+  id           String          @id @default(cuid())
+  employeeId   String
+  schoolName   String
+  major        String          @default("")
+  degree       EducationDegree @default(BACHELOR)
+  enrollDate   DateTime
+  graduateDate DateTime?
+  description  String          @default("")
+  sortOrder    Int             @default(0)
+  createdAt    DateTime        @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("education_histories")
+}
+
+/// 구성원 가족 사항
+model FamilyMember {
+  id           String    @id @default(cuid())
+  employeeId   String
+  name         String
+  relationship String
+  birthDate    DateTime?
+  isDependent  Boolean   @default(false)
+  gender       Gender?
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("family_members")
+}

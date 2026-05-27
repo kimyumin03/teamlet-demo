@@ -18,7 +18,8 @@
     "./recruit": "./src/recruit/index.ts",
     "./document": "./src/document/index.ts",
     "./security": "./src/security/index.ts",
-    "./notification": "./src/notification/index.ts"
+    "./notification": "./src/notification/index.ts",
+    "./announcement": "./src/announcement/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

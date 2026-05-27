@@ -1,6 +1,6 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
-import type { CreateDocumentInput, DocumentListItem, PendingApprovalItem, DocumentDetail } from "./types";
+import type { CreateDocumentInput, DocumentListItem, PendingApprovalItem, DocumentDetail, CcDocumentItem } from "./types";
 import type { FieldDef } from "./template";
 
 export async function getDocument(
@@ -22,6 +22,7 @@ export async function getDocument(
         },
         orderBy: { step: "asc" },
       },
+      ccRecipients: { select: { employeeId: true, employee: { select: { name: true } } } },
     },
   });
 
@@ -29,7 +30,8 @@ export async function getDocument(
 
   const isRelated =
     doc.authorId === employeeId ||
-    doc.approvalLines.some((l) => l.approverId === employeeId);
+    doc.approvalLines.some((l) => l.approverId === employeeId) ||
+    doc.ccRecipients.some((c) => c.employeeId === employeeId);
   if (!isRelated) return err(errors.forbidden("열람 권한이 없어요"));
 
   return ok({
@@ -41,6 +43,7 @@ export async function getDocument(
     templateFields: doc.template ? (doc.template.fields as FieldDef[]) : null,
     authorName: doc.author.name,
     createdAt: doc.createdAt,
+    ccRecipients: doc.ccRecipients.map((c) => ({ employeeId: c.employeeId, name: c.employee.name })),
     approvalLines: doc.approvalLines.map((l) => ({
       id: l.id,
       step: l.step,
@@ -100,6 +103,14 @@ export async function createDocument(
         status: "PENDING",
       })),
     });
+
+    if (input.ccRecipientIds && input.ccRecipientIds.length > 0) {
+      const uniqueCc = [...new Set(input.ccRecipientIds)];
+      await tx.documentCcRecipient.createMany({
+        data: uniqueCc.map((employeeId) => ({ documentId: created.id, employeeId })),
+        skipDuplicates: true,
+      });
+    }
 
     return created;
   });
@@ -245,4 +256,33 @@ export async function listPendingApprovals(
   );
 
   return ok(items.filter((i): i is PendingApprovalItem => i !== null));
+}
+
+export async function listCcDocuments(
+  employeeId: string,
+): Promise<Result<CcDocumentItem[]>> {
+  const rows = await prisma.documentCcRecipient.findMany({
+    where: { employeeId },
+    include: {
+      document: {
+        include: {
+          author: { select: { name: true } },
+          approvalLines: { select: { step: true }, orderBy: { step: "desc" }, take: 1 },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return ok(
+    rows.map((r) => ({
+      id: r.document.id,
+      title: r.document.title,
+      kind: r.document.kind,
+      status: r.document.status,
+      authorName: r.document.author.name,
+      createdAt: r.document.createdAt,
+      totalSteps: r.document.approvalLines[0]?.step ?? 0,
+    })),
+  );
 }

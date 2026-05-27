@@ -17,6 +17,15 @@ export type AuthedUser = {
 
 export type LoginContext = { ip?: string | null; userAgent?: string | null };
 
+/** 이메일로 활성 사용자 조회 — 비밀번호 없는 로그인용 */
+export async function findUserByEmail(email: string): Promise<AuthedUser | null> {
+  const normalized = email.trim().toLowerCase();
+  const user = await prisma.user.findUnique({ where: { email: normalized } });
+  if (!user || !user.isActive) return null;
+  await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+  return { id: user.id, email: user.email, name: user.name };
+}
+
 export async function authenticateUser(
   email: string,
   password: string,

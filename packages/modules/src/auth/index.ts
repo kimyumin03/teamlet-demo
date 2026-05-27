@@ -1,6 +1,7 @@
 export { hashPassword, verifyPassword } from "./password";
 export {
   authenticateUser,
+  findUserByEmail,
   type AuthedUser,
   type LoginContext,
 } from "./login";

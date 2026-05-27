@@ -25,6 +25,7 @@ export async function createDocumentAction(input: {
   kind: FormDocumentKind;
   templateId?: string;
   approverIds: string[];
+  ccRecipientIds?: string[];
   formData?: Record<string, unknown>;
 }): Promise<ApiResponse<{ id: string }>> {
   const { employeeId, companyId } = await requireEmployee();
@@ -36,6 +37,7 @@ export async function createDocumentAction(input: {
       kind: input.kind,
       templateId: input.templateId,
       approverIds: input.approverIds,
+      ccRecipientIds: input.ccRecipientIds,
       formData: input.formData,
     }),
   );
