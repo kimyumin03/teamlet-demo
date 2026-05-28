@@ -266,7 +266,7 @@ export function LeavePoliciesClient({ initialPolicies, leaveTypes }: Props) {
       </div>
 
       {policies.length === 0 ? (
-        <div className="rounded-lg border border-border bg-background-primary p-10 text-center text-sm text-foreground-muted">
+        <div className="rounded-[14px] border border-border bg-background-primary p-10 text-center text-sm text-foreground-muted">
           등록된 휴가 정책이 없어요. 정책을 추가해 구성원에게 배정하세요.
         </div>
       ) : (
@@ -274,7 +274,7 @@ export function LeavePoliciesClient({ initialPolicies, leaveTypes }: Props) {
           {policies.map((p) => (
             <div
               key={p.id}
-              className="rounded-lg border border-border bg-background-primary p-4"
+              className="rounded-[14px] border border-border bg-background-primary p-4"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -326,7 +326,7 @@ export function LeavePoliciesClient({ initialPolicies, leaveTypes }: Props) {
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
             <PolicyForm form={form} setForm={setForm} leaveTypes={leaveTypes} />
             {error && (
-              <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>
+              <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>
             )}
             <DialogFooter>
               <DialogClose asChild>
@@ -349,7 +349,7 @@ export function LeavePoliciesClient({ initialPolicies, leaveTypes }: Props) {
           <form onSubmit={handleEdit} className="flex flex-col gap-4">
             <PolicyForm form={form} setForm={setForm} leaveTypes={leaveTypes} disableLeaveType />
             {error && (
-              <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>
+              <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>
             )}
             <DialogFooter>
               <DialogClose asChild>
@@ -372,7 +372,7 @@ export function LeavePoliciesClient({ initialPolicies, leaveTypes }: Props) {
           <p className="text-sm text-foreground-muted">
             <strong className="text-foreground">{deleteTarget?.name}</strong> 정책을 삭제할까요?
             {deleteTarget && deleteTarget.assignedCount > 0 && (
-              <span className="mt-1 block text-destructive-600">배정된 구성원이 있어 삭제할 수 없어요.</span>
+              <span className="mt-1 block text-destructive">배정된 구성원이 있어 삭제할 수 없어요.</span>
             )}
           </p>
           <DialogFooter>

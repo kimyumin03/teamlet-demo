@@ -1,64 +1,67 @@
 import Link from "next/link";
 import type { LeaveBalanceSummary } from "@teamlet/modules/leave";
 import type { PendingApprovalItem, DocumentListItem } from "@teamlet/modules/workflow";
-import type { NotificationItem } from "@teamlet/modules/notification";
-import { MiniCalendar } from "./mini-calendar";
+import type { AnnouncementItem } from "@teamlet/modules/announcement";
 
-const STATUS_CLASS: Record<string, string> = {
-  IN_PROGRESS: "bg-amber-50 text-amber-700",
-  APPROVED: "bg-background-secondary text-foreground-muted",
-  REJECTED: "bg-destructive-50 text-destructive-700",
-  DRAFT: "bg-background-secondary text-foreground-subtle",
-  CANCELLED: "bg-background-secondary text-foreground-subtle",
-};
-const STATUS_LABEL: Record<string, string> = {
-  IN_PROGRESS: "진행중",
-  APPROVED: "승인",
-  REJECTED: "반려",
-  DRAFT: "임시저장",
-  CANCELLED: "취소",
-};
-
-const KIND_LABEL: Record<string, string> = {
-  LEAVE_REQUEST: "휴가",
-  NOTICE: "공지",
-  GENERAL: "일반",
-  INFO_CHANGE: "정보변경",
-};
-
-function formatDate(d: Date) {
-  return new Date(d).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" });
+function formatRelative(d: Date) {
+  const diff = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
+  if (diff < 60) return `${diff}분 전`;
+  if (diff < 1440) return `${Math.floor(diff / 60)}시간 전`;
+  return `${Math.floor(diff / 1440)}일 전`;
 }
 
-function StatCard({
+function KpiCard({
   label,
   value,
-  sub,
+  unit,
+  delta,
   href,
-  accent,
+  warn,
 }: {
   label: string;
   value: string | number;
-  sub?: string;
+  unit?: string;
+  delta?: string;
   href: string;
-  accent?: "amber" | "blue" | "default";
+  warn?: boolean;
 }) {
-  const accentClass =
-    accent === "amber"
-      ? "border-amber-200 hover:bg-amber-50/30"
-      : accent === "blue"
-      ? "border-blue-100 hover:bg-blue-50/20"
-      : "hover:bg-background-secondary";
-
   return (
     <Link
       href={href}
-      className={`flex flex-col gap-1.5 rounded-xl border border-border bg-background-primary p-5 transition-colors ${accentClass}`}
+      className="flex flex-col gap-1 rounded-[14px] border border-border bg-background-primary p-4 transition-colors hover:bg-background-secondary"
     >
-      <p className="text-xs text-foreground-subtle">{label}</p>
-      <p className="text-2xl font-bold tabular-nums text-foreground">{value}</p>
-      {sub && <p className="text-xs text-foreground-muted">{sub}</p>}
+      <span className="text-[12px] text-foreground-muted">{label}</span>
+      <span className={`text-[22px] font-bold tabular-nums leading-tight tracking-tight ${warn ? "text-destructive-600" : "text-foreground"}`}>
+        {value}
+        {unit && <small className="ml-1 text-[12px] font-normal text-foreground-muted">{unit}</small>}
+      </span>
+      {delta && <span className="text-[12px] text-foreground-muted">{delta}</span>}
     </Link>
+  );
+}
+
+function PostCard({ item, currentEmployeeId }: { item: AnnouncementItem; currentEmployeeId?: string | null }) {
+  return (
+    <article className="overflow-hidden rounded-[16px] border border-border bg-background-primary transition-shadow hover:shadow-sm mb-3.5">
+      <div className="flex items-center gap-3 px-5 pt-4 pb-2.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background-secondary text-xs font-semibold text-foreground">
+          {item.authorName?.slice(-2) ?? "??"}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-foreground truncate">{item.authorName}</div>
+          <div className="text-[12px] text-foreground-muted">{formatRelative(item.createdAt)} · 공지사항</div>
+        </div>
+        {item.isPinned && (
+          <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
+            📌 필독
+          </span>
+        )}
+      </div>
+      <div className="px-5 pb-4">
+        <h3 className="mb-1.5 text-[16px] font-bold leading-snug tracking-tight">{item.title}</h3>
+        <p className="line-clamp-3 text-[13.5px] leading-relaxed text-foreground-muted">{item.content}</p>
+      </div>
+    </article>
   );
 }
 
@@ -67,217 +70,108 @@ export function FeedTab({
   pending,
   balances,
   myDocs,
-  notifications,
   annualBalance,
+  announcements,
   year,
 }: {
   employeeId: string | undefined | null;
   pending: PendingApprovalItem[];
   balances: LeaveBalanceSummary[];
   myDocs: DocumentListItem[];
-  notifications: NotificationItem[];
   annualBalance: LeaveBalanceSummary | undefined;
+  announcements: AnnouncementItem[];
   year: number;
 }) {
-  const recentDocs = myDocs.slice(0, 6);
   const inProgressDocs = myDocs.filter((d) => d.status === "IN_PROGRESS").length;
-  const unreadCount = notifications.length;
+  const urgentCount = pending.filter(
+    (p) => Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000) >= 3
+  ).length;
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* 요약 카드 */}
+    <section className="flex flex-col">
+      {/* KPI 카드 */}
       {employeeId && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard
+        <div className="mb-5 grid grid-cols-4 gap-3">
+          <KpiCard
+            label="연차 잔여"
+            value={annualBalance ? annualBalance.remainingDays : "—"}
+            unit={annualBalance ? `/ ${annualBalance.grantedDays}일` : undefined}
+            delta={annualBalance ? `사용 ${annualBalance.usedDays}일` : "잔여 정보 없음"}
+            href="/leave"
+            warn={!!annualBalance && annualBalance.remainingDays <= 3}
+          />
+          <KpiCard
             label="결재 대기"
             value={pending.length}
-            sub={pending.length > 0 ? `${pending.length}건 승인 필요` : "처리 완료"}
+            unit="건"
+            delta={pending.length > 0 ? "바로 처리 →" : "처리 완료"}
             href="/workflow"
-            accent={pending.length > 0 ? "amber" : "default"}
+            warn={pending.length > 0}
           />
-          <StatCard
-            label={`연차 잔여 (${year})`}
-            value={annualBalance ? `${annualBalance.remainingDays}일` : "—"}
-            sub={
-              annualBalance
-                ? `총 ${annualBalance.grantedDays}일 · 사용 ${annualBalance.usedDays}일`
-                : "잔여 정보 없음"
-            }
-            href="/leave"
-            accent="blue"
-          />
-          <StatCard
+          <KpiCard
             label="진행 중 문서"
             value={inProgressDocs}
-            sub="내가 기안한 문서"
+            unit="건"
+            delta="내가 기안한 문서"
             href="/workflow"
           />
-          <StatCard
-            label="안 읽은 알림"
-            value={unreadCount}
-            sub={unreadCount > 0 ? "확인해 주세요" : "새 알림 없음"}
-            href="/workflow"
-            accent={unreadCount > 0 ? "amber" : "default"}
+          <KpiCard
+            label="처리 지연"
+            value={urgentCount}
+            unit="건"
+            delta={urgentCount > 0 ? "즉시 처리 필요" : "지연 없음"}
+            href="/home?tab=tasks"
+            warn={urgentCount > 0}
           />
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_288px]">
-        {/* 왼쪽: 피드 */}
-        <div className="flex flex-col gap-5">
-          {/* 결재 대기 */}
-          {pending.length > 0 && (
-            <section className="rounded-xl border border-amber-200 bg-amber-50/30 overflow-hidden">
-              <div className="flex items-center justify-between px-5 pt-5 pb-3">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-semibold text-foreground">결재 대기</h2>
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                    {pending.length}
-                  </span>
-                </div>
-                <Link href="/workflow" className="text-xs text-foreground-muted hover:text-foreground">
-                  전체 보기 →
-                </Link>
-              </div>
-              <ul className="flex flex-col divide-y divide-amber-100">
-                {pending.slice(0, 5).map((item) => (
-                  <li key={item.id}>
-                    <Link
-                      href={`/workflow/documents/${item.documentId}`}
-                      className="flex items-center justify-between px-5 py-3 hover:bg-amber-50/50 transition-colors"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-foreground">{item.documentTitle}</p>
-                        <p className="text-xs text-foreground-muted mt-0.5">
-                          {item.authorName} · {item.step}/{item.totalSteps}단계 · {formatDate(item.createdAt)}
-                        </p>
-                      </div>
-                      <span className="ml-3 shrink-0 rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                        승인 필요
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              {pending.length > 5 && (
-                <div className="border-t border-amber-100 px-5 py-2.5">
-                  <Link href="/workflow" className="text-xs text-amber-700 hover:text-amber-900">
-                    + {pending.length - 5}건 더 보기
-                  </Link>
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* 최근 문서 */}
-          <section className="rounded-xl border border-border bg-background-primary overflow-hidden">
-            <div className="flex items-center justify-between px-5 pt-5 pb-3">
-              <h2 className="text-sm font-semibold text-foreground">최근 문서</h2>
-              <Link href="/workflow" className="text-xs text-foreground-muted hover:text-foreground">
-                전체 보기 →
-              </Link>
+      {/* 결재 대기 배너 */}
+      {pending.length > 0 && (
+        <div className="mb-5 overflow-hidden rounded-[14px] border border-amber-200 bg-amber-50">
+          <div className="flex items-center justify-between px-5 py-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-semibold text-amber-800">결재 대기</span>
+              <span className="rounded-full bg-amber-200 px-2 py-0.5 font-mono text-[10.5px] font-bold text-amber-800">
+                {pending.length}
+              </span>
             </div>
-            {recentDocs.length === 0 ? (
-              <div className="px-5 pb-6 text-center">
-                <p className="text-sm text-foreground-muted">작성한 문서가 없어요.</p>
+            <Link href="/workflow" className="text-[12px] text-amber-700 hover:text-amber-900">
+              전체 보기 →
+            </Link>
+          </div>
+          <ul className="flex flex-col divide-y divide-amber-100">
+            {pending.slice(0, 3).map((item) => (
+              <li key={item.id}>
                 <Link
-                  href="/workflow"
-                  className="mt-2 inline-block text-xs text-primary hover:underline"
+                  href={`/workflow/documents/${item.documentId}`}
+                  className="flex items-center justify-between px-5 py-3 hover:bg-amber-100/40 transition-colors"
                 >
-                  첫 문서 기안하기 →
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-medium text-foreground">{item.documentTitle}</p>
+                    <p className="text-[11.5px] text-foreground-muted mt-0.5">
+                      {item.authorName} · {item.step}/{item.totalSteps}단계
+                    </p>
+                  </div>
+                  <span className="ml-3 shrink-0 text-amber-700 text-[12px]">→</span>
                 </Link>
-              </div>
-            ) : (
-              <ul className="flex flex-col divide-y divide-border">
-                {recentDocs.map((doc) => (
-                  <li key={doc.id}>
-                    <Link
-                      href={`/workflow/documents/${doc.id}`}
-                      className="flex items-center justify-between px-5 py-3 hover:bg-background-secondary transition-colors"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          {doc.kind in KIND_LABEL && (
-                            <span className="shrink-0 rounded bg-background-secondary px-1.5 py-0.5 text-[10px] text-foreground-subtle">
-                              {KIND_LABEL[doc.kind]}
-                            </span>
-                          )}
-                          <p className="truncate text-sm font-medium text-foreground">{doc.title}</p>
-                        </div>
-                        <p className="text-xs text-foreground-muted mt-0.5">
-                          {formatDate(doc.createdAt)} ·{" "}
-                          {doc.currentStep !== null
-                            ? `${doc.currentStep}/${doc.totalSteps}단계`
-                            : `총 ${doc.totalSteps}단계`}
-                        </p>
-                      </div>
-                      <span
-                        className={`ml-3 shrink-0 rounded-md px-2 py-0.5 text-xs ${STATUS_CLASS[doc.status] ?? "text-foreground-muted"}`}
-                      >
-                        {STATUS_LABEL[doc.status] ?? doc.status}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {/* 알림 (안 읽은 것) */}
-          {notifications.length > 0 && (
-            <section className="rounded-xl border border-border bg-background-primary overflow-hidden">
-              <div className="px-5 pt-5 pb-3">
-                <h2 className="text-sm font-semibold text-foreground">새 알림</h2>
-              </div>
-              <ul className="flex flex-col divide-y divide-border">
-                {notifications.slice(0, 4).map((n) => (
-                  <li key={n.id} className="px-5 py-3">
-                    <p className="text-sm font-medium text-foreground">{n.title}</p>
-                    <p className="text-xs text-foreground-muted mt-0.5">{n.body}</p>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+              </li>
+            ))}
+          </ul>
         </div>
+      )}
 
-        {/* 오른쪽 사이드바 */}
-        <div className="flex flex-col gap-5">
-          {/* 미니 캘린더 */}
-          <section className="rounded-xl border border-border bg-background-primary p-5">
-            <MiniCalendar />
-          </section>
-
-          {/* 휴가 잔여 */}
-          {balances.length > 0 && (
-            <section className="rounded-xl border border-border bg-background-primary overflow-hidden">
-              <div className="flex items-center justify-between px-5 pt-5 pb-3">
-                <h2 className="text-sm font-semibold text-foreground">휴가 잔여</h2>
-                <Link href="/leave" className="text-xs text-foreground-muted hover:text-foreground">
-                  신청 →
-                </Link>
-              </div>
-              <ul className="flex flex-col divide-y divide-border">
-                {balances.slice(0, 5).map((b) => (
-                  <li
-                    key={b.leaveTypeId}
-                    className="flex items-center justify-between px-5 py-2.5"
-                  >
-                    <span className="text-sm text-foreground">{b.leaveTypeName}</span>
-                    <div className="text-right">
-                      <span className="text-sm font-semibold tabular-nums text-foreground">
-                        {b.remainingDays}일
-                      </span>
-                      <span className="ml-1 text-xs text-foreground-subtle">/ {b.grantedDays}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
+      {/* 공지 피드 */}
+      {announcements.length > 0 ? (
+        announcements.slice(0, 5).map((a) => (
+          <PostCard key={a.id} item={a} currentEmployeeId={employeeId} />
+        ))
+      ) : (
+        <div className="flex flex-col items-center gap-2 rounded-[14px] border border-border bg-background-primary py-12 text-center">
+          <p className="text-[14px] font-medium text-foreground">등록된 공지사항이 없어요</p>
+          <p className="text-[12.5px] text-foreground-muted">팀의 소식을 공유해 보세요.</p>
         </div>
-      </div>
-    </div>
+      )}
+    </section>
   );
 }

@@ -90,7 +90,6 @@ export function MiniCalendar() {
                 viewMonth === todayM &&
                 day === todayD;
               const isSun = di === 0;
-              const isSat = di === 6;
 
               return (
                 <div key={di} className="flex items-center justify-center py-0.5">
@@ -101,8 +100,6 @@ export function MiniCalendar() {
                           ? "bg-foreground text-background-primary font-semibold"
                           : isSun
                           ? "text-destructive-600 hover:bg-background-secondary cursor-default"
-                          : isSat
-                          ? "text-blue-500 hover:bg-background-secondary cursor-default"
                           : "text-foreground-muted hover:bg-background-secondary cursor-default"
                       }`}
                     >

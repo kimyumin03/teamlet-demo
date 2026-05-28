@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input } from "@teamlet/ui";
+import { Button } from "@teamlet/ui";
 import type { CompanyInfo } from "@teamlet/modules/tenancy";
 import { updateCompanyInfoAction } from "@/lib/actions/company";
 
@@ -11,11 +11,27 @@ function toDateInput(d: Date | null | undefined): string {
   return new Date(d).toISOString().slice(0, 10);
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+const inputCls =
+  "w-full max-w-[420px] rounded-[8px] border border-border-strong bg-background-primary px-3 py-2 text-[13.5px] text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50";
+
+function Field({
+  label,
+  hint,
+  narrow,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  narrow?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm text-foreground-muted">{label}</label>
-      {children}
+    <div className="grid grid-cols-[220px_1fr] items-start gap-6 border-b border-border py-3.5 last:border-0">
+      <div>
+        <p className="text-[13px] font-semibold text-foreground">{label}</p>
+        {hint && <p className="mt-1 text-[11.5px] text-foreground-muted">{hint}</p>}
+      </div>
+      <div className={narrow ? "max-w-[260px]" : ""}>{children}</div>
     </div>
   );
 }
@@ -54,96 +70,116 @@ export function CompanyInfoForm({ initialInfo }: { initialInfo: CompanyInfo }) {
     });
   }
 
+  const companyInitial = initialInfo.name.charAt(0).toUpperCase();
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {/* 회사 로고 카드 */}
+      <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+        <h3 className="mb-1.5 text-[15px] font-bold text-foreground">회사 로고</h3>
+        <p className="mb-4 text-[12.5px] text-foreground-muted">사이드바·증명서·결재 문서 상단에 표시됩니다.</p>
+        <div className="flex items-center gap-4">
+          <div
+            className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-[14px] text-[22px] font-bold"
+            style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-hover))", color: "var(--primary-on)" }}
+          >
+            {companyInitial}
+          </div>
+          <label className="flex flex-1 max-w-[380px] cursor-pointer items-center gap-3 rounded-[10px] border border-dashed border-border-strong bg-background-secondary px-4 py-3 transition-colors hover:bg-background-tertiary">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border border-border bg-background-primary text-foreground-muted">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                <path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z" />
+                <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-foreground">새 로고 업로드</p>
+              <p className="text-[11.5px] text-foreground-muted">SVG 권장 · PNG 최소 256×256 · 준비 중</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
       {/* 읽기 전용 정보 */}
-      <div className="rounded-lg border border-border bg-background-secondary p-4">
-        <p className="mb-3 text-xs font-medium text-foreground-muted uppercase tracking-wide">읽기 전용</p>
-        <div className="grid grid-cols-2 gap-4 text-sm">
+      <div className="rounded-[14px] border border-border bg-background-secondary px-[26px] py-[22px]">
+        <h3 className="mb-4 text-[15px] font-bold text-foreground">등록 정보 <span className="ml-2 text-[12px] font-normal text-foreground-muted">변경 불가</span></h3>
+        <div className="grid grid-cols-2 gap-4 text-[13px]">
           <div>
-            <p className="text-foreground-subtle">사업자번호</p>
-            <p className="mt-0.5 font-mono text-foreground">{initialInfo.businessNumber}</p>
+            <p className="text-[11.5px] text-foreground-subtle">사업자번호</p>
+            <p className="mt-0.5 font-mono font-semibold text-foreground">{initialInfo.businessNumber}</p>
           </div>
           <div>
-            <p className="text-foreground-subtle">회사코드</p>
-            <p className="mt-0.5 font-mono text-foreground">{initialInfo.companyCode}</p>
+            <p className="text-[11.5px] text-foreground-subtle">회사코드</p>
+            <p className="mt-0.5 font-mono font-semibold text-foreground">{initialInfo.companyCode}</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* 기본 정보 카드 */}
+      <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+        <h3 className="mb-5 text-[15px] font-bold text-foreground">기본 정보</h3>
         <Field label="회사명">
-          <Input
-            required
-            minLength={2}
-            maxLength={100}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <input className={inputCls} required minLength={2} maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
         <Field label="대표 연락처">
-          <Input
-            maxLength={20}
-            placeholder="02-0000-0000"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
+          <input className={inputCls} maxLength={20} placeholder="02-0000-0000" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        </Field>
+        <Field label="설립일" narrow>
+          <input className={inputCls} type="date" value={foundedAt} onChange={(e) => setFoundedAt(e.target.value)} />
         </Field>
       </div>
 
-      <Field label="설립일">
-        <Input type="date" value={foundedAt} onChange={(e) => setFoundedAt(e.target.value)} />
-      </Field>
+      {/* 연락·주소 카드 */}
+      <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+        <h3 className="mb-5 text-[15px] font-bold text-foreground">연락 · 주소</h3>
+        <Field label="도로명 주소">
+          <input className={inputCls} maxLength={200} placeholder="서울특별시 강남구 테헤란로 123" value={addressRoad} onChange={(e) => setAddressRoad(e.target.value)} />
+        </Field>
+        <Field label="상세 주소">
+          <input className={inputCls} maxLength={200} placeholder="4층 401호" value={addressDetail} onChange={(e) => setAddressDetail(e.target.value)} />
+        </Field>
+      </div>
 
-      <Field label="도로명 주소">
-        <Input
-          maxLength={200}
-          placeholder="서울특별시 강남구 테헤란로 123"
-          value={addressRoad}
-          onChange={(e) => setAddressRoad(e.target.value)}
-        />
-      </Field>
-
-      <Field label="상세 주소">
-        <Input
-          maxLength={200}
-          placeholder="4층 401호"
-          value={addressDetail}
-          onChange={(e) => setAddressDetail(e.target.value)}
-        />
-      </Field>
-
-      <Field label="비전·미션">
+      {/* 비전·미션 카드 */}
+      <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+        <h3 className="mb-5 text-[15px] font-bold text-foreground">비전 · 미션</h3>
         <textarea
           maxLength={2000}
           rows={4}
-          className="rounded-md border border-border bg-background-primary px-3 py-2 text-sm text-foreground resize-none focus-visible:outline-none focus-visible:border-border-focus"
+          className="w-full rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground resize-none focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           placeholder="회사의 비전과 미션을 입력해요"
           value={visionMission}
           onChange={(e) => setVisionMission(e.target.value)}
         />
-      </Field>
+      </div>
 
-      <label className="flex items-center gap-2 text-sm text-foreground">
-        <input
-          type="checkbox"
-          checked={companyCodeActive}
-          onChange={(e) => setCompanyCodeActive(e.target.checked)}
-          className="h-4 w-4 rounded border-border"
-        />
-        회사코드로 가입 허용
-      </label>
+      {/* 가입 설정 카드 */}
+      <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+        <h3 className="mb-4 text-[15px] font-bold text-foreground">가입 설정</h3>
+        <label className="flex cursor-pointer items-center gap-3">
+          <input
+            type="checkbox"
+            checked={companyCodeActive}
+            onChange={(e) => setCompanyCodeActive(e.target.checked)}
+            className="h-4 w-4 rounded border-border"
+          />
+          <div>
+            <p className="text-[13px] font-semibold text-foreground">회사코드로 가입 허용</p>
+            <p className="mt-0.5 text-[11.5px] text-foreground-muted">코드를 아는 누구나 가입 신청할 수 있어요</p>
+          </div>
+        </label>
+      </div>
 
       {error && (
-        <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>
+        <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>
       )}
       {success && (
-        <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">저장됐어요.</p>
+        <p className="rounded-[14px] border border-emerald-300 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-700">저장됐어요.</p>
       )}
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isPending}>
-          {isPending ? "저장 중…" : "저장"}
+          {isPending ? "저장 중…" : "변경 사항 저장"}
         </Button>
       </div>
     </form>

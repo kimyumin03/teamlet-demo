@@ -77,15 +77,15 @@ export default async function SettingsLayout({ children }: { children: React.Rea
       <div className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
         <div className="flex gap-8">
           {/* 사이드 네비게이션 */}
-          <aside className="w-48 shrink-0">
+          <aside className="w-[248px] shrink-0">
             <div className="sticky top-[72px]">
-              <p className="mb-4 text-base font-semibold text-foreground">설정</p>
+              <p className="mb-4 text-[17px] font-bold tracking-tight text-foreground">설정</p>
               <SettingsNav canSeeCompany={canSeeCompany} canSeeOps={canSeeOps} />
             </div>
           </aside>
 
           {/* 구분선 */}
-          <div className="w-px bg-border shrink-0" />
+          <div className="w-px shrink-0 bg-border" />
 
           {/* 컨텐츠 */}
           <div className="min-w-0 flex-1 pb-16">{children}</div>

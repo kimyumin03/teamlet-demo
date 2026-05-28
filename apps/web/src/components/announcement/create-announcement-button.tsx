@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pin } from "lucide-react";
 import { Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@teamlet/ui";
 import { createAnnouncementAction } from "@/lib/actions/announcement";
 
@@ -43,7 +42,6 @@ export function CreateAnnouncementButton() {
         variant="secondary"
         onClick={() => { reset(); setOpen(true); }}
       >
-        <Plus className="h-3.5 w-3.5 mr-1" />
         공지 작성
       </Button>
 
@@ -55,9 +53,9 @@ export function CreateAnnouncementButton() {
 
           <div className="flex flex-col gap-4 py-1">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-foreground-muted">제목</label>
+              <label className="text-[12px] font-medium text-foreground-muted">제목</label>
               <input
-                className="w-full rounded-lg border border-border bg-background-primary px-3 py-2 text-sm text-foreground placeholder:text-foreground-subtle outline-none focus:border-foreground-subtle transition-colors"
+                className="w-full rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground placeholder:text-foreground-subtle outline-none focus:border-foreground-subtle transition-colors"
                 placeholder="공지사항 제목"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -67,9 +65,9 @@ export function CreateAnnouncementButton() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-foreground-muted">내용</label>
+              <label className="text-[12px] font-medium text-foreground-muted">내용</label>
               <textarea
-                className="w-full rounded-lg border border-border bg-background-primary px-3 py-2 text-sm text-foreground placeholder:text-foreground-subtle outline-none focus:border-foreground-subtle transition-colors resize-none"
+                className="w-full rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground placeholder:text-foreground-subtle outline-none focus:border-foreground-subtle transition-colors resize-none"
                 placeholder="공지 내용을 입력해 주세요"
                 rows={6}
                 value={content}
@@ -87,13 +85,17 @@ export function CreateAnnouncementButton() {
                     : "border-border bg-background-primary"
                 }`}
               >
-                {isPinned && <Pin className="h-2.5 w-2.5 text-background-primary" />}
+                {isPinned && (
+                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-2.5 w-2.5 text-background-primary">
+                    <path fillRule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clipRule="evenodd" />
+                  </svg>
+                )}
               </div>
-              <span className="text-sm text-foreground-muted">상단 고정</span>
+              <span className="text-[13px] text-foreground-muted">상단 고정</span>
             </label>
 
             {error && (
-              <p className="text-xs text-destructive-700">{error}</p>
+              <p className="text-[12px] text-destructive">{error}</p>
             )}
           </div>
 

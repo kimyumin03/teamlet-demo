@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getInviteInfo } from "@teamlet/modules/auth";
 import { auth } from "@/auth";
 import { AcceptInviteButton } from "@/components/invite/accept-invite-button";
+import { AuthLogo } from "@/components/auth/auth-logo";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -18,8 +19,9 @@ export default async function InvitePage({
 
   if (!result.ok) {
     return (
-      <div className="flex flex-col gap-4">
-        <h1 className="text-xl font-semibold text-foreground">초대 링크 오류</h1>
+      <div className="flex flex-col gap-6">
+        <AuthLogo />
+        <h2 className="text-[22px] font-bold leading-tight tracking-tight">초대 링크 오류</h2>
         <p className="text-sm text-destructive-600">{result.error.message}</p>
         <Link href="/home" className="text-sm text-foreground-muted underline hover:no-underline">
           홈으로 돌아가기
@@ -33,15 +35,16 @@ export default async function InvitePage({
   // 미로그인: 로그인/회원가입 선택지 제공
   if (!session?.user?.id) {
     return (
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-6">
+        <AuthLogo />
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-foreground-subtle">
             {invite.companyName}
           </p>
-          <h1 className="mt-1 text-xl font-semibold text-foreground">
+          <h2 className="mt-1 text-[22px] font-bold leading-tight tracking-tight">
             {invite.inviterName}님이 초대했어요
-          </h1>
-          <p className="mt-1 text-sm text-foreground-muted">
+          </h2>
+          <p className="mt-1.5 text-[13.5px] text-foreground-muted">
             {invite.employeeName} · {invite.email}
           </p>
         </div>
@@ -75,8 +78,9 @@ export default async function InvitePage({
   // 이미 회사에 소속된 사용자
   if (session.user.employeeId) {
     return (
-      <div className="flex flex-col gap-4">
-        <h1 className="text-xl font-semibold text-foreground">이미 회사에 소속되어 있어요</h1>
+      <div className="flex flex-col gap-6">
+        <AuthLogo />
+        <h2 className="text-[22px] font-bold leading-tight tracking-tight">이미 회사에 소속되어 있어요</h2>
         <p className="text-sm text-foreground-muted">
           현재 계정은 이미 다른 직원 레코드에 연결되어 있어요.
         </p>
@@ -89,15 +93,16 @@ export default async function InvitePage({
 
   // 로그인됨 + employeeId 없음 → 수락 가능
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
+      <AuthLogo />
       <div>
         <p className="text-xs font-medium uppercase tracking-wide text-foreground-subtle">
           {invite.companyName}
         </p>
-        <h1 className="mt-1 text-xl font-semibold text-foreground">
+        <h2 className="mt-1 text-[22px] font-bold leading-tight tracking-tight">
           {invite.inviterName}님이 초대했어요
-        </h1>
-        <p className="mt-1 text-sm text-foreground-muted">
+        </h2>
+        <p className="mt-1.5 text-[13.5px] text-foreground-muted">
           {invite.employeeName} · {invite.email}
         </p>
       </div>

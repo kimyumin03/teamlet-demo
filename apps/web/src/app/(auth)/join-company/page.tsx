@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { getMembershipSummary } from "@teamlet/modules/tenancy";
+import { AuthLogo } from "@/components/auth/auth-logo";
 import { JoinCompanyOptions } from "@/components/forms/join-company-options";
 
 export default async function JoinCompanyPage() {
@@ -11,14 +12,19 @@ export default async function JoinCompanyPage() {
   if (summary.active.length > 0) redirect("/home");
   if (summary.pending > 0) redirect("/pending-approval");
 
+  const name = session.user.name?.split(" ")[0] ?? "";
+
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
+      <AuthLogo />
+
       <div>
-        <h1 className="text-xl font-semibold text-foreground">회사 가입</h1>
-        <p className="mt-1 text-sm text-foreground-muted">
-          가입할 회사를 선택하거나 새 회사를 등록하세요.
+        <h2 className="text-[22px] font-bold leading-tight tracking-tight">회사를 선택해주세요</h2>
+        <p className="mt-1.5 text-[13.5px] text-foreground-muted">
+          {name ? `${name}님, ` : ""}어떻게 Teamlet을 시작할까요?
         </p>
       </div>
+
       <JoinCompanyOptions
         logoutAction={async () => {
           "use server";

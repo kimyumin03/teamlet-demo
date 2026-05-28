@@ -1,64 +1,60 @@
-import Link from "next/link";
 import type { LeaveBalanceSummary } from "@teamlet/modules/leave";
 
-function BalanceCard({ b }: { b: LeaveBalanceSummary }) {
-  const usedPct = b.grantedDays > 0 ? Math.min(100, (b.usedDays / b.grantedDays) * 100) : 0;
-  const isLow = b.remainingDays > 0 && b.remainingDays <= 3;
-  const isExhausted = b.remainingDays <= 0;
+function BreakdownBar({ used, total }: { used: number; total: number }) {
+  const usedPct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
+  const remaining = Math.max(0, total - used);
+  return (
+    <div>
+      <div className="flex h-[10px] overflow-hidden rounded-full bg-background-tertiary">
+        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${usedPct}%` }} />
+      </div>
+      <div className="mt-2 flex gap-4 text-[12px] text-foreground-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-sm bg-primary" />
+          사용 <b className="font-semibold text-foreground">{used}일</b>
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-sm bg-background-tertiary" />
+          잔여 <b className="font-semibold text-foreground">{remaining}일</b>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function TypeCard({ b }: { b: LeaveBalanceSummary }) {
+  const total = b.grantedDays + b.adjustedDays;
+  const isExhausted = b.remainingDays <= 0 && total > 0;
+  const isLow = !isExhausted && b.remainingDays <= 3 && b.remainingDays > 0;
 
   return (
     <div
-      className={`flex flex-col gap-3 rounded-xl border bg-background-primary p-5 ${
+      className={`rounded-[10px] border px-3.5 py-3 ${
         isExhausted
-          ? "border-destructive-200"
+          ? "border-destructive/30 bg-destructive/5"
           : isLow
-          ? "border-amber-200"
-          : "border-border"
+          ? "border-amber-200 bg-amber-50/40"
+          : "border-border bg-background-primary"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm text-foreground-muted">{b.leaveTypeName}</p>
-        {isLow && !isExhausted && (
-          <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-            잔여 부족
-          </span>
-        )}
-        {isExhausted && (
-          <span className="shrink-0 rounded-full bg-destructive-50 px-2 py-0.5 text-[10px] font-medium text-destructive-700">
-            소진
-          </span>
-        )}
-      </div>
-
-      <div className="flex items-baseline gap-1">
-        <span
-          className={`text-3xl font-bold tabular-nums ${
-            isExhausted ? "text-destructive-600" : isLow ? "text-amber-700" : "text-foreground"
-          }`}
-        >
-          {b.remainingDays}
-        </span>
-        <span className="text-sm text-foreground-subtle">일 남음</span>
-      </div>
-
-      {/* 진행 바 */}
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-background-secondary">
-        <div
-          className={`h-full rounded-full transition-all ${
-            isExhausted ? "bg-destructive-400" : isLow ? "bg-amber-400" : "bg-foreground"
-          }`}
-          style={{ width: `${usedPct}%` }}
-        />
-      </div>
-
-      <p className="text-xs text-foreground-subtle">
-        부여 {b.grantedDays}일 · 사용 {b.usedDays}일
-        {b.adjustedDays !== 0 && (
-          <span className="ml-1">
-            · 조정 {b.adjustedDays > 0 ? "+" : ""}
-            {b.adjustedDays}일
-          </span>
-        )}
+      <p className="text-[12.5px] font-semibold text-foreground">{b.leaveTypeName}</p>
+      <p
+        className={`mt-0.5 text-[18px] font-bold tabular-nums leading-tight ${
+          isExhausted ? "text-destructive" : isLow ? "text-amber-700" : "text-foreground"
+        }`}
+      >
+        {b.remainingDays}
+        <small className="ml-1 text-[11px] font-normal text-foreground-muted">
+          / {total}일
+        </small>
+      </p>
+      <p className="mt-0.5 font-mono text-[11px] text-foreground-muted">
+        {isExhausted
+          ? "소진 완료"
+          : isLow
+          ? `소진 임박 · 사용 ${b.usedDays}일`
+          : `사용 ${b.usedDays}일`}
+        {b.adjustedDays !== 0 && ` · 조정 ${b.adjustedDays > 0 ? "+" : ""}${b.adjustedDays}`}
       </p>
     </div>
   );
@@ -71,50 +67,46 @@ export function BalanceSection({
   balances: LeaveBalanceSummary[];
   year: number;
 }) {
-  const totalGranted = balances.reduce((s, b) => s + b.grantedDays, 0);
-  const totalUsed = balances.reduce((s, b) => s + b.usedDays, 0);
-  const totalRemaining = balances.reduce((s, b) => s + b.remainingDays, 0);
+  const annual = balances.find((b) => b.leaveTypeKey === "annual");
+  const others = balances.filter((b) => b.leaveTypeKey !== "annual");
+  const annualTotal = annual ? annual.grantedDays + annual.adjustedDays : 0;
+
+  if (balances.length === 0) {
+    return (
+      <div className="rounded-[14px] border border-border bg-background-primary p-8 text-center">
+        <p className="text-[14px] font-medium text-foreground">부여된 휴가가 없어요</p>
+        <p className="mt-1 text-[12.5px] text-foreground-muted">관리자에게 연차 부여를 요청해 주세요</p>
+      </div>
+    );
+  }
 
   return (
-    <section className="mb-8">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-medium text-foreground-muted">{year}년 잔여 현황</h2>
-        {balances.length > 0 && (
-          <p className="text-xs text-foreground-subtle">
-            총 {totalGranted}일 부여 · {totalUsed}일 사용 · {totalRemaining}일 잔여
-          </p>
-        )}
-      </div>
-
-      {balances.length === 0 ? (
-        <div className="rounded-xl border border-border bg-background-primary p-8 text-center">
-          <p className="text-sm text-foreground-muted">부여된 휴가 정보가 없어요.</p>
-          <p className="mt-1 text-xs text-foreground-subtle">
-            관리자에게 연차 부여를 요청해 주세요.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {balances.map((b) => (
-            <BalanceCard key={b.leaveTypeId} b={b} />
-          ))}
+    <div className="flex flex-col gap-4">
+      {/* 연간 사용 현황 분석 바 */}
+      {annual && (
+        <div className="rounded-[14px] border border-border bg-background-primary px-5 py-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-[14px] font-bold text-foreground">연간 사용 현황</h3>
+            <span className="font-mono text-[12px] text-foreground-muted">
+              {year}. 1. 1 — {year}. 12. 31
+            </span>
+          </div>
+          <BreakdownBar used={annual.usedDays} total={annualTotal} />
         </div>
       )}
 
-      <div className="mt-4 flex gap-2">
-        <Link
-          href="/leave/calendar"
-          className="rounded-lg border border-border px-3 py-1.5 text-xs text-foreground-muted transition-colors hover:bg-background-secondary hover:text-foreground"
-        >
-          팀 캘린더 보기 →
-        </Link>
-        <Link
-          href="/leave/requests"
-          className="rounded-lg border border-border px-3 py-1.5 text-xs text-foreground-muted transition-colors hover:bg-background-secondary hover:text-foreground"
-        >
-          승인 관리 →
-        </Link>
+      {/* 휴가 종류별 잔여 */}
+      <div>
+        <p className="mb-3 text-[12px] font-semibold uppercase tracking-wider text-foreground-muted">
+          휴가 종류별 잔여
+        </p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {annual && <TypeCard b={annual} />}
+          {others.map((b) => (
+            <TypeCard key={b.leaveTypeId} b={b} />
+          ))}
+        </div>
       </div>
-    </section>
+    </div>
   );
 }

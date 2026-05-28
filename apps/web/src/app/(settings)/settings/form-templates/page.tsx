@@ -15,10 +15,14 @@ export default async function FormTemplatesPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-foreground">양식 관리</h1>
-        <p className="mt-0.5 text-sm text-foreground-muted">결재·신청 양식을 만들고 필드를 정의해요</p>
+        <h1 className="text-[20px] font-bold tracking-tight text-foreground">양식 관리</h1>
+        <p className="mt-0.5 text-[13px] text-foreground-muted">결재·신청 양식을 만들고 필드를 정의해요</p>
       </div>
-      <FormTemplatesClient initialTemplates={templates} />
+      <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+        <h3 className="mb-1.5 text-[15px] font-bold text-foreground">양식 목록</h3>
+        <p className="mb-5 text-[12.5px] text-foreground-muted">기안 시 사용할 양식 템플릿을 정의해요. 양식을 비활성화하면 새 문서에서 선택할 수 없어요.</p>
+        <FormTemplatesClient initialTemplates={templates} />
+      </div>
     </div>
   );
 }

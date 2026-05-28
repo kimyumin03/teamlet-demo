@@ -7,7 +7,13 @@ import type { HolidayItem } from "@teamlet/modules/tenancy";
 import { addCompanyHolidayAction, deleteCompanyHolidayAction } from "@/lib/actions/company";
 
 function formatDate(d: Date): string {
-  return new Date(d).toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" });
+  const dt = new Date(d);
+  return dt.toLocaleDateString("ko-KR", { month: "numeric", day: "numeric", weekday: "short" });
+}
+
+function formatDateShort(d: Date): string {
+  const dt = new Date(d);
+  return `${dt.getFullYear()}. ${dt.getMonth() + 1}. ${dt.getDate()}`;
 }
 
 export function HolidaysClient({ initialHolidays, year }: { initialHolidays: HolidayItem[]; year: number }) {
@@ -40,95 +46,126 @@ export function HolidaysClient({ initialHolidays, year }: { initialHolidays: Hol
     });
   }
 
-  const currentYear = new Date().getFullYear();
+  const legalCount = holidays.filter((h) => h.isNational).length;
+  const customCount = holidays.filter((h) => !h.isNational).length;
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* 연도 선택 */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="secondary"
-          onClick={() => router.push(`/settings/holidays?year=${year - 1}`)}
-        >
-          ‹ {year - 1}
-        </Button>
-        <span className="px-4 text-sm font-medium text-foreground">{year}년</span>
-        <Button
-          variant="secondary"
-          onClick={() => router.push(`/settings/holidays?year=${year + 1}`)}
-        >
-          {year + 1} ›
-        </Button>
+    <div className="flex flex-col gap-4">
+      {/* 공휴일 목록 카드 */}
+      <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+        <div className="mb-1.5 flex items-center gap-2">
+          <h3 className="text-[15px] font-bold text-foreground">{year}년 공휴일</h3>
+          <span className="text-[12px] font-normal text-foreground-muted">
+            법정 {legalCount} · 회사 {customCount}
+          </span>
+        </div>
+        <p className="mb-4 text-[12.5px] text-foreground-muted">
+          법정 공휴일은 자동으로 반영됩니다. 회사 자율 휴일은 직접 추가·삭제 가능해요.
+        </p>
+
+        {/* 연도 네비게이션 */}
+        <div className="mb-4 flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => router.push(`/settings/holidays?year=${year - 1}`)}
+            className="rounded-md border border-border bg-background-primary px-2.5 py-1 text-[12.5px] text-foreground-muted hover:bg-background-secondary transition-colors"
+          >
+            ‹ {year - 1}
+          </button>
+          <span className="px-2 font-mono text-[13px] font-semibold text-foreground">{year}</span>
+          <button
+            type="button"
+            onClick={() => router.push(`/settings/holidays?year=${year + 1}`)}
+            className="rounded-md border border-border bg-background-primary px-2.5 py-1 text-[12.5px] text-foreground-muted hover:bg-background-secondary transition-colors"
+          >
+            {year + 1} ›
+          </button>
+        </div>
+
+        {holidays.length === 0 ? (
+          <div className="rounded-[10px] border border-border bg-background-secondary py-8 text-center text-[13px] text-foreground-muted">
+            {year}년에 등록된 공휴일이 없어요.
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {holidays.map((h) => (
+              <div
+                key={h.id}
+                className="grid grid-cols-[120px_1fr_80px_72px] items-center gap-4 py-3"
+              >
+                <p className="font-mono text-[13px] font-bold text-foreground">
+                  {formatDateShort(h.date)}
+                </p>
+                <div>
+                  <p className="text-[13.5px] font-semibold text-foreground">{h.name}</p>
+                  <p className="mt-0.5 font-mono text-[11px] text-foreground-muted">
+                    {formatDate(h.date)}
+                  </p>
+                </div>
+                <div>
+                  {h.isNational ? (
+                    <span className="rounded-full border border-destructive/40 bg-destructive/5 px-2.5 py-0.5 text-[10.5px] font-semibold text-destructive">
+                      법정
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-purple-300 bg-purple-50 px-2.5 py-0.5 text-[10.5px] font-semibold text-purple-700">
+                      회사
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-end">
+                  {!h.isNational && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(h.id)}
+                      disabled={isPending}
+                      className="rounded-md border border-border px-2.5 py-1 text-[12px] text-foreground-muted hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive transition-colors disabled:opacity-50"
+                    >
+                      삭제
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* 추가 폼 */}
-      <form onSubmit={handleAdd} className="rounded-lg border border-border bg-background-primary p-4">
-        <p className="mb-3 text-sm font-medium text-foreground">공휴일 추가</p>
-        <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              type="date"
-              required
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              min={`${year}-01-01`}
-              max={`${year}-12-31`}
-            />
-            <Input
-              required
-              maxLength={50}
-              placeholder="공휴일 이름"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={isNational}
-              onChange={(e) => setIsNational(e.target.checked)}
-              className="h-4 w-4 rounded border-border"
-            />
-            법정공휴일
-          </label>
-          {error && (
-            <p role="alert" className="text-sm text-destructive-600">{error}</p>
-          )}
-          <div className="flex justify-end">
+      {/* 추가 폼 카드 */}
+      <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+        <h3 className="mb-4 text-[15px] font-bold text-foreground">회사 자율 휴일 추가</h3>
+        <form onSubmit={handleAdd}>
+          <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-medium text-foreground-muted">날짜</label>
+              <Input
+                type="date"
+                required
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                min={`${year}-01-01`}
+                max={`${year}-12-31`}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-medium text-foreground-muted">이름</label>
+              <Input
+                required
+                maxLength={50}
+                placeholder="예: 회사 창립일"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
             <Button type="submit" disabled={isPending || !date || !name.trim()}>
               {isPending ? "추가 중…" : "추가"}
             </Button>
           </div>
-        </div>
-      </form>
-
-      {/* 목록 */}
-      {holidays.length === 0 ? (
-        <div className="rounded-lg border border-border bg-background-primary p-8 text-center text-sm text-foreground-muted">
-          {year}년에 등록된 공휴일이 없어요.
-        </div>
-      ) : (
-        <div className="flex flex-col divide-y divide-border rounded-lg border border-border bg-background-primary">
-          {holidays.map((h) => (
-            <div key={h.id} className="flex items-center justify-between px-4 py-3">
-              <div>
-                <span className="text-sm font-medium text-foreground">{h.name}</span>
-                {h.isNational && (
-                  <span className="ml-2 rounded-full bg-primary-100 px-1.5 py-0.5 text-xs text-primary-700">법정</span>
-                )}
-                <p className="mt-0.5 text-xs text-foreground-muted">{formatDate(h.date)}</p>
-              </div>
-              <Button
-                variant="destructive"
-                onClick={() => handleDelete(h.id)}
-                disabled={isPending}
-              >
-                삭제
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+          {error && (
+            <p role="alert" className="mt-2 text-[12px] text-destructive">{error}</p>
+          )}
+        </form>
+      </div>
     </div>
   );
 }

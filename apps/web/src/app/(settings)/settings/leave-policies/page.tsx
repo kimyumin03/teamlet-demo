@@ -22,22 +22,31 @@ export default async function LeavePoliciesPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-foreground">휴가 정책</h1>
-        <p className="mt-0.5 text-sm text-foreground-muted">연차 부여 정책을 만들고 구성원에게 배정해요</p>
+        <h1 className="text-[20px] font-bold tracking-tight text-foreground">휴가 정책</h1>
+        <p className="mt-0.5 text-[13px] text-foreground-muted">연차 부여 정책을 만들고 구성원에게 배정해요</p>
       </div>
-      <div className="mb-6 flex items-start justify-between gap-3 rounded-md border border-border bg-background-secondary px-4 py-3">
-        <p className="text-sm text-foreground-muted">
-          정책이 배정된 구성원에게{" "}
-          <strong className="text-foreground">연차 자동부여</strong>를 실행할 수 있어요.
-          입사 첫 해는 월할 비례 적용 · 같은 해 재실행 시 중복 부여 없음.
-          <br />
-          <span className="text-xs text-foreground-subtle">
-            소멸·이월 자동화는 아직 준비 중이에요.
-          </span>
-        </p>
-        <AutoGrantButton />
+
+      {/* 연차 자동부여 카드 */}
+      <div className="mb-4 rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="mb-1.5 text-[15px] font-bold text-foreground">연차 자동부여</h3>
+            <p className="text-[12.5px] text-foreground-muted">
+              정책이 배정된 구성원에게 <strong className="text-foreground">연차 자동부여</strong>를 실행해요.
+              입사 첫 해는 월할 비례 적용 · 같은 해 재실행 시 중복 부여 없음.
+            </p>
+            <p className="mt-1 text-[11.5px] text-foreground-subtle">소멸·이월 자동화는 아직 준비 중이에요.</p>
+          </div>
+          <AutoGrantButton />
+        </div>
       </div>
-      <LeavePoliciesClient initialPolicies={policies} leaveTypes={leaveTypes} />
+
+      {/* 정책 목록 카드 */}
+      <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+        <h3 className="mb-1.5 text-[15px] font-bold text-foreground">정책 목록</h3>
+        <p className="mb-5 text-[12.5px] text-foreground-muted">연차 부여 규칙을 정의하고 구성원에게 배정해요.</p>
+        <LeavePoliciesClient initialPolicies={policies} leaveTypes={leaveTypes} />
+      </div>
     </div>
   );
 }

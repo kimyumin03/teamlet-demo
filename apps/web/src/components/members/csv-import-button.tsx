@@ -63,7 +63,7 @@ export function CsvImportButton() {
           {!hasResults ? (
             <>
               {/* 템플릿 다운로드 */}
-              <div className="mb-4 rounded-lg border border-border bg-background-secondary p-3">
+              <div className="mb-4 rounded-[14px] border border-border bg-background-secondary p-3">
                 <p className="mb-2 text-sm text-foreground-muted">
                   CSV 파일 형식: <code className="text-xs text-foreground">이름, 사원번호, 회사이메일, 입사일, 부서명, 직책명, 고용형태</code>
                 </p>
@@ -102,7 +102,7 @@ export function CsvImportButton() {
                 />
 
                 {state.error && (
-                  <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">
+                  <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">
                     {state.error}
                   </p>
                 )}
@@ -131,7 +131,7 @@ export function CsvImportButton() {
                     {r.ok ? (
                       <CheckCircle2 className="size-4 shrink-0 text-green-600" />
                     ) : (
-                      <XCircle className="size-4 shrink-0 text-destructive-600" />
+                      <XCircle className="size-4 shrink-0 text-destructive" />
                     )}
                     <span className="font-medium text-foreground">{r.name || `${r.row}행`}</span>
                     {!r.ok && (

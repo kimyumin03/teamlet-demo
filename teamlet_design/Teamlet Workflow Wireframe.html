@@ -1,0 +1,1251 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Teamlet — Workflow Wireframe v1</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #111418; --ink-2: #3b4149; --ink-3: #6b7280; --ink-4: #9aa1ab; --ink-5: #c4c9d0;
+    --line: #d9dde2; --line-2: #e6e9ed;
+    --bg: #f6f7f8; --paper: #ffffff;
+    --hatch: repeating-linear-gradient(135deg, #eef0f3 0 6px, #f6f7f8 6px 12px);
+    --note: #1e6cff; --note-bg: #eef3ff;
+    --font-kr: "Noto Sans KR", "Inter", system-ui, sans-serif;
+    --font-en: "Inter", "Noto Sans KR", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: var(--font-kr); color: var(--ink); background: #ecedef; font-size: 13px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+
+  .sheet { max-width: 1480px; margin: 32px auto 64px; padding: 0 28px; }
+  .doc-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 8px 0 20px; border-bottom: 1px dashed var(--ink-5); margin-bottom: 24px; }
+  .doc-head h1 { font-family: var(--font-en); font-size: 20px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .doc-head .sub { color: var(--ink-3); font-size: 12px; font-family: var(--font-mono); }
+  .doc-meta { text-align: right; color: var(--ink-3); font-size: 11px; font-family: var(--font-mono); line-height: 1.7; }
+  .doc-meta b { color: var(--ink); font-weight: 600; }
+  .pagenav { display: flex; gap: 8px; margin-top: 12px; font-family: var(--font-mono); font-size: 11px; }
+  .pagenav a { text-decoration: none; color: var(--ink-3); padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+  .pagenav a:hover { color: var(--ink); }
+  .pagenav a.cur { color: var(--ink); font-weight: 600; border-color: var(--ink); }
+
+  .frame { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,0.02), 0 24px 48px -32px rgba(20,30,50,0.18); margin-bottom: 32px; }
+  .frame-bar { height: 36px; background: #fafbfc; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 14px; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+  .url { flex: 1; text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+  .url b { color: var(--ink-2); }
+  .frame-label { font-family: var(--font-en); font-size: 10px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; padding: 0 6px; }
+
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 860px; }
+
+  /* sidebar (reused) */
+  .side { border-right: 1px solid var(--line); background: #fafbfc; padding: 14px 12px 18px; display: flex; flex-direction: column; gap: 14px; }
+  .org { display: flex; align-items: center; gap: 10px; padding: 6px 6px 10px; border-bottom: 1px solid var(--line-2); }
+  .org-logo { width: 28px; height: 28px; border-radius: 6px; background: var(--ink); color: white; display: grid; place-items: center; font-family: var(--font-en); font-weight: 700; font-size: 12px; letter-spacing: -0.02em; }
+  .org-name { font-size: 13px; font-weight: 600; }
+  .org-name small { display:block; color: var(--ink-3); font-weight: 400; font-size: 11px; }
+  .org-caret { margin-left: auto; color: var(--ink-4); }
+  .status-pill { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 12px; }
+  .status-pill .tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #e8f3ec; color: #1b6b3b; font-weight: 600; font-family: var(--font-en); letter-spacing: 0.02em; }
+  .status-pill .t { color: var(--ink-2); font-family: var(--font-mono); font-size: 11px; }
+  .status-pill .caret { margin-left: auto; color: var(--ink-4); }
+  .nav-group { display: flex; flex-direction: column; gap: 1px; }
+  .nav-label { padding: 12px 8px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-4); font-family: var(--font-en); font-weight: 600; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 6px; color: var(--ink-2); font-size: 13px; text-decoration: none; user-select: none; cursor: pointer; }
+  .nav-item:hover { background: #eef0f3; }
+  .nav-item.active { background: #eef0f3; color: var(--ink); font-weight: 600; }
+  .nav-item svg.ico { width: 18px; height: 18px; flex-shrink: 0; color: var(--ink-3); stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .nav-item.active svg.ico { color: var(--ink); stroke-width: 1.8; }
+  .nav-item .kbd { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--ink-4); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; background: var(--paper); }
+  .nav-item .badge { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--ink); background: #e6e9ed; border-radius: 10px; padding: 1px 6px; font-weight: 600; }
+  .nav-item .badge.attn { background: var(--ink); color: white; }
+  .me { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+  .me .av { width: 28px; height: 28px; border-radius: 50%; background-image: var(--hatch); }
+  .me .name { font-size: 12px; font-weight: 600; }
+  .me .role { font-size: 10px; color: var(--ink-3); font-family: var(--font-mono); }
+
+  /* topbar */
+  .main { display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-bottom: 1px solid var(--line-2); background: var(--paper); }
+  .search { flex: 1; max-width: 480px; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: #fafbfc; color: var(--ink-4); font-size: 12px; }
+  .search .glyph { width: 12px; height: 12px; border-radius: 50%; border: 1.25px solid var(--ink-4); }
+  .top-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .icon-btn { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); display: grid; place-items: center; color: var(--ink-3); position: relative; }
+  .icon-btn .pip { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); border: 1.5px solid var(--paper); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); cursor: pointer; }
+  .btn.ghost { background: var(--paper); color: var(--ink); }
+  .btn.sm { padding: 5px 10px; font-size: 11px; }
+  .btn.reject { border-color: #9a3b3b; background: var(--paper); color: #9a3b3b; }
+  .btn.approve { border-color: #1b6b3b; background: #1b6b3b; color: white; }
+
+  .body-col { padding: 22px 24px 28px; min-width: 0; }
+  .page-h { display: flex; align-items: flex-end; justify-content: space-between; }
+  .h-title { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 4px; }
+  .h-sub { font-size: 12px; color: var(--ink-3); font-family: var(--font-mono); }
+
+  /* KPI */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0 16px; }
+  .kpi { padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); }
+  .kpi .l { font-size: 10px; color: var(--ink-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; }
+  .kpi .v { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; margin-top: 2px; }
+  .kpi .v small { font-size: 11px; color: var(--ink-3); font-weight: 500; margin-left: 4px; font-family: var(--font-mono); }
+  .kpi .d { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 2px; }
+  .kpi .d b { color: var(--ink); font-weight: 600; }
+  .kpi.cta {
+    background: var(--ink); color: white; border-color: var(--ink);
+  }
+  .kpi.cta .l { color: rgba(255,255,255,0.65); }
+  .kpi.cta .d { color: rgba(255,255,255,0.75); }
+  .kpi.cta .d b { color: white; }
+
+  /* tabs */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 4px 0 16px; }
+  .tab { padding: 9px 14px 11px; font-size: 13px; color: var(--ink-3); border-bottom: 2px solid transparent; cursor: pointer; font-weight: 500; margin-bottom: -1px; display: inline-flex; align-items: center; gap: 7px; }
+  .tab .count { font-family: var(--font-mono); font-size: 10px; background: #e6e9ed; color: var(--ink-2); padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+  .tab .count.attn { background: var(--ink); color: white; }
+  .tab.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+
+  .filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; background: var(--paper); color: var(--ink-2); }
+  .chip .lbl { color: var(--ink-3); }
+  .chip .val { color: var(--ink); font-weight: 600; }
+  .chip .x { color: var(--ink-4); margin-left: 2px; }
+  .chip.add { color: var(--ink-3); border-style: dashed; }
+  .filters .spread { margin-left: auto; display: flex; gap: 6px; }
+
+  /* Document row card */
+  .doc-list { display: flex; flex-direction: column; gap: 8px; }
+  .doc {
+    display: grid;
+    grid-template-columns: 88px 1fr 220px auto;
+    gap: 16px; align-items: center;
+    padding: 14px 16px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--paper);
+    cursor: pointer; position: relative;
+  }
+  .doc:hover { background: #fafbfc; }
+  .doc.active { background: #eef0f3; border-color: var(--ink-3); }
+  .doc.urg::before {
+    content: ""; position: absolute; left: -1px; top: 12px; bottom: 12px;
+    width: 3px; background: #9a3b3b; border-radius: 2px;
+  }
+  .doc-kind {
+    display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+  }
+  .doc-kind .k {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    background: #eef0f3; color: var(--ink-2); font-weight: 600; font-family: var(--font-en);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .doc-kind .k.expense { background: #fbf5e3; color: #7a5b00; }
+  .doc-kind .k.leave { background: #e8f3ec; color: #1b6b3b; }
+  .doc-kind .k.training { background: #ecdefb; color: #553099; }
+  .doc-kind .k.wfh { background: #e5edf7; color: #1f4b94; }
+  .doc-kind .k.hr { background: #fbecec; color: #8a3030; }
+  .doc-kind .d {
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
+  }
+  .doc-body .t {
+    font-size: 14px; font-weight: 600; letter-spacing: -0.005em;
+    margin-bottom: 4px;
+  }
+  .doc-body .m {
+    display: flex; gap: 10px; font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);
+    align-items: center;
+  }
+  .doc-body .m .who {
+    display: inline-flex; gap: 6px; align-items: center; color: var(--ink-2);
+  }
+  .doc-body .m .who .av {
+    width: 16px; height: 16px; border-radius: 50%; background: var(--hatch); border: 1px solid var(--line);
+  }
+  .doc-body .m .who b { color: var(--ink); font-weight: 600; font-family: var(--font-kr); }
+  .doc-body .m .sep { color: var(--ink-5); }
+  .doc-body .m .amt { color: var(--ink); font-weight: 600; }
+
+  /* approval line mini */
+  .aline {
+    display: flex; align-items: center; gap: 0;
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
+  }
+  .aline .step {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border: 1px solid var(--line); border-radius: 16px;
+    background: var(--paper); font-size: 10px; min-width: 0;
+  }
+  .aline .step::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-4); flex-shrink: 0;
+  }
+  .aline .step.done::before { background: #1b6b3b; }
+  .aline .step.now { font-weight: 700; color: var(--ink); border-color: var(--ink); }
+  .aline .step.now::before { background: var(--ink); border-radius: 1px; width: 5px; height: 5px; }
+  .aline .step.rej::before { background: #9a3b3b; }
+  .aline .arr { color: var(--ink-5); padding: 0 4px; font-size: 10px; }
+
+  /* doc actions */
+  .doc-actions { display: flex; gap: 6px; align-items: center; }
+  .doc-actions .btn { font-size: 11px; padding: 5px 10px; }
+  .doc-due {
+    font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border: 1px solid var(--line); border-radius: 5px;
+    color: var(--ink-2); background: var(--paper); text-align: center; min-width: 60px;
+  }
+  .doc-due.urg { background: #fbecec; border-color: #f1c8c8; color: #8a1f1f; }
+  .doc-due.soon { background: #fbf5e3; border-color: #ecdca0; color: #7a5b00; }
+
+  /* Section divider */
+  .sec-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 16px 0 8px; padding: 6px 4px 0;
+    font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+  }
+  .sec-divider .ct {
+    background: #e6e9ed; color: var(--ink-2); padding: 1px 7px; border-radius: 10px;
+    font-family: var(--font-mono); font-size: 10px;
+  }
+  .sec-divider .line { flex: 1; height: 1px; background: var(--line-2); }
+
+  [data-view] { display: none; }
+  [data-view].is-active { display: block; }
+
+  /* ============ DOCUMENT DETAIL ============ */
+  .detail-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 940px; }
+  .det-main { display: grid; grid-template-rows: auto auto 1fr; min-width: 0; }
+
+  .det-hero {
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--line-2);
+    display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: flex-start;
+  }
+  .det-hero .kicker {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 8px;
+  }
+  .det-hero .kicker .k {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    background: #fbf5e3; color: #7a5b00; font-weight: 600; font-family: var(--font-en);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .det-hero .kicker .id {
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
+  }
+  .det-hero .kicker .stamp {
+    display: inline-flex; gap: 5px; align-items: center;
+    padding: 2px 8px; border-radius: 12px; font-size: 10px;
+    font-family: var(--font-en); font-weight: 600; letter-spacing: 0.04em;
+    background: #fbf5e3; color: #7a5b00; text-transform: uppercase;
+  }
+  .det-hero .kicker .stamp::before {
+    content: ""; width: 5px; height: 5px; border-radius: 50%; background: #c2832a;
+  }
+  .det-hero h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.015em; margin: 0; }
+  .det-hero .submeta {
+    margin-top: 8px; font-size: 12px; color: var(--ink-3); font-family: var(--font-mono);
+  }
+  .det-hero .submeta b { color: var(--ink); font-family: var(--font-kr); font-weight: 600; margin-right: 2px; }
+  .det-hero .submeta .sep { color: var(--ink-5); margin: 0 10px; }
+  .det-hero .det-actions { display: flex; gap: 6px; flex-direction: column; align-items: flex-end; }
+  .det-hero .det-actions .row { display: flex; gap: 6px; }
+
+  /* approval line FULL */
+  .aline-full {
+    padding: 16px 28px 18px;
+    border-bottom: 1px solid var(--line-2);
+    background: #fafbfc;
+  }
+  .aline-full h4 {
+    margin: 0 0 12px;
+    font-size: 11px; color: var(--ink-3); font-family: var(--font-en);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .aline-full h4 .ct { font-family: var(--font-mono); font-size: 11px; color: var(--ink); background: var(--paper); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--line); font-weight: 600; text-transform: none; letter-spacing: 0; }
+  .aline-full .stages {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative;
+  }
+  .stage {
+    padding: 0 12px; position: relative;
+    text-align: left;
+  }
+  .stage::after {
+    content: ""; position: absolute; left: 50%; top: 11px; right: -50%;
+    height: 2px; background: var(--line);
+  }
+  .stage:last-child::after { display: none; }
+  .stage .dot-h {
+    position: relative; z-index: 2;
+    display: inline-grid; place-items: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--paper); border: 1.5px solid var(--ink-4);
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--ink-3);
+  }
+  .stage.done .dot-h { background: #1b6b3b; border-color: #1b6b3b; color: white; }
+  .stage.done::after { background: #1b6b3b; }
+  .stage.now .dot-h { background: var(--ink); border-color: var(--ink); color: white; }
+  .stage.rej .dot-h { background: #9a3b3b; border-color: #9a3b3b; color: white; }
+  .stage .role-l {
+    margin-top: 8px; font-size: 11px; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-en); font-weight: 600;
+  }
+  .stage .who-h {
+    margin-top: 4px; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .stage .who-h .av { width: 22px; height: 22px; border-radius: 50%; background: var(--hatch); border: 1px solid var(--line); flex-shrink: 0; }
+  .stage .when-h {
+    margin-top: 2px; font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);
+  }
+  .stage.now .when-h { color: var(--ink); font-weight: 600; }
+
+  /* detail body 2-col */
+  .det-body { display: grid; grid-template-columns: minmax(0, 1fr) 320px; min-height: 0; }
+  .det-form { padding: 22px 28px 32px; overflow: auto; }
+  .det-form h3 {
+    font-size: 12px; color: var(--ink-3); margin: 0 0 12px;
+    text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-en); font-weight: 600;
+  }
+  .det-form .fg {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px;
+    margin-bottom: 22px;
+    padding: 16px 18px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--paper);
+  }
+  .det-form .f-row { display: flex; flex-direction: column; gap: 3px; }
+  .det-form .f-row.full { grid-column: 1 / -1; }
+  .det-form .f-row .l { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; }
+  .det-form .f-row .v { font-size: 13px; color: var(--ink); }
+  .det-form .f-row .v b { font-weight: 700; }
+  .det-form .f-row .v.big { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .det-form .reason {
+    padding: 12px 14px; background: #fafbfc; border-radius: 7px;
+    border: 1px solid var(--line-2);
+    font-size: 12.5px; color: var(--ink-2); line-height: 1.55;
+  }
+
+  .attach {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--paper); margin-bottom: 6px;
+  }
+  .attach .ico-doc {
+    width: 32px; height: 38px; background: #eef0f3; border-radius: 4px;
+    display: grid; place-items: center; color: var(--ink-3);
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  }
+  .attach .ti { font-size: 12px; font-weight: 600; }
+  .attach .sub-a { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); }
+  .attach .dl {
+    margin-left: auto; font-family: var(--font-mono); font-size: 11px;
+    color: var(--ink-3); padding: 5px 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper);
+  }
+
+  /* comments */
+  .comments h3 { margin-top: 24px; }
+  .cm {
+    display: grid; grid-template-columns: 32px 1fr; gap: 12px; margin-bottom: 16px;
+  }
+  .cm .av-c { width: 32px; height: 32px; border-radius: 50%; background: var(--hatch); border: 1px solid var(--line); flex-shrink: 0; }
+  .cm .cm-body { font-size: 12.5px; }
+  .cm .cm-h { display: flex; gap: 8px; align-items: baseline; }
+  .cm .cm-h .who { font-weight: 700; }
+  .cm .cm-h .role { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); }
+  .cm .cm-h .when { font-size: 11px; color: var(--ink-4); font-family: var(--font-mono); margin-left: auto; }
+  .cm .cm-text { margin-top: 4px; color: var(--ink-2); line-height: 1.55; }
+  .cm-input {
+    display: grid; grid-template-columns: 32px 1fr auto; gap: 12px;
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper);
+    align-items: center;
+  }
+  .cm-input .av-c { width: 28px; height: 28px; }
+  .cm-input .ph { color: var(--ink-4); font-size: 12px; }
+
+  /* right rail: history + approval line meta */
+  .det-rail { background: #fafbfc; border-left: 1px solid var(--line-2); padding: 22px; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+  .r-card { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; }
+  .r-card h5 { margin: 0 0 10px; font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-en); font-weight: 600; display: flex; align-items: center; justify-content: space-between; }
+  .r-card h5 .all { font-family: var(--font-mono); font-size: 10px; color: var(--ink-4); text-transform: none; letter-spacing: 0; font-weight: 500; }
+
+  .tline-h { padding-left: 14px; position: relative; }
+  .tline-h::before { content: ""; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 1px; background: var(--line); }
+  .tline-h .ev { position: relative; padding: 7px 0 10px 10px; font-size: 12px; }
+  .tline-h .ev::before { content: ""; position: absolute; left: -14px; top: 11px; width: 9px; height: 9px; background: var(--paper); border: 1.5px solid var(--ink-3); border-radius: 50%; }
+  .tline-h .ev.now::before { background: var(--ink); border-color: var(--ink); }
+  .tline-h .ev.ok::before { background: #1b6b3b; border-color: #1b6b3b; }
+  .tline-h .ev .t { font-weight: 600; font-size: 12px; }
+  .tline-h .ev .d { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 2px; }
+  .tline-h .ev .note { font-size: 11px; color: var(--ink-2); margin-top: 4px; padding: 5px 7px; background: #fafbfc; border-radius: 4px; }
+
+  /* hero status pill variants */
+  .det-hero .kicker .stamp.ok { background: #e8f3ec; color: #1b6b3b; }
+  .det-hero .kicker .stamp.ok::before { background: #1b6b3b; }
+  .det-hero .kicker .stamp.rej { background: #fbecec; color: #8a3030; }
+  .det-hero .kicker .stamp.rej::before { background: #9a3b3b; }
+  .det-hero .kicker .stamp.draft { background: #eef0f3; color: var(--ink-3); }
+  .det-hero .kicker .stamp.draft::before { background: var(--ink-4); }
+
+  /* annotation (reused) */
+  .annot { position: absolute; display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border: 1px solid var(--note); background: var(--note-bg); border-radius: 6px; font-size: 11px; line-height: 1.5; color: #173f9c; max-width: 240px; font-family: var(--font-en); font-weight: 500; pointer-events: none; }
+  .annot::before { content: attr(data-n); flex-shrink: 0; width: 16px; height: 16px; border-radius: 50%; background: var(--note); color: white; display: grid; place-items: center; font-size: 10px; font-weight: 700; font-family: var(--font-mono); }
+  .annot b { color: #0a2a73; font-weight: 700; }
+  .annot code { font-family: var(--font-mono); font-size: 10px; background: white; padding: 1px 4px; border-radius: 3px; }
+  .pin-n { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--note); color: white; font-family: var(--font-mono); font-size: 9px; font-weight: 700; vertical-align: middle; margin-left: 6px; }
+
+  /* rationale (reused) */
+  .rationale { margin-top: 32px; padding: 24px 28px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; }
+  .rationale h2 { margin: 0 0 4px; font-size: 14px; font-family: var(--font-en); letter-spacing: -0.01em; }
+  .rationale .ratio-sub { color: var(--ink-3); font-size: 11px; font-family: var(--font-mono); margin-bottom: 18px; }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; padding: 16px; background: #fafbfc; border: 1px dashed var(--line); border-radius: 8px; }
+  .compare h3 { font-size: 11px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-en); color: var(--ink-3); font-weight: 600; }
+  .compare .flex h3 { color: #9a3b3b; }
+  .compare .tlt h3 { color: #1b6b3b; }
+  .compare ul { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.6; color: var(--ink-2); }
+  .compare ul li + li { margin-top: 4px; }
+  .compare ul b { color: var(--ink); }
+  .compare ul code { font-family: var(--font-mono); font-size: 11px; background: white; padding: 1px 4px; border-radius: 3px; }
+  .rationale-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .rationale-col h3 { font-size: 12px; margin: 0 0 8px; color: var(--ink); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-en); }
+  .rationale-col ul { margin: 0; padding-left: 18px; font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+  .rationale-col ul li + li { margin-top: 6px; }
+  .rationale-col ul li b { color: var(--ink); }
+  .rationale-col ul li code { font-family: var(--font-mono); font-size: 11px; background: #eef0f3; padding: 1px 4px; border-radius: 3px; color: var(--ink-2); }
+
+  .spec { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 14px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); }
+  .spec div { padding: 7px 9px; border: 1px dashed var(--line); border-radius: 6px; background: var(--paper); }
+  .spec b { color: var(--ink); display: block; font-weight: 600; margin-bottom: 2px; letter-spacing: 0.04em; text-transform: uppercase; font-size: 9px; }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <div class="doc-head">
+    <div>
+      <h1>Teamlet — Workflow Wireframe <span style="color:var(--ink-4);font-weight:400">/ v1</span></h1>
+      <div class="sub">Inbox-first 3 tabs · inline approve in list · approval line as the spine of detail</div>
+      <div class="pagenav">
+        <a href="Teamlet Home Wireframe.html">← 홈</a>
+        <a href="Teamlet Leave Management Wireframe.html">휴가 관리</a>
+        <a href="Teamlet Members Wireframe.html">구성원</a>
+        <a class="cur">워크플로우</a>
+        <a>권한·문서 (next)</a>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <b>Status</b> Working draft<br/>
+      <b>Tabs</b> 3 (per brief)<br/>
+      <b>Ref</b> brief · home 할 일 tab
+    </div>
+  </div>
+
+  <!-- ============ FRAME 1: INBOX ============ -->
+  <div class="frame">
+    <div class="frame-bar">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="url">app.teamlet.io<b>/workflow</b></div>
+      <div class="frame-label">INBOX</div>
+    </div>
+
+    <div class="app" style="position: relative;">
+
+      <aside class="side">
+        <div class="org"><div class="org-logo">T</div><div class="org-name">팀렛 주식회사<small>Pro · 142명</small></div><div class="org-caret">⌄</div></div>
+        <div class="status-pill"><span class="tag">근무중</span><span class="t">09:12 · 2h 47m</span><span class="caret">⌄</span></div>
+        <div class="nav-group">
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>홈</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15 14c2.8 0 5.5 1.6 5.5 5"/></svg>구성원</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M4 12a8 8 0 0 1 16 0"/><path d="M9 20l3-3 3 3"/></svg>휴가<span class="badge">3</span></a>
+          <a class="nav-item active"><svg class="ico" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h6M10 16h4"/></svg>워크플로우<span class="badge attn">7</span></a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></svg>조직도</a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">Workspace</div>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg>검색<span class="kbd">⌘K</span></a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0v5l1.5 2h-15L6 14z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>알림<span class="badge">12</span></a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">Admin</div>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2L10 21h4l.6-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5a7 7 0 0 0 .1-1.2z"/></svg>설정</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>권한 관리</a>
+        </div>
+        <div class="me"><div class="av"></div><div><div class="name">김유민</div><div class="role">PRODUCT · ADMIN</div></div></div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <div class="search"><span class="glyph"></span>문서 제목, 신청자, 결재 번호 검색…<span style="margin-left:auto;font-family:var(--font-mono);font-size:10px">⌘ K</span></div>
+          <div class="top-actions">
+            <button class="icon-btn"><span style="font-size:14px">◔</span><span class="pip"></span></button>
+            <button class="icon-btn">?</button>
+            <button class="btn ghost">템플릿 관리</button>
+            <button class="btn">+ 새 문서 작성</button>
+          </div>
+        </div>
+
+        <main class="body-col">
+          <div class="page-h">
+            <div>
+              <h1 class="h-title">워크플로우 <span class="pin-n" data-n="1">1</span></h1>
+              <div class="h-sub">오늘 처리 7건 · 평균 결재 소요 1.4일</div>
+            </div>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi cta">
+              <div class="l">결재 대기 (내가 처리)</div>
+              <div class="v">7<small>건</small></div>
+              <div class="d">마감 임박 <b>3</b> · 일반 4</div>
+            </div>
+            <div class="kpi">
+              <div class="l">내가 요청한 진행 중</div>
+              <div class="v">2<small>건</small></div>
+              <div class="d">대기 단계 평균 <b>0.8일</b></div>
+            </div>
+            <div class="kpi">
+              <div class="l">이번 달 완료</div>
+              <div class="v">34<small>건</small></div>
+              <div class="d">승인 <b>32</b> · 반려 2</div>
+            </div>
+            <div class="kpi">
+              <div class="l">참조</div>
+              <div class="v">11<small>건</small></div>
+              <div class="d">읽지 않음 <b>4</b></div>
+            </div>
+          </div>
+
+          <div class="tabs">
+            <div class="tab active" data-tab="pending">결재 대기 <span class="count attn">7</span> <span class="pin-n" data-n="2">2</span></div>
+            <div class="tab" data-tab="requested">내가 요청한 <span class="count">14</span></div>
+            <div class="tab" data-tab="completed">완료 · 참조 <span class="count">62</span></div>
+          </div>
+
+          <div class="filters">
+            <span class="chip"><span class="lbl">종류</span><span class="val">전체</span> <span class="x">⌄</span></span>
+            <span class="chip"><span class="lbl">기간</span><span class="val">최근 30일</span> <span class="x">⌄</span></span>
+            <span class="chip"><span class="lbl">신청자</span><span class="val">전체</span> <span class="x">⌄</span></span>
+            <span class="chip add">+ 필터</span>
+            <span class="spread">
+              <button class="btn ghost sm">일괄 승인 (선택)</button>
+            </span>
+          </div>
+
+          <!-- VIEW: pending -->
+          <section data-view="pending" class="is-active">
+
+            <div class="sec-divider">
+              <span>마감 임박</span>
+              <span class="ct">3</span>
+              <span class="line"></span>
+              <span class="pin-n" data-n="3">3</span>
+            </div>
+
+            <div class="doc-list">
+              <div class="doc urg active">
+                <div class="doc-kind">
+                  <span class="k leave">휴가 신청</span>
+                  <span class="d">WF-2026-0421</span>
+                </div>
+                <div class="doc-body">
+                  <div class="t">박지훈 · 연차 사용 (2일)</div>
+                  <div class="m">
+                    <span class="who"><span class="av"></span><b>박지훈</b></span>
+                    <span class="sep">·</span>
+                    <span>5. 26 (월) ~ 5. 27 (화)</span>
+                    <span class="sep">·</span>
+                    <span>신청 어제 16:24</span>
+                  </div>
+                </div>
+                <div class="aline">
+                  <span class="step done">신청</span>
+                  <span class="arr">›</span>
+                  <span class="step now">팀장</span>
+                  <span class="arr">›</span>
+                  <span class="step">HR</span>
+                </div>
+                <div class="doc-actions">
+                  <span class="doc-due urg">오늘 마감</span>
+                  <button class="btn reject sm">반려</button>
+                  <button class="btn approve sm">승인</button>
+                </div>
+              </div>
+
+              <div class="doc urg">
+                <div class="doc-kind">
+                  <span class="k expense">출장비 정산</span>
+                  <span class="d">WF-2026-0418</span>
+                </div>
+                <div class="doc-body">
+                  <div class="t">이서연 · 부산 출장비 정산 <span style="color:var(--ink-3); font-weight: 500;">(470,000원)</span></div>
+                  <div class="m">
+                    <span class="who"><span class="av"></span><b>이서연</b></span>
+                    <span class="sep">·</span>
+                    <span>5. 19 ~ 5. 20 · 영수증 8</span>
+                    <span class="sep">·</span>
+                    <span class="amt">470,000원</span>
+                  </div>
+                </div>
+                <div class="aline">
+                  <span class="step done">신청</span>
+                  <span class="arr">›</span>
+                  <span class="step done">팀장</span>
+                  <span class="arr">›</span>
+                  <span class="step now">재무</span>
+                </div>
+                <div class="doc-actions">
+                  <span class="doc-due urg">D-1</span>
+                  <button class="btn reject sm">반려</button>
+                  <button class="btn approve sm">승인</button>
+                </div>
+              </div>
+
+              <div class="doc urg">
+                <div class="doc-kind">
+                  <span class="k hr">인사평가</span>
+                  <span class="d">WF-2026-0415</span>
+                </div>
+                <div class="doc-body">
+                  <div class="t">2026 Q2 인사평가 1차 리뷰 작성</div>
+                  <div class="m">
+                    <span class="who"><span class="av"></span><b>HR팀</b> 요청</span>
+                    <span class="sep">·</span>
+                    <span>평가 대상 6명 · 진행 2 / 6</span>
+                  </div>
+                </div>
+                <div class="aline">
+                  <span class="step done">요청</span>
+                  <span class="arr">›</span>
+                  <span class="step now">평가자</span>
+                </div>
+                <div class="doc-actions">
+                  <span class="doc-due urg">D-1</span>
+                  <button class="btn approve sm">작성 시작 →</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="sec-divider">
+              <span>이번 주</span>
+              <span class="ct">4</span>
+              <span class="line"></span>
+            </div>
+
+            <div class="doc-list">
+              <div class="doc">
+                <div class="doc-kind">
+                  <span class="k training">외부 교육</span>
+                  <span class="d">WF-2026-0412</span>
+                </div>
+                <div class="doc-body">
+                  <div class="t">디자인팀 · UX 컨퍼런스 참가 신청</div>
+                  <div class="m">
+                    <span class="who"><span class="av"></span><b>박혜진</b></span>
+                    <span class="sep">·</span>
+                    <span>6. 12 ~ 13 (서울)</span>
+                    <span class="sep">·</span>
+                    <span class="amt">참가비 280,000원</span>
+                  </div>
+                </div>
+                <div class="aline">
+                  <span class="step done">신청</span>
+                  <span class="arr">›</span>
+                  <span class="step now">팀장</span>
+                  <span class="arr">›</span>
+                  <span class="step">HR</span>
+                  <span class="arr">›</span>
+                  <span class="step">재무</span>
+                </div>
+                <div class="doc-actions">
+                  <span class="doc-due soon">D-4</span>
+                  <button class="btn reject sm">반려</button>
+                  <button class="btn approve sm">승인</button>
+                </div>
+              </div>
+
+              <div class="doc">
+                <div class="doc-kind">
+                  <span class="k wfh">재택 근무</span>
+                  <span class="d">WF-2026-0410</span>
+                </div>
+                <div class="doc-body">
+                  <div class="t">최민재 · 재택근무 신청 (1일)</div>
+                  <div class="m">
+                    <span class="who"><span class="av"></span><b>최민재</b></span>
+                    <span class="sep">·</span>
+                    <span>5. 28 (목)</span>
+                    <span class="sep">·</span>
+                    <span>사유: 어린이집 행사</span>
+                  </div>
+                </div>
+                <div class="aline">
+                  <span class="step done">신청</span>
+                  <span class="arr">›</span>
+                  <span class="step now">팀장</span>
+                </div>
+                <div class="doc-actions">
+                  <span class="doc-due soon">D-4</span>
+                  <button class="btn reject sm">반려</button>
+                  <button class="btn approve sm">승인</button>
+                </div>
+              </div>
+
+              <div class="doc">
+                <div class="doc-kind">
+                  <span class="k expense">구매 요청</span>
+                  <span class="d">WF-2026-0408</span>
+                </div>
+                <div class="doc-body">
+                  <div class="t">개발팀 · 신규 도서 구매 (3건)</div>
+                  <div class="m">
+                    <span class="who"><span class="av"></span><b>김도현</b></span>
+                    <span class="sep">·</span>
+                    <span>도서 3종</span>
+                    <span class="sep">·</span>
+                    <span class="amt">96,000원</span>
+                  </div>
+                </div>
+                <div class="aline">
+                  <span class="step done">신청</span>
+                  <span class="arr">›</span>
+                  <span class="step now">팀장</span>
+                  <span class="arr">›</span>
+                  <span class="step">재무</span>
+                </div>
+                <div class="doc-actions">
+                  <span class="doc-due soon">D-5</span>
+                  <button class="btn reject sm">반려</button>
+                  <button class="btn approve sm">승인</button>
+                </div>
+              </div>
+
+              <div class="doc">
+                <div class="doc-kind">
+                  <span class="k leave">휴가 신청</span>
+                  <span class="d">WF-2026-0405</span>
+                </div>
+                <div class="doc-body">
+                  <div class="t">한지우 · 반차 신청 (오후)</div>
+                  <div class="m">
+                    <span class="who"><span class="av"></span><b>한지우</b></span>
+                    <span class="sep">·</span>
+                    <span>6. 3 (수) 오후</span>
+                  </div>
+                </div>
+                <div class="aline">
+                  <span class="step done">신청</span>
+                  <span class="arr">›</span>
+                  <span class="step now">팀장</span>
+                </div>
+                <div class="doc-actions">
+                  <span class="doc-due">D-7</span>
+                  <button class="btn reject sm">반려</button>
+                  <button class="btn approve sm">승인</button>
+                </div>
+              </div>
+            </div>
+
+          </section>
+
+          <!-- VIEW: requested -->
+          <section data-view="requested">
+            <div class="doc-list">
+              <div class="doc">
+                <div class="doc-kind"><span class="k leave">휴가 신청</span><span class="d">WF-2026-0420</span></div>
+                <div class="doc-body">
+                  <div class="t">반차 신청 — 5. 22 (금) 오후</div>
+                  <div class="m"><span>오늘 09:12 작성</span><span class="sep">·</span><span>현재 단계: 송재희 (HR)</span></div>
+                </div>
+                <div class="aline">
+                  <span class="step done">신청</span>
+                  <span class="arr">›</span>
+                  <span class="step now">HR</span>
+                </div>
+                <div class="doc-actions">
+                  <button class="btn ghost sm">회수</button>
+                  <button class="btn ghost sm">상세 →</button>
+                </div>
+              </div>
+
+              <div class="doc">
+                <div class="doc-kind"><span class="k expense">출장비 정산</span><span class="d">WF-2026-0388</span></div>
+                <div class="doc-body">
+                  <div class="t">서울 → 부산 출장비 정산</div>
+                  <div class="m"><span>3일 전 작성</span><span class="sep">·</span><span class="amt">312,500원</span><span class="sep">·</span><span>현재 단계: 재무팀</span></div>
+                </div>
+                <div class="aline">
+                  <span class="step done">신청</span>
+                  <span class="arr">›</span>
+                  <span class="step done">팀장</span>
+                  <span class="arr">›</span>
+                  <span class="step now">재무</span>
+                </div>
+                <div class="doc-actions">
+                  <button class="btn ghost sm">회수</button>
+                  <button class="btn ghost sm">상세 →</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- VIEW: completed -->
+          <section data-view="completed">
+            <div class="doc-list">
+              <div class="doc">
+                <div class="doc-kind"><span class="k leave">휴가 신청</span><span class="d">WF-2026-0397</span></div>
+                <div class="doc-body">
+                  <div class="t">연차 신청 — 5. 14 (수)</div>
+                  <div class="m"><span class="who"><span class="av"></span><b>함헌규</b> 요청</span><span class="sep">·</span><span>완료 5. 9</span></div>
+                </div>
+                <div class="aline">
+                  <span class="step done">신청</span>
+                  <span class="arr">›</span>
+                  <span class="step done">팀장</span>
+                  <span class="arr">›</span>
+                  <span class="step done">HR</span>
+                </div>
+                <div class="doc-actions">
+                  <span class="doc-due" style="background:#e8f3ec;border-color:#c5deca;color:#1b6b3b;">승인</span>
+                  <button class="btn ghost sm">상세 →</button>
+                </div>
+              </div>
+
+              <div class="doc">
+                <div class="doc-kind"><span class="k expense">출장비 정산</span><span class="d">WF-2026-0381</span></div>
+                <div class="doc-body">
+                  <div class="t">대전 출장비 — 영수증 누락</div>
+                  <div class="m"><span class="who"><span class="av"></span><b>김도현</b> 요청</span><span class="sep">·</span><span>반려 5. 6</span><span class="sep">·</span><span>사유: 영수증 2건 미첨부</span></div>
+                </div>
+                <div class="aline">
+                  <span class="step done">신청</span>
+                  <span class="arr">›</span>
+                  <span class="step rej">팀장</span>
+                </div>
+                <div class="doc-actions">
+                  <span class="doc-due" style="background:#fbecec;border-color:#f1c8c8;color:#8a3030;">반려</span>
+                  <button class="btn ghost sm">재작성</button>
+                </div>
+              </div>
+
+              <div class="doc">
+                <div class="doc-kind"><span class="k wfh">재택 근무</span><span class="d">WF-2026-0376</span></div>
+                <div class="doc-body">
+                  <div class="t">재택근무 (2일) — 5. 7 ~ 5. 8</div>
+                  <div class="m"><span class="who"><span class="av"></span><b>박혜진</b> 요청</span><span class="sep">·</span><span>완료 5. 6</span></div>
+                </div>
+                <div class="aline">
+                  <span class="step done">신청</span>
+                  <span class="arr">›</span>
+                  <span class="step done">팀장</span>
+                </div>
+                <div class="doc-actions">
+                  <span class="doc-due" style="background:#e8f3ec;border-color:#c5deca;color:#1b6b3b;">승인</span>
+                  <button class="btn ghost sm">상세 →</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </main>
+
+        <!-- annotations -->
+        <div class="annot" data-n="1" style="top: 130px; right: 14px;">
+          <div><b>"새 문서 작성"</b> 단일 CTA에서 템플릿 검색 → 인라인 작성. 종류별로 메뉴 트리 X.</div>
+        </div>
+        <div class="annot" data-n="2" style="top: 422px; left: 1140px; max-width: 220px;">
+          <div><b>탭 순서 = 우선순위</b> 결재 대기 → 내가 요청 → 완료 (flex/일반 솔루션과 반대 — actionable이 먼저).</div>
+        </div>
+        <div class="annot" data-n="3" style="top: 562px; left: 25px; max-width: 220px;">
+          <div><b>마감 임박 그룹</b> 시간순 그룹화로 액션 우선순위 시각화. urgent 항목은 좌측 빨간 bar.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FRAME 2: DOCUMENT DETAIL ============ -->
+  <div class="frame">
+    <div class="frame-bar">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="url">app.teamlet.io<b>/workflow/WF-2026-0421</b></div>
+      <div class="frame-label">DETAIL</div>
+    </div>
+
+    <div class="detail-shell" style="position: relative;">
+      <aside class="side">
+        <div class="org"><div class="org-logo">T</div><div class="org-name">팀렛 주식회사<small>Pro · 142명</small></div></div>
+        <div class="nav-group" style="margin-top: 8px;">
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>홈</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15 14c2.8 0 5.5 1.6 5.5 5"/></svg>구성원</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M4 12a8 8 0 0 1 16 0"/><path d="M9 20l3-3 3 3"/></svg>휴가</a>
+          <a class="nav-item active"><svg class="ico" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h6M10 16h4"/></svg>워크플로우<span class="badge attn">7</span></a>
+        </div>
+        <div style="margin-top: auto; padding: 10px; font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); border-top: 1px solid var(--line-2);">
+          ← 결재 대기 (7)
+        </div>
+      </aside>
+
+      <div class="det-main">
+
+        <div class="topbar">
+          <div style="font-size: 12px; color: var(--ink-3); font-family: var(--font-mono);">
+            <a style="text-decoration: none; color: var(--ink-3);">워크플로우</a>
+            <span style="margin: 0 6px;">/</span>
+            <a style="text-decoration: none; color: var(--ink-3);">결재 대기</a>
+            <span style="margin: 0 6px;">/</span>
+            <span style="color: var(--ink); font-weight: 600;">WF-2026-0421</span>
+          </div>
+          <div class="top-actions">
+            <button class="icon-btn">‹</button>
+            <button class="icon-btn">›</button>
+            <button class="btn ghost sm">⬇ PDF</button>
+            <button class="btn ghost sm">⋯ 더보기</button>
+          </div>
+        </div>
+
+        <div class="det-hero">
+          <div>
+            <div class="kicker">
+              <span class="k">휴가 신청</span>
+              <span class="id">WF-2026-0421 · 어제 16:24 작성</span>
+              <span class="stamp">결재 진행 중</span>
+            </div>
+            <h2>박지훈 · 연차 사용 (2일)</h2>
+            <div class="submeta">
+              <span><b>신청자</b> 박지훈 (ENG · 백엔드 · 사번 048)</span>
+              <span class="sep">·</span>
+              <span><b>기간</b> 2026. 5. 26 (월) ~ 5. 27 (화)</span>
+              <span class="sep">·</span>
+              <span><b>참조</b> 정수민 (HR)</span>
+            </div>
+          </div>
+          <div class="det-actions">
+            <div class="row">
+              <button class="btn ghost sm">댓글 추가</button>
+              <button class="btn ghost sm">참조자 추가</button>
+            </div>
+            <div class="row">
+              <button class="btn reject">반려하기</button>
+              <button class="btn approve">승인하기 <span class="pin-n" data-n="4">4</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- approval line (full) -->
+        <div class="aline-full">
+          <h4>결재선 <span class="ct">3단계 · 직렬</span></h4>
+          <div class="stages">
+            <div class="stage done">
+              <div class="dot-h">✓</div>
+              <div class="role-l">신청</div>
+              <div class="who-h"><span class="av"></span>박지훈</div>
+              <div class="when-h">어제 16:24 · 신청 완료</div>
+            </div>
+            <div class="stage now">
+              <div class="dot-h">2</div>
+              <div class="role-l">1차 결재 · 팀장</div>
+              <div class="who-h"><span class="av"></span>김유민 <span style="font-size: 10px; color: var(--ink-3); font-family: var(--font-mono); font-weight: 500;">(나)</span></div>
+              <div class="when-h">오늘 마감 (D-0)</div>
+            </div>
+            <div class="stage">
+              <div class="dot-h">3</div>
+              <div class="role-l">최종 결재 · HR</div>
+              <div class="who-h"><span class="av"></span>송재희</div>
+              <div class="when-h">미시작</div>
+            </div>
+            <div class="stage">
+              <div class="dot-h">✓</div>
+              <div class="role-l">자동 처리</div>
+              <div class="who-h"><span class="av"></span>휴가 시스템</div>
+              <div class="when-h">잔여 자동 차감</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="det-body">
+          <!-- form -->
+          <div class="det-form">
+
+            <h3>신청 내용</h3>
+            <div class="fg">
+              <div class="f-row">
+                <span class="l">휴가 종류</span>
+                <span class="v">연차</span>
+              </div>
+              <div class="f-row">
+                <span class="l">사용 일수</span>
+                <span class="v big">2일</span>
+              </div>
+              <div class="f-row">
+                <span class="l">시작일</span>
+                <span class="v">2026. 5. 26 (월)</span>
+              </div>
+              <div class="f-row">
+                <span class="l">종료일</span>
+                <span class="v">2026. 5. 27 (화)</span>
+              </div>
+              <div class="f-row">
+                <span class="l">신청 시점 잔여</span>
+                <span class="v">11.5일 → <b>9.5일 (사용 후)</b></span>
+              </div>
+              <div class="f-row">
+                <span class="l">대체 인력</span>
+                <span class="v">박혜진 (디자인)</span>
+              </div>
+              <div class="f-row full">
+                <span class="l">사유</span>
+                <div class="reason">
+                  부모님 환갑 행사 참석을 위해 휴가 신청드립니다. 5/26 오전 KTX로 부산 이동 → 가족 행사 → 5/27 저녁 복귀 예정. 업무는 박혜진 매니저께서 대신 처리해주시기로 양해 구했습니다.
+                </div>
+              </div>
+            </div>
+
+            <h3>첨부 자료</h3>
+            <div class="attach">
+              <div class="ico-doc">PDF</div>
+              <div>
+                <div class="ti">행사 일정.pdf</div>
+                <div class="sub-a">214 KB · 어제 16:23</div>
+              </div>
+              <span class="dl">⬇ 다운로드</span>
+            </div>
+
+            <div class="comments">
+              <h3>댓글 <span style="font-family: var(--font-mono); color: var(--ink-4); font-weight: 500;">(2)</span></h3>
+
+              <div class="cm">
+                <div class="av-c"></div>
+                <div class="cm-body">
+                  <div class="cm-h">
+                    <span class="who">정수민</span>
+                    <span class="role">HR팀 매니저</span>
+                    <span class="when">오늘 09:48</span>
+                  </div>
+                  <div class="cm-text">대체 인력 확인했습니다. 박혜진 매니저께도 메일 드렸어요. HR 단계에서는 문제 없을 듯합니다.</div>
+                </div>
+              </div>
+
+              <div class="cm">
+                <div class="av-c"></div>
+                <div class="cm-body">
+                  <div class="cm-h">
+                    <span class="who">박지훈</span>
+                    <span class="role">신청자</span>
+                    <span class="when">어제 16:25</span>
+                  </div>
+                  <div class="cm-text">5/26 오전 ~ 5/27 종일 자리 비웁니다. 긴급한 건은 박혜진 매니저께 부탁드립니다 🙏</div>
+                </div>
+              </div>
+
+              <div class="cm-input">
+                <div class="av-c" style="background-image: var(--hatch);"></div>
+                <span class="ph">댓글을 남겨주세요…</span>
+                <button class="btn ghost sm">전송</button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- rail -->
+          <aside class="det-rail">
+            <div class="r-card">
+              <h5>신청자 컨텍스트 <span class="pin-n" data-n="5">5</span></h5>
+              <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--line-2); margin-bottom: 6px;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--hatch); border: 1px solid var(--line);"></div>
+                <div>
+                  <div style="font-size: 13px; font-weight: 700;">박지훈</div>
+                  <div style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">사번 048 · 입사 2024. 8. 5</div>
+                </div>
+              </div>
+              <div style="font-size: 11px; color: var(--ink-2); font-family: var(--font-mono); line-height: 1.7;">
+                <div>연차 잔여 · <b style="font-family: var(--font-kr); font-weight: 600; color: var(--ink);">11.5일 / 15일</b></div>
+                <div>YTD 사용 · 3.5일</div>
+                <div>최근 휴가 · 5. 14 (1일)</div>
+                <div>이번 주 근무 · 38:42</div>
+                <div style="margin-top: 6px; color: var(--ink-3);">충돌 일정 없음 ✓</div>
+              </div>
+            </div>
+
+            <div class="r-card">
+              <h5>활동 이력 <span class="all">전체 →</span></h5>
+              <div class="tline-h">
+                <div class="ev now">
+                  <div class="t">결재 진행 중 (팀장)</div>
+                  <div class="d">오늘 09:48 · 대기 17시간</div>
+                </div>
+                <div class="ev ok">
+                  <div class="t">정수민 댓글 추가</div>
+                  <div class="d">오늘 09:48</div>
+                  <div class="note">대체 인력 확인했습니다…</div>
+                </div>
+                <div class="ev ok">
+                  <div class="t">참조자 추가 · 정수민 (HR)</div>
+                  <div class="d">어제 16:24 · 자동</div>
+                </div>
+                <div class="ev ok">
+                  <div class="t">신청 작성 완료</div>
+                  <div class="d">어제 16:24 · 박지훈</div>
+                </div>
+                <div class="ev">
+                  <div class="t">신청 작성 시작</div>
+                  <div class="d">어제 16:18</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="r-card">
+              <h5>관련 문서</h5>
+              <div style="font-size: 12px; line-height: 1.7;">
+                <div style="padding: 6px 0; border-bottom: 1px dashed var(--line-2);">
+                  <div style="font-weight: 600;">박지훈 · 휴가 신청 (1일)</div>
+                  <div style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">WF-2026-0312 · 5. 14 · 승인</div>
+                </div>
+                <div style="padding: 6px 0;">
+                  <div style="font-weight: 600;">박지훈 · 휴가 신청 (0.5일)</div>
+                  <div style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">WF-2026-0203 · 3. 22 · 승인</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- annotations -->
+      <div class="annot" data-n="4" style="top: 218px; right: 14px; max-width: 220px;">
+        <div><b>승인 CTA가 가장 무거운 색</b> 반려는 outline. 잘못 누름 방지 + 디폴트 액션 명시.</div>
+      </div>
+      <div class="annot" data-n="5" style="top: 700px; left: 25px; max-width: 210px;">
+        <div><b>신청자 컨텍스트</b> 결재자가 결정에 필요한 정보 (잔여/근무/충돌)를 본문 안에. flex는 별도 화면 이동 필요.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec">
+    <div><b>Grid</b>240 + 1fr (+ 320 in detail)</div>
+    <div><b>Tabs</b>3 (대기/요청/완료)</div>
+    <div><b>Doc statuses</b>5 (작성/진행/승인/반려/회수)</div>
+    <div><b>Doc types</b>5 visual (leave/expense/training/wfh/hr)</div>
+    <div><b>Approval steps</b>visual chain (mini in list, full in detail)</div>
+    <div><b>List action</b>inline approve/reject</div>
+  </div>
+
+  <!-- RATIONALE -->
+  <div class="rationale">
+    <h2>워크플로우 — 설계 원칙</h2>
+    <div class="ratio-sub">brief의 3구분(요청/대기/완료) · 액션 우선 순서 · 결재선 가시화</div>
+
+    <div class="compare">
+      <div class="flex">
+        <h3>일반 결재 시스템</h3>
+        <ul>
+          <li><b>탭 순서</b>가 시간순(요청 → 대기 → 완료) — 첫 화면에 액션 없음</li>
+          <li><b>리스트에서 승인 불가</b> — 모든 결재는 상세 진입 필요</li>
+          <li><b>결재선</b>은 상세 페이지에 텍스트로만 존재</li>
+          <li><b>결재 의사결정 정보</b>(신청자 잔여, 근무 상황, 일정 충돌)가 흩어짐</li>
+          <li><b>5+ 가지 문서 종류</b>를 메뉴 트리로 분리 → 신규 문서 찾기 어려움</li>
+        </ul>
+      </div>
+      <div class="tlt">
+        <h3>Teamlet</h3>
+        <ul>
+          <li><b>탭 순서 = 우선순위</b> 결재 대기를 1번 탭 + cta 카드로 노출</li>
+          <li><b>리스트에서 인라인 승인/반려</b> — 단순 휴가는 1초 결재</li>
+          <li><b>결재선이 리스트 + 상세 양쪽의 spine</b> · 현재 단계 시각화</li>
+          <li><b>신청자 컨텍스트 카드</b> 우측 레일에 — 잔여·근무·충돌 즉시 확인</li>
+          <li><b>+ 새 문서 작성 단일 CTA</b> · 안에서 템플릿 검색</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>세부 결정</h2>
+    <div class="ratio-sub">상태 · 색 · 결재선 · 인라인 액션</div>
+
+    <div class="rationale-grid">
+      <div class="rationale-col">
+        <h3>1. 상태 압축</h3>
+        <ul>
+          <li>5가지: <code>작성중 / 진행중 / 승인 / 반려 / 회수</code></li>
+          <li>"승인진행중", "결재대기", "검토중" 등 동의어 표현 제거 → 진행중 1개로</li>
+          <li>"제출완료"는 상태 X, 이벤트 → 활동 이력에서만 노출</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>2. 결재선 시각화</h3>
+        <ul>
+          <li><b>리스트</b>: 미니 chip chain (신청 ✓ → 팀장 ● → HR ○)</li>
+          <li><b>상세</b>: 가로 stepper, 각 단계에 역할·이름·시점</li>
+          <li>현재 단계는 <b>잉크 fill + 굵게</b> — 색 + 두께 2중 인코딩</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>3. 문서 종류 색</h3>
+        <ul>
+          <li>5개 종류만 색 chip: <code>leave / expense / training / wfh / hr</code></li>
+          <li>그 외는 회색 기본 chip — 색 인플레이션 방지</li>
+          <li>같은 카테고리(예: 휴가)는 종류 무관 같은 색 — 시각 그룹화</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>4. 인라인 액션</h3>
+        <ul>
+          <li>리스트 우측에 <b>반려 / 승인</b> 직접 노출 — 클릭 시 컨펌 (Cmd+Enter)</li>
+          <li>단순 결재 (휴가, 재택)는 리스트에서 완결 가능</li>
+          <li>금액·증빙·서명 필요한 결재는 상세로 이동 — 동선 차별화</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>5. 그룹화</h3>
+        <ul>
+          <li>리스트는 <b>마감 임박 / 이번 주 / 그 외</b>로 시간순 그룹</li>
+          <li>마감 임박 항목은 좌측 빨간 bar — 색 + 위치 2중 인코딩</li>
+          <li>같은 그룹 내에서는 신청 시점 역순</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>6. 결재자 컨텍스트</h3>
+        <ul>
+          <li>우측 레일에 <b>신청자 미니 카드</b> · 결정에 필요한 5개 지표</li>
+          <li>"충돌 일정 없음" 자동 검증 → 빠른 승인 신호</li>
+          <li>관련 이전 문서 자동 리스트 — 패턴 식별 (잦은 신청 등)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.nav-item').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const sb = a.closest('.side'); if (!sb) return;
+      sb.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+      a.classList.add('active');
+    });
+  });
+  const tabs = document.querySelectorAll('.tab');
+  const views = document.querySelectorAll('[data-view]');
+  tabs.forEach(t => {
+    t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      views.forEach(v => v.classList.remove('is-active'));
+      t.classList.add('active');
+      document.querySelector(`[data-view="${t.dataset.tab}"]`).classList.add('is-active');
+    });
+  });
+  document.querySelectorAll('.doc').forEach(d => {
+    d.addEventListener('click', e => {
+      if (e.target.closest('.btn')) return;
+      document.querySelectorAll('.doc').forEach(x => x.classList.remove('active'));
+      d.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

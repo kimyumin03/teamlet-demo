@@ -122,7 +122,7 @@ function RenameButton({
           {error && (
             <p
               role="alert"
-              className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700"
+              className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
             >
               {error}
             </p>
@@ -191,7 +191,7 @@ function DeleteButton({
         size="sm"
         onClick={() => setOpen(true)}
         aria-label="부서 삭제"
-        className="text-destructive-700 hover:bg-destructive-50"
+        className="text-destructive hover:bg-destructive/5"
       >
         <Trash2 className="size-3.5" />
         삭제
@@ -208,7 +208,7 @@ function DeleteButton({
         {error && (
           <p
             role="alert"
-            className="mt-3 rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700"
+            className="mt-3 rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
           >
             {error}
           </p>

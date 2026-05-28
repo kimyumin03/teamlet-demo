@@ -54,7 +54,7 @@ export function ExpiryButton({ year }: { year: number }) {
                 <li>이월 한도 설정 시 해당 일수를 {year + 1}년으로 이월합니다.</li>
                 <li>이미 소멸 처리된 항목은 건너뜁니다 (멱등).</li>
               </ul>
-              {error && <p className="mt-3 text-xs text-destructive-700">{error}</p>}
+              {error && <p className="mt-3 text-[12px] text-destructive">{error}</p>}
             </div>
           )}
 

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 import {
   getPermissionCatalog,
   getRolePermissions,
@@ -20,7 +19,7 @@ function ErrorBox({ message }: { message: string }) {
   return (
     <p
       role="alert"
-      className="rounded-md bg-destructive-50 px-4 py-3 text-sm text-destructive-700"
+      className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-4 py-3 text-[13px] text-destructive"
     >
       {message}
     </p>
@@ -66,15 +65,17 @@ export default async function RolePermissionPage({
     <div>
       <Link
         href="/settings/permissions"
-        className="inline-flex items-center gap-1 text-sm text-foreground-muted hover:text-foreground"
+        className="inline-flex items-center gap-1 text-[12px] text-foreground-subtle hover:text-foreground transition-colors"
       >
-        <ChevronLeft className="size-4" />
+        <svg viewBox="0 0 16 16" fill="currentColor" className="size-3.5">
+          <path fillRule="evenodd" d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 1.06L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z" clipRule="evenodd" />
+        </svg>
         권한 설정
       </Link>
 
       <div className="mb-6 mt-4">
-        <h1 className="text-xl font-semibold text-foreground">{role.name}</h1>
-        <p className="mt-0.5 text-sm text-foreground-muted">
+        <h1 className="text-[20px] font-bold tracking-tight text-foreground">{role.name}</h1>
+        <p className="mt-0.5 text-[13px] text-foreground-muted">
           {role.description ?? "이 역할이 가질 권한을 설정해요."}
         </p>
       </div>

@@ -105,7 +105,7 @@ export function CreateDocumentButton({ employees, templates }: Props) {
       <div key={field.id} className="flex flex-col gap-1.5">
         <label className="text-sm text-foreground-muted">
           {field.label}
-          {field.required && <span className="ml-0.5 text-destructive-600">*</span>}
+          {field.required && <span className="ml-0.5 text-destructive">*</span>}
         </label>
         {field.type === "textarea" ? (
           <textarea
@@ -229,7 +229,7 @@ export function CreateDocumentButton({ employees, templates }: Props) {
           <form id="step2" onSubmit={(e) => { e.preventDefault(); setStep(3); }} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm text-foreground-muted">
-                제목<span className="ml-0.5 text-destructive-600">*</span>
+                제목<span className="ml-0.5 text-destructive">*</span>
               </label>
               <Input
                 required
@@ -271,7 +271,7 @@ export function CreateDocumentButton({ employees, templates }: Props) {
                     <button
                       type="button"
                       onClick={() => removeApprover(idx)}
-                      className="px-2 text-foreground-muted hover:text-destructive-600"
+                      className="px-2 text-foreground-muted hover:text-destructive"
                     >
                       ×
                     </button>
@@ -314,7 +314,7 @@ export function CreateDocumentButton({ employees, templates }: Props) {
                   <button
                     type="button"
                     onClick={() => setCcIds((p) => p.filter((_, i) => i !== idx))}
-                    className="px-2 text-foreground-muted hover:text-destructive-600"
+                    className="px-2 text-foreground-muted hover:text-destructive"
                   >
                     ×
                   </button>
@@ -323,7 +323,7 @@ export function CreateDocumentButton({ employees, templates }: Props) {
             </div>
 
             {error && (
-              <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>
+              <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>
             )}
           </form>
         )}

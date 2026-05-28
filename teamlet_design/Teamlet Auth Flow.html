@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Teamlet — Auth Flow Hi-Fi</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Pretendard:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --bg-card: #ffffff;
+    --bg-secondary: #f1f3f6;
+    --bg-tertiary: #e8ebf0;
+    --fg: #0b1220;
+    --fg-muted: #475569;
+    --fg-subtle: #8b95a7;
+    --border: #e3e7ee;
+    --border-strong: #ccd2dc;
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+    --shadow-lg: 0 24px 48px -16px rgba(15, 23, 42, 0.12);
+
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-soft: rgba(79, 70, 229, 0.10);
+    --primary-on: #ffffff;
+
+    --destructive: #dc2626;
+    --destructive-50: #fef2f2;
+    --success: #16a34a;
+    --success-50: #f0fdf4;
+    --warn: #d97706;
+    --warn-50: #fffbeb;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #ecedef; }
+  body {
+    font-family: "Pretendard", "Noto Sans KR", "Inter", system-ui, sans-serif;
+    color: var(--fg);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: "JetBrains Mono", monospace; font-feature-settings: "tnum"; }
+
+  /* Doc layout */
+  .sheet { max-width: 1480px; margin: 32px auto 64px; padding: 0 28px; }
+  .doc-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 24px; padding: 8px 0 20px;
+    border-bottom: 1px dashed var(--border-strong); margin-bottom: 28px;
+  }
+  .doc-head h1 { font-family: "Inter", system-ui; font-size: 20px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .doc-head .sub { color: var(--fg-muted); font-size: 12px; font-family: "JetBrains Mono", monospace; }
+  .pagenav { display: flex; gap: 8px; margin-top: 12px; font-family: "JetBrains Mono", monospace; font-size: 11px; flex-wrap: wrap; }
+  .pagenav a {
+    text-decoration: none; color: var(--fg-muted); padding: 5px 10px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card);
+  }
+  .pagenav a:hover { color: var(--fg); }
+  .pagenav a.cur { color: var(--fg); font-weight: 600; border-color: var(--fg); }
+
+  /* Grid of auth screen previews */
+  .auth-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+  }
+
+  /* Frame */
+  .frame {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  .frame-bar {
+    height: 36px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 14px; gap: 10px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bg-tertiary); }
+  .url { flex: 1; text-align: center; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--fg-muted); }
+  .url b { color: var(--fg); }
+  .frame-label {
+    font-family: "Inter", system-ui; font-size: 10px; font-weight: 600;
+    color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 0 6px;
+  }
+  .frame-body {
+    background: var(--bg);
+    min-height: 580px;
+    display: grid; place-items: center;
+    padding: 32px 20px;
+    position: relative;
+  }
+
+  /* Auth card */
+  .card {
+    width: 100%; max-width: 400px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: var(--shadow-md);
+  }
+  .card.wide { max-width: 480px; }
+
+  .logo-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
+  }
+  .logo {
+    width: 36px; height: 36px; border-radius: 9px;
+    background: var(--primary); color: var(--primary-on);
+    display: grid; place-items: center;
+    font-family: "Inter", system-ui; font-weight: 700; font-size: 15px; letter-spacing: -0.02em;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.18) inset, var(--shadow-sm);
+  }
+  .brand { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .brand small { font-size: 11px; color: var(--fg-muted); margin-left: 6px; font-weight: 400; }
+
+  h2.title { margin: 0 0 6px; font-size: 22px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; }
+  p.sub { margin: 0 0 24px; color: var(--fg-muted); font-size: 13.5px; }
+
+  /* Form */
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 500; color: var(--fg-muted); margin-bottom: 6px;
+  }
+  .input {
+    width: 100%; padding: 11px 13px;
+    border: 1px solid var(--border-strong); border-radius: 8px;
+    background: var(--bg-card); color: var(--fg);
+    font-size: 14px; font-family: inherit;
+    transition: border-color 120ms, box-shadow 120ms;
+  }
+  .input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .input.error { border-color: var(--destructive); }
+  .input.ph { color: var(--fg-subtle); }
+  .input-help { font-size: 11.5px; color: var(--fg-muted); margin-top: 5px; }
+  .input-help.error { color: var(--destructive); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 11px 14px;
+    border-radius: 8px;
+    font-size: 14px; font-weight: 600; line-height: 1;
+    cursor: pointer; border: 1px solid transparent; font-family: inherit;
+    transition: background 120ms, color 120ms, border-color 120ms;
+    width: 100%;
+  }
+  .btn-primary {
+    background: var(--primary); color: var(--primary-on);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.18) inset, var(--shadow-sm);
+  }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-outline { background: var(--bg-card); color: var(--fg); border-color: var(--border-strong); }
+  .btn-outline:hover { background: var(--bg-secondary); }
+  .btn-ghost { background: transparent; color: var(--fg-muted); border-color: transparent; }
+  .btn-ghost:hover { color: var(--fg); }
+
+  /* OAuth providers */
+  .oauth-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .oauth { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg-card); cursor: pointer; font-size: 13.5px; font-weight: 500; transition: background 120ms; }
+  .oauth:hover { background: var(--bg-secondary); }
+  .oauth .g { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-family: "Inter", system-ui; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .oauth .g.google { background: #fff; border: 1px solid var(--border-strong); color: #4285F4; }
+
+  .divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 18px 0;
+    font-size: 11px; color: var(--fg-subtle);
+    font-family: "Inter", system-ui; text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .divider::before, .divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--border);
+  }
+
+  .terms {
+    margin: 14px 0 0;
+    text-align: center; font-size: 11.5px; color: var(--fg-muted);
+  }
+  .terms a { color: var(--primary); text-decoration: none; font-weight: 500; }
+
+  /* 2FA */
+  .otp-row { display: flex; gap: 8px; justify-content: center; margin: 18px 0 8px; }
+  .otp {
+    width: 44px; height: 52px; border: 1.5px solid var(--border-strong); border-radius: 9px;
+    font-family: "JetBrains Mono", monospace; font-size: 22px; font-weight: 700;
+    text-align: center;
+    background: var(--bg-card);
+  }
+  .otp.filled { border-color: var(--primary); color: var(--fg); background: var(--bg-card); }
+  .otp.focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .otp.empty { color: var(--fg-subtle); }
+  .otp-help {
+    text-align: center; font-size: 12px; color: var(--fg-muted); margin-bottom: 18px;
+  }
+  .otp-help .timer { color: var(--warn); font-family: "JetBrains Mono", monospace; font-weight: 600; }
+
+  /* Join company - 3 options */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option {
+    display: grid; grid-template-columns: 40px 1fr auto; gap: 14px;
+    padding: 16px;
+    border: 1.5px solid var(--border); border-radius: 12px;
+    background: var(--bg-card); cursor: pointer;
+    transition: border-color 120ms, background 120ms;
+    align-items: center;
+  }
+  .option:hover { border-color: var(--border-strong); background: var(--bg-secondary); }
+  .option.selected { border-color: var(--primary); background: var(--primary-soft); }
+  .option .opt-ic {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--bg-secondary); color: var(--fg); display: grid; place-items: center;
+    font-size: 18px;
+  }
+  .option.selected .opt-ic { background: var(--primary); color: var(--primary-on); }
+  .option .opt-t { font-size: 14px; font-weight: 600; }
+  .option .opt-s { font-size: 12px; color: var(--fg-muted); margin-top: 3px; }
+  .option .opt-arr { color: var(--fg-subtle); }
+
+  /* Register company - multi field form */
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field-row .field { margin-bottom: 0; }
+
+  /* Pending approval */
+  .status-bg-ok { background: var(--success-50); color: var(--success); }
+  .status-bg-rej { background: var(--destructive-50); color: var(--destructive); }
+  .status-bg-wait { background: var(--warn-50); color: var(--warn); }
+
+  .status-card {
+    text-align: center;
+  }
+  .status-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 28px;
+    margin: 0 auto 18px;
+  }
+  .status-icon.wait { background: var(--warn-50); color: var(--warn); animation: pulse 2s ease-in-out infinite; }
+  .status-icon.rej { background: var(--destructive-50); color: var(--destructive); }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+
+  .timeline {
+    margin: 20px 0; padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    text-align: left;
+  }
+  .timeline .ev {
+    display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+  }
+  .timeline .ev .icon-s {
+    width: 18px; height: 18px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: "JetBrains Mono", monospace; font-size: 10px; font-weight: 700;
+    background: var(--bg-card); border: 1.5px solid var(--border-strong); color: var(--fg-subtle);
+  }
+  .timeline .ev.done .icon-s { background: var(--success); border-color: var(--success); color: white; }
+  .timeline .ev.now .icon-s { background: var(--warn); border-color: var(--warn); color: white; animation: pulse 2s ease-in-out infinite; }
+  .timeline .ev.rej .icon-s { background: var(--destructive); border-color: var(--destructive); color: white; }
+  .timeline .ev .t { font-weight: 600; }
+  .timeline .ev .w { color: var(--fg-muted); font-family: "JetBrains Mono", monospace; font-size: 11px; }
+
+  .reject-reason {
+    margin: 18px 0;
+    padding: 14px;
+    background: var(--destructive-50);
+    border: 1px solid #f1c8c8;
+    border-radius: 10px;
+    text-align: left;
+    font-size: 13px;
+    color: var(--fg);
+  }
+  .reject-reason .l { font-size: 11px; color: var(--destructive); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 6px; }
+  .reject-reason .t { color: var(--fg); line-height: 1.5; }
+
+  .footer-link {
+    margin-top: 14px; text-align: center; font-size: 12.5px; color: var(--fg-muted);
+  }
+  .footer-link a { color: var(--primary); text-decoration: none; font-weight: 500; }
+
+  .helper-row {
+    display: flex; align-items: center; gap: 8px;
+    margin: 14px 0 0;
+    font-size: 12.5px; color: var(--fg-muted);
+  }
+  .helper-row a { color: var(--primary); text-decoration: none; font-weight: 500; margin-left: auto; }
+
+  .field .req { color: var(--destructive); margin-left: 2px; }
+
+  /* annotation */
+  .annot {
+    position: absolute;
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px 10px; border: 1px solid #1e6cff; background: #eef3ff;
+    border-radius: 6px;
+    font-size: 11px; line-height: 1.45; color: #173f9c; max-width: 200px;
+    font-family: "Inter", system-ui; font-weight: 500;
+    pointer-events: none;
+  }
+  .annot::before {
+    content: attr(data-n); flex-shrink: 0;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #1e6cff; color: white;
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 700;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .annot b { color: #0a2a73; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <div class="doc-head">
+    <div>
+      <h1>Teamlet — Auth Flow <span style="color:var(--fg-subtle);font-weight:400">/ Hi-Fi v1</span></h1>
+      <div class="sub">6 화면 · 로그인 / 회원가입 / 2FA / 회사 가입 / 회사 등록 / 승인 대기</div>
+      <div class="pagenav">
+        <a href="Teamlet Home Hi-Fi.html">홈 Hi-Fi</a>
+        <a href="Teamlet Hi-Fi Prototype.html">전체 Hi-Fi</a>
+        <a class="cur">Auth Flow</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-grid">
+
+    <!-- ============ 1. LOGIN ============ -->
+    <div class="frame">
+      <div class="frame-bar">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="url">app.teamlet.io<b>/login</b></div>
+        <div class="frame-label">01 · LOGIN</div>
+      </div>
+      <div class="frame-body">
+        <div class="card">
+          <div class="logo-row">
+            <div class="logo">T</div>
+            <div class="brand">Teamlet <small>HR for small teams</small></div>
+          </div>
+
+          <h2 class="title">로그인</h2>
+          <p class="sub">회사 이메일을 입력하면 로그인 링크를 보내드려요.</p>
+
+          <div class="field">
+            <label>이메일</label>
+            <input class="input" type="email" value="charles@jocodingax.ai" />
+            <div class="input-help">비밀번호는 사용하지 않아요. 메일로 받은 임시 비밀번호로 1회 로그인합니다.</div>
+          </div>
+
+          <button class="btn btn-primary">로그인 링크 받기 →</button>
+
+          <div class="divider">또는</div>
+
+          <div class="oauth-list">
+            <div class="oauth">
+              <span class="g google">G</span>
+              <span>Google로 계속하기</span>
+            </div>
+          </div>
+
+          <div class="footer-link">
+            계정이 없으신가요? <a>회원가입 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 2. SIGNUP ============ -->
+    <div class="frame">
+      <div class="frame-bar">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="url">app.teamlet.io<b>/signup</b></div>
+        <div class="frame-label">02 · SIGNUP</div>
+      </div>
+      <div class="frame-body">
+        <div class="card">
+          <div class="logo-row">
+            <div class="logo">T</div>
+            <div class="brand">Teamlet</div>
+          </div>
+
+          <h2 class="title">계정 만들기</h2>
+          <p class="sub">5초면 시작할 수 있어요. 회사는 다음 단계에서 선택합니다.</p>
+
+          <div class="field-row">
+            <div class="field">
+              <label>이름<span class="req">*</span></label>
+              <input class="input" type="text" value="김유민" />
+            </div>
+            <div class="field">
+              <label>닉네임</label>
+              <input class="input ph" type="text" placeholder="선택 사항" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>이메일<span class="req">*</span></label>
+            <input class="input" type="email" value="charles@jocodingax.ai" />
+            <div class="input-help">회사 도메인 이메일을 권장합니다.</div>
+          </div>
+
+          <div class="field">
+            <label>휴대전화 (선택)</label>
+            <input class="input ph" type="tel" placeholder="010-0000-0000" />
+          </div>
+
+          <button class="btn btn-primary" style="margin-top: 8px;">계정 만들기 →</button>
+
+          <div class="terms">
+            계정을 만들면 <a>이용약관</a>과 <a>개인정보 처리방침</a>에 동의하게 됩니다.
+          </div>
+
+          <div class="footer-link">
+            이미 계정이 있으신가요? <a>로그인 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 3. 2FA ============ -->
+    <div class="frame">
+      <div class="frame-bar">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="url">app.teamlet.io<b>/2fa</b></div>
+        <div class="frame-label">03 · 2FA</div>
+      </div>
+      <div class="frame-body">
+        <div class="card">
+          <div class="logo-row">
+            <div class="logo">T</div>
+            <div class="brand">Teamlet</div>
+          </div>
+
+          <h2 class="title">2단계 인증</h2>
+          <p class="sub">인증 앱(Authy, Google Authenticator)에서 표시되는 <b>6자리 코드</b>를 입력해주세요.</p>
+
+          <div class="otp-row">
+            <input class="otp filled" value="3" maxlength="1" />
+            <input class="otp filled" value="9" maxlength="1" />
+            <input class="otp filled" value="4" maxlength="1" />
+            <input class="otp focus empty" value="" maxlength="1" />
+            <input class="otp empty" value="" maxlength="1" />
+            <input class="otp empty" value="" maxlength="1" />
+          </div>
+
+          <div class="otp-help">
+            코드는 <span class="timer">00:24</span> 후에 재발급됩니다.
+          </div>
+
+          <button class="btn btn-primary">인증하기 →</button>
+
+          <div class="helper-row">
+            <span>인증 앱을 분실하셨나요?</span>
+            <a>복구 코드 사용 →</a>
+          </div>
+
+          <div class="footer-link" style="margin-top: 24px;">
+            <a style="color: var(--fg-muted);">← 다른 계정으로 로그인</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 4. JOIN COMPANY ============ -->
+    <div class="frame">
+      <div class="frame-bar">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="url">app.teamlet.io<b>/join-company</b></div>
+        <div class="frame-label">04 · JOIN COMPANY</div>
+      </div>
+      <div class="frame-body">
+        <div class="card wide">
+          <div class="logo-row">
+            <div class="logo">T</div>
+            <div class="brand">Teamlet</div>
+          </div>
+
+          <h2 class="title">회사를 선택해주세요</h2>
+          <p class="sub">유민님, 어떻게 Teamlet을 시작할까요?</p>
+
+          <div class="options">
+            <div class="option selected">
+              <div class="opt-ic">🏢</div>
+              <div>
+                <div class="opt-t">회사를 새로 등록하기</div>
+                <div class="opt-s">대표·관리자로 회사를 만들고 동료를 초대합니다</div>
+              </div>
+              <div class="opt-arr">→</div>
+            </div>
+            <div class="option">
+              <div class="opt-ic">🔑</div>
+              <div>
+                <div class="opt-t">회사 코드 입력하기</div>
+                <div class="opt-s">관리자에게 받은 가입 코드로 합류합니다</div>
+              </div>
+              <div class="opt-arr">→</div>
+            </div>
+            <div class="option">
+              <div class="opt-ic">📩</div>
+              <div>
+                <div class="opt-t">초대 메일 기다리기</div>
+                <div class="opt-s">관리자가 보낸 초대 메일을 통해 합류합니다</div>
+              </div>
+              <div class="opt-arr">→</div>
+            </div>
+          </div>
+
+          <div class="helper-row" style="margin-top: 22px;">
+            <span>도움이 필요하신가요?</span>
+            <a>가이드 보기 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 5. REGISTER COMPANY ============ -->
+    <div class="frame">
+      <div class="frame-bar">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="url">app.teamlet.io<b>/register-company</b></div>
+        <div class="frame-label">05 · REGISTER COMPANY</div>
+      </div>
+      <div class="frame-body">
+        <div class="card wide">
+          <div class="logo-row">
+            <div class="logo">T</div>
+            <div class="brand">Teamlet</div>
+          </div>
+
+          <h2 class="title">회사 등록 신청</h2>
+          <p class="sub">신청 후 영업일 기준 1일 이내 검토 결과를 메일로 알려드려요.</p>
+
+          <div class="field">
+            <label>회사명<span class="req">*</span></label>
+            <input class="input" type="text" value="조코딩 AX 파트너스" />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label>사업자등록번호<span class="req">*</span></label>
+              <input class="input" type="text" value="289-87-03180" />
+            </div>
+            <div class="field">
+              <label>대표자<span class="req">*</span></label>
+              <input class="input" type="text" value="김민호" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>회사 주소</label>
+            <input class="input ph" type="text" placeholder="도로명 주소" />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label>구성원 수<span class="req">*</span></label>
+              <input class="input" type="text" value="10 ~ 50명" />
+            </div>
+            <div class="field">
+              <label>업종</label>
+              <input class="input" type="text" value="소프트웨어 개발" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>관리자 권한 확인</label>
+            <div class="input-help">
+              <input type="checkbox" checked style="margin-right: 6px;" />
+              본인은 위 회사의 대표 또는 인사 담당자이며, 등록할 권한이 있습니다.
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="margin-top: 12px;">등록 신청하기 →</button>
+
+          <div class="footer-link">
+            <a style="color: var(--fg-muted);">← 회사 선택으로 돌아가기</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 6. PENDING APPROVAL ============ -->
+    <div class="frame">
+      <div class="frame-bar">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="url">app.teamlet.io<b>/pending-approval</b></div>
+        <div class="frame-label">06 · PENDING / REJECTED</div>
+      </div>
+      <div class="frame-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: center; padding: 20px 14px;">
+
+        <div class="card status-card">
+          <div class="status-icon wait">⏱</div>
+          <h2 class="title">승인을 기다리는 중이에요</h2>
+          <p class="sub">평균 검토 시간 <b>4시간 12분</b></p>
+
+          <div class="timeline">
+            <div class="ev done">
+              <div class="icon-s">✓</div>
+              <div class="t">회사 등록 신청 완료</div>
+              <div class="w">방금 전</div>
+            </div>
+            <div class="ev now">
+              <div class="icon-s">…</div>
+              <div class="t">플랫폼 관리자 검토 중</div>
+              <div class="w">진행</div>
+            </div>
+            <div class="ev">
+              <div class="icon-s">3</div>
+              <div class="t">승인 → 자동 이동</div>
+              <div class="w">대기</div>
+            </div>
+          </div>
+
+          <div style="font-size: 11.5px; color: var(--fg-muted); margin-bottom: 14px;">
+            <span class="mono">5초마다 자동 새로고침</span> · 결과는 메일로도 알림드려요
+          </div>
+
+          <button class="btn btn-outline">로그아웃하기</button>
+        </div>
+
+        <div class="card status-card">
+          <div class="status-icon rej">✕</div>
+          <h2 class="title">신청이 반려되었어요</h2>
+          <p class="sub">아래 사유를 확인하고 다시 신청해주세요</p>
+
+          <div class="reject-reason">
+            <div class="l">반려 사유</div>
+            <div class="t">제출된 사업자등록번호가 국세청 데이터와 일치하지 않습니다. 사업자등록증 사본을 첨부하여 다시 신청해주세요.</div>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline">다시 선택하기</button>
+            <button class="btn btn-primary">재신청 →</button>
+          </div>
+
+          <div class="footer-link">
+            <a>고객센터 문의 →</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Notes -->
+  <div style="margin-top: 28px; padding: 22px 28px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;">
+    <h3 style="margin: 0 0 12px; font-size: 14px; font-family: 'Inter', system-ui; letter-spacing: -0.005em;">설계 노트</h3>
+    <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: var(--fg-muted); line-height: 1.7;">
+      <li><b style="color: var(--fg);">비밀번호 없음 (passwordless)</b> — 브리프 명시. 이메일 매직링크 + 임시 비밀번호 1회 발급. UX 마찰 ↓, 보안 ↑</li>
+      <li><b style="color: var(--fg);">2FA TOTP 6자리</b> — 입력 칸 시각적 분리 + 입력 위치 명확. 24초 카운트다운으로 재발급 시점 안내</li>
+      <li><b style="color: var(--fg);">회사 가입 3옵션</b> — 등록 / 코드 / 초대 대기. 가장 일반적인 "등록"이 default selected (1번 → 5번 흐름이 sales-led 진입로)</li>
+      <li><b style="color: var(--fg);">승인 대기 = 활동형 상태</b> — 5초 폴링, 타임라인으로 진행 단계 가시화, 평균 검토 시간 명시 → 불안 ↓</li>
+      <li><b style="color: var(--fg);">반려 = 액션 두 개</b> — "다시 선택" (회사 가입 페이지로) / "재신청" (등록 신청 폼으로 사유 반영). 막다른 길 X</li>
+      <li><b style="color: var(--fg);">Required indicator</b> — <code style="background: var(--bg-secondary); padding: 1px 4px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 11px;">*</code> + destructive 컬러. 시각적으로 즉시 인지</li>
+    </ul>
+  </div>
+
+</div>
+
+</body>
+</html>

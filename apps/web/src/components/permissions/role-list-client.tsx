@@ -12,10 +12,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  EmptyState,
   Input,
 } from "@teamlet/ui";
-import { Shield, Trash2, UsersRound } from "lucide-react";
 import type { RoleListItem } from "@teamlet/modules/permission";
 import {
   createRoleAction,
@@ -62,18 +60,17 @@ export function RoleListClient({
       {error && (
         <p
           role="alert"
-          className="rounded-md bg-destructive-50 px-4 py-3 text-sm text-destructive-700"
+          className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-4 py-3 text-[13px] text-destructive"
         >
           {error}
         </p>
       )}
 
       {initialRoles.length === 0 ? (
-        <EmptyState
-          icon={<Shield />}
-          title="아직 만들어진 역할이 없어요"
-          description="구성원에게 부여할 권한 그룹을 만들어 보세요."
-        />
+        <div className="flex flex-col items-center gap-2 py-20 text-center">
+          <p className="text-[14px] font-medium text-foreground">아직 만들어진 역할이 없어요</p>
+          <p className="text-[12.5px] text-foreground-muted">구성원에게 부여할 권한 그룹을 만들어 보세요.</p>
+        </div>
       ) : (
         <ul className="flex flex-col gap-2">
           {initialRoles.map((role) => {
@@ -84,37 +81,35 @@ export function RoleListClient({
             return (
               <li
                 key={role.id}
-                className="flex items-center gap-4 rounded-lg border border-border bg-background-primary px-4 py-3"
+                className="flex items-center gap-4 rounded-[14px] border border-border bg-background-primary px-5 py-4"
               >
                 <Link
                   href={`/settings/permissions/${role.id}`}
-                  className="-mx-2 flex flex-1 flex-col gap-1 rounded-md px-2 py-1 hover:bg-background-secondary"
+                  className="flex flex-1 flex-col gap-1 min-w-0"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground">
+                    <span className="text-[13.5px] font-semibold text-foreground hover:text-primary transition-colors">
                       {role.name}
                     </span>
                     {isSystem && (
-                      <span className="rounded-md bg-background-secondary px-2 py-0.5 text-xs text-foreground-muted">
+                      <span className="rounded-[5px] border border-border bg-background-secondary px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground-muted">
                         {SYSTEM_BADGE_LABEL[role.type] ?? "시스템"}
                       </span>
                     )}
                   </div>
                   {role.description && (
-                    <p className="text-sm text-foreground-muted">
-                      {role.description}
-                    </p>
+                    <p className="text-[12px] text-foreground-muted truncate">{role.description}</p>
                   )}
                 </Link>
 
-                <div className="flex items-center gap-1 text-sm text-foreground-muted">
-                  <UsersRound className="size-4" />
+                <div className="flex shrink-0 items-center gap-1 font-mono text-[12px] text-foreground-muted">
+                  <svg viewBox="0 0 16 16" fill="currentColor" className="size-3.5">
+                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 0 0-11.215 0c-.22.578.254 1.139.872 1.139h9.47Z" />
+                  </svg>
                   <span>{role.memberCount}</span>
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
                   aria-label={`${role.name} 삭제`}
                   disabled={
                     isSystem ||
@@ -129,9 +124,12 @@ export function RoleListClient({
                         ? "배정된 구성원이 있어 삭제할 수 없어요"
                         : undefined
                   }
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-foreground-muted transition-colors hover:bg-background-secondary hover:text-destructive disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  <Trash2 className="size-4 text-foreground-muted" />
-                </Button>
+                  <svg viewBox="0 0 16 16" fill="currentColor" className="size-4">
+                    <path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.711Z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </li>
             );
           })}
@@ -204,7 +202,7 @@ function CreateRoleDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="role-name" className="text-sm text-foreground-muted">
+            <label htmlFor="role-name" className="text-[13px] text-foreground-muted">
               역할명
             </label>
             <Input
@@ -218,10 +216,7 @@ function CreateRoleDialog({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="role-description"
-              className="text-sm text-foreground-muted"
-            >
+            <label htmlFor="role-description" className="text-[13px] text-foreground-muted">
               설명 (선택)
             </label>
             <Input
@@ -236,7 +231,7 @@ function CreateRoleDialog({
           {fieldError && (
             <p
               role="alert"
-              className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700"
+              className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
             >
               {fieldError}
             </p>

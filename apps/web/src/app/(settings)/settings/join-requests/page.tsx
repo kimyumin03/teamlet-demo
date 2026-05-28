@@ -12,8 +12,8 @@ export default async function JoinRequestsPage() {
   if (!result.ok) {
     return (
       <div>
-        <h1 className="text-xl font-semibold text-foreground mb-6">가입 신청 관리</h1>
-        <p className="text-sm text-destructive-600">{result.error.message}</p>
+        <h1 className="text-[20px] font-bold tracking-tight text-foreground mb-6">가입 신청 관리</h1>
+        <p className="text-[13px] text-destructive">{result.error.message}</p>
       </div>
     );
   }
@@ -21,12 +21,14 @@ export default async function JoinRequestsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-foreground">가입 신청 관리</h1>
-        <p className="mt-1 text-sm text-foreground-muted">
-          회사코드로 가입을 신청한 구성원을 승인하거나 반려합니다.
-        </p>
+        <h1 className="text-[20px] font-bold tracking-tight text-foreground">가입 신청 관리</h1>
+        <p className="mt-0.5 text-[13px] text-foreground-muted">회사코드로 가입을 신청한 구성원을 승인하거나 반려해요</p>
       </div>
-      <JoinRequestsClient items={result.data} />
+      <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+        <h3 className="mb-1.5 text-[15px] font-bold text-foreground">대기 중인 신청</h3>
+        <p className="mb-5 text-[12.5px] text-foreground-muted">승인하면 구성원으로 등록돼요. 반려하면 재신청할 수 없어요.</p>
+        <JoinRequestsClient items={result.data} />
+      </div>
     </div>
   );
 }

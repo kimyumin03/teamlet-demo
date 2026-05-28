@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Teamlet — Settings Hi-Fi</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Pretendard:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="teamlet-design.css" />
+<style>
+  .app-set { display: grid; grid-template-columns: 248px 220px 1fr; min-height: 100vh; background: var(--bg); }
+  .snav-s {
+    background: var(--bg-primary); border-right: 1px solid var(--border);
+    padding: 18px 12px; height: 100vh; position: sticky; top: 0; overflow-y: auto;
+  }
+  .snav-s-group { margin-bottom: 18px; }
+  .snav-s-h {
+    font-size: 10.5px; color: var(--fg-subtle); text-transform: uppercase; letter-spacing: 0.08em;
+    margin: 0 10px 6px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .snav-s-h .admin-badge {
+    font-family: "JetBrains Mono", monospace; font-size: 9px;
+    background: var(--fg); color: var(--bg-primary); padding: 1px 5px; border-radius: 3px;
+    letter-spacing: 0;
+  }
+  .snav-s a {
+    display: block; padding: 7px 12px; border-radius: 7px;
+    font-size: 12.5px; color: var(--fg-muted); text-decoration: none; line-height: 1.5;
+    cursor: pointer;
+  }
+  .snav-s a:hover { background: var(--bg-secondary); color: var(--fg); }
+  .snav-s a.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+  .snav-s a small { display: block; font-size: 10.5px; color: var(--fg-subtle); font-family: "JetBrains Mono", monospace; font-weight: 500; margin-top: 1px; }
+  .snav-s a.active small { color: var(--primary); opacity: 0.7; }
+
+  .set-card {
+    background: var(--bg-primary); border: 1px solid var(--border); border-radius: 14px;
+    padding: 22px 26px; margin-bottom: 16px;
+  }
+  .set-card h3 { font-size: 15px; font-weight: 700; margin: 0 0 6px; }
+  .set-card .desc { font-size: 12.5px; color: var(--fg-muted); margin-bottom: 16px; }
+
+  .field { display: grid; grid-template-columns: 220px 1fr; gap: 24px; padding: 14px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .field:last-child { border-bottom: none; }
+  .field .label { font-size: 13px; font-weight: 600; }
+  .field .label .help { display: block; font-size: 11.5px; color: var(--fg-muted); font-weight: 400; margin-top: 4px; }
+  .field .ctl { display: flex; flex-direction: column; gap: 8px; }
+  .ctl input.in, .ctl select.in, .ctl textarea.in {
+    width: 100%; max-width: 420px;
+    padding: 9px 12px; border: 1px solid var(--border-strong); border-radius: 8px;
+    background: var(--bg-primary); font-size: 13.5px; font-family: inherit; color: var(--fg);
+  }
+  .ctl input.in:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .ctl .row-2 { display: flex; gap: 8px; align-items: center; }
+  .ctl .help-row { font-size: 11.5px; color: var(--fg-muted); }
+  .ctl .help-row b { color: var(--fg); font-family: "JetBrains Mono", monospace; }
+
+  .av-edit {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .av-edit .av {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+    color: var(--primary-on);
+    display: grid; place-items: center;
+    font-family: "Inter", system-ui; font-weight: 700; font-size: 18px;
+  }
+
+  /* 2FA / security */
+  .tog-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .tog-row:last-child { border-bottom: none; }
+  .tog-row .info { flex: 1; }
+  .tog-row .info .t { font-size: 13.5px; font-weight: 600; }
+  .tog-row .info .s { font-size: 12px; color: var(--fg-muted); margin-top: 3px; }
+  .tog {
+    width: 38px; height: 22px; border-radius: 999px;
+    background: var(--primary); position: relative; cursor: pointer;
+    transition: background 120ms;
+  }
+  .tog::after { content: ""; position: absolute; right: 2px; top: 2px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: right 120ms; box-shadow: var(--shadow-sm); }
+  .tog.off { background: var(--border-strong); }
+  .tog.off::after { right: auto; left: 2px; }
+  .tog-row .status-pill-s {
+    display: inline-flex; gap: 6px; align-items: center;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 600;
+    background: var(--success-50); color: var(--success);
+  }
+  .tog-row .status-pill-s::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+
+  .session-row {
+    display: grid; grid-template-columns: 32px 1fr auto auto; gap: 14px; align-items: center;
+    padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg-primary); margin-bottom: 6px;
+  }
+  .session-row .dev-ic {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--bg-secondary); display: grid; place-items: center;
+    color: var(--fg-muted); font-size: 16px;
+  }
+  .session-row .info .t { font-size: 13px; font-weight: 600; }
+  .session-row .info .t .now {
+    margin-left: 8px; font-size: 10.5px;
+    padding: 1px 7px; background: var(--success-50); color: var(--success); border-radius: 999px; font-weight: 600;
+  }
+  .session-row .info .s { font-size: 11.5px; color: var(--fg-muted); margin-top: 2px; font-family: "JetBrains Mono", monospace; }
+  .session-row .last { font-size: 11.5px; color: var(--fg-muted); font-family: "JetBrains Mono", monospace; }
+
+  /* Notification channels */
+  .notif-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .notif-table th { text-align: center; padding: 10px; font-size: 10.5px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .notif-table th.first { text-align: left; padding-left: 0; }
+  .notif-table td { padding: 12px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .notif-table td.first { padding-left: 0; }
+  .notif-table tr:last-child td { border-bottom: none; }
+  .notif-table .nm { font-size: 13.5px; font-weight: 600; }
+  .notif-table .desc { font-size: 11.5px; color: var(--fg-muted); margin-top: 2px; }
+  .notif-table .ck-c { text-align: center; }
+  .cbx {
+    width: 18px; height: 18px; border: 1.5px solid var(--border-strong); border-radius: 5px;
+    display: inline-block; vertical-align: middle; cursor: pointer;
+  }
+  .cbx.on { background: var(--primary); border-color: var(--primary); position: relative; }
+  .cbx.on::after { content: ""; position: absolute; left: 5px; top: 1px; width: 4px; height: 9px; border: 1.5px solid var(--primary-on); border-top: 0; border-left: 0; transform: rotate(45deg); }
+
+  /* Company info */
+  .file-up {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border: 1px dashed var(--border-strong); border-radius: 10px;
+    background: var(--bg-secondary); cursor: pointer;
+  }
+  .file-up .ic-up { width: 40px; height: 40px; border-radius: 8px; background: var(--bg-primary); display: grid; place-items: center; font-size: 16px; color: var(--fg-muted); border: 1px solid var(--border); }
+  .file-up .t { font-size: 13px; font-weight: 600; }
+  .file-up .s { font-size: 11.5px; color: var(--fg-muted); margin-top: 2px; }
+
+  /* Holidays */
+  .holiday-row {
+    display: grid; grid-template-columns: 100px 1fr 100px 80px; gap: 14px; align-items: center;
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+  }
+  .holiday-row:last-child { border-bottom: none; }
+  .holiday-row .h-date { font-family: "JetBrains Mono", monospace; font-size: 13px; font-weight: 700; }
+  .holiday-row .h-name { font-size: 13.5px; font-weight: 600; }
+  .holiday-row .h-source { font-size: 11px; color: var(--fg-muted); font-family: "JetBrains Mono", monospace; }
+  .holiday-row .h-type {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 600;
+  }
+  .holiday-row .h-type.legal { background: var(--destructive-50); color: var(--destructive); }
+  .holiday-row .h-type.opt { background: var(--info-50); color: var(--info); }
+  .holiday-row .h-type.cust { background: var(--purple-50); color: var(--purple); }
+</style>
+</head>
+<body data-screen-label="Settings Hi-Fi">
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" data-presets="env,react" src="tweaks-panel.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="teamlet-shared.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "light",
+  "accent": "indigo",
+  "section": "profile"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [section, setSection] = React.useState(t.section || "profile");
+
+  React.useEffect(() => {
+    document.documentElement.dataset.theme = t.theme;
+    document.documentElement.dataset.accent = t.accent;
+    document.documentElement.dataset.density = "regular";
+  }, [t.theme, t.accent]);
+
+  return (
+    <>
+      <div className="app-set">
+        <Sidebar active="settings" />
+        <SettingsNav current={section} onPick={(s) => { setSection(s); setTweak("section", s); }} />
+        <div className="main">
+          <Topbar
+            placeholder="설정 검색…"
+            actions={<button className="btn btn-outline">변경 사항 저장</button>}
+          />
+          <main className="page-body">
+            {section === "profile" && <Profile/>}
+            {section === "security" && <Security/>}
+            {section === "notif" && <Notifications/>}
+            {section === "company" && <CompanyInfo/>}
+            {section === "holidays" && <Holidays/>}
+          </main>
+        </div>
+      </div>
+
+      <TweaksPanel>
+        <TweakSection label="Theme" />
+        <TweakRadio label="모드" value={t.theme} options={["light", "dark"]} onChange={(v) => setTweak("theme", v)} />
+        <TweakSelect label="액센트" value={t.accent}
+          options={[
+            {value:"indigo", label:"Indigo"},
+            {value:"blue", label:"Blue"},
+            {value:"emerald", label:"Emerald"},
+            {value:"amber", label:"Amber"},
+            {value:"slate", label:"Slate"}
+          ]}
+          onChange={(v) => setTweak("accent", v)} />
+        <TweakSection label="Page" />
+        <TweakSelect label="설정 페이지" value={section}
+          options={[
+            {value:"profile", label:"프로필 (개인)"},
+            {value:"security", label:"보안 (개인)"},
+            {value:"notif", label:"알림 (개인)"},
+            {value:"company", label:"회사 정보 (회사)"},
+            {value:"holidays", label:"공휴일 (회사)"}
+          ]}
+          onChange={(v) => { setSection(v); setTweak("section", v); }} />
+      </TweaksPanel>
+    </>
+  );
+}
+
+function SettingsNav({ current, onPick }) {
+  const link = (id, label, sub) => (
+    <a className={current === id ? "active" : ""} onClick={(e) => { e.preventDefault(); onPick(id); }}>
+      {label}<small>{sub}</small>
+    </a>
+  );
+  return (
+    <nav className="snav-s">
+      <div className="snav-s-group">
+        <h4 className="snav-s-h">개인</h4>
+        {link("profile", "프로필", "이름 · 연락처")}
+        {link("security", "보안", "2FA · 세션")}
+        {link("notif", "알림", "이메일 · 슬랙")}
+      </div>
+      <div className="snav-s-group">
+        <h4 className="snav-s-h">회사 <span className="admin-badge">ADMIN</span></h4>
+        {link("company", "회사 정보", "대표 · 주소 · 로고")}
+        {link("holidays", "공휴일", "한국 + 회사 자율")}
+        <a>조직 · 직책<small>본부 · 팀 · 직급</small></a>
+      </div>
+      <div className="snav-s-group">
+        <h4 className="snav-s-h">운영 <span className="admin-badge">ADMIN</span></h4>
+        <a>권한 그룹<small>역할 · 범위</small></a>
+        <a>휴가 정책<small>종류 · 부여 규칙</small></a>
+        <a>워크플로우<small>결재선 · 템플릿</small></a>
+        <a>문서함<small>유형 · 보관</small></a>
+        <a>감사 로그<small>관리자 활동</small></a>
+      </div>
+    </nav>
+  );
+}
+
+function Profile() {
+  return (
+    <>
+      <div className="page-h">
+        <div>
+          <h1 className="h-title">프로필</h1>
+          <div className="h-sub">기본 정보와 연락처를 관리합니다 · 본인 정보 변경 권한</div>
+        </div>
+        <button className="btn btn-primary">변경 사항 저장</button>
+      </div>
+
+      <div className="set-card">
+        <h3>프로필 사진</h3>
+        <div className="desc">프로필 사진은 동료들에게 표시됩니다.</div>
+        <div className="av-edit">
+          <div className="av">유민</div>
+          <div style={{display:"flex", gap:"6px", flexDirection:"column"}}>
+            <div style={{display:"flex", gap:"6px"}}>
+              <button className="btn btn-outline sm">이미지 업로드</button>
+              <button className="btn btn-ghost sm">제거</button>
+            </div>
+            <div style={{fontSize:"11.5px", color:"var(--fg-muted)"}}>JPG, PNG · 최대 2MB · 자동으로 정사각형 크롭</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="set-card">
+        <h3>기본 정보</h3>
+        <div className="field">
+          <div className="label">본명<span className="help">계약·증명서에 표시됩니다</span></div>
+          <div className="ctl"><input className="in" defaultValue="김유민" /></div>
+        </div>
+        <div className="field">
+          <div className="label">닉네임<span className="help">동료들에게 표시됩니다 (선택)</span></div>
+          <div className="ctl"><input className="in" defaultValue="charles" /></div>
+        </div>
+        <div className="field">
+          <div className="label">이메일<span className="help">로그인 ID로 사용됩니다</span></div>
+          <div className="ctl">
+            <div className="row-2"><input className="in" defaultValue="charles@jocodingax.ai" disabled /><button className="btn btn-outline sm">변경 요청</button></div>
+            <div className="help-row">이메일 변경은 관리자 승인이 필요합니다</div>
+          </div>
+        </div>
+        <div className="field">
+          <div className="label">개인 이메일<span className="help">백업 알림용</span></div>
+          <div className="ctl"><input className="in" placeholder="optional@example.com" /></div>
+        </div>
+      </div>
+
+      <div className="set-card">
+        <h3>연락처</h3>
+        <div className="field">
+          <div className="label">휴대전화</div>
+          <div className="ctl"><input className="in" defaultValue="010-1234-3180" /></div>
+        </div>
+        <div className="field">
+          <div className="label">생일</div>
+          <div className="ctl">
+            <input className="in" defaultValue="2026. 5. 22" style={{maxWidth:"220px"}} />
+            <div className="help-row">홈 피드 "축하 보낼 동료"에 노출 여부는 알림 설정에서 조정</div>
+          </div>
+        </div>
+        <div className="field">
+          <div className="label">주소</div>
+          <div className="ctl"><input className="in" placeholder="도로명 주소" /></div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Security() {
+  return (
+    <>
+      <div className="page-h">
+        <div>
+          <h1 className="h-title">보안</h1>
+          <div className="h-sub">2단계 인증 · 활성 세션 관리</div>
+        </div>
+      </div>
+
+      <div className="set-card">
+        <h3>2단계 인증 (2FA)</h3>
+        <div className="desc">로그인 시 TOTP 6자리 코드를 추가로 입력합니다. 보안을 위해 강력히 권장합니다.</div>
+
+        <div className="tog-row">
+          <div className="info">
+            <div className="t">TOTP 인증 앱</div>
+            <div className="s">Authy, Google Authenticator 등 · 설정일 2026. 4. 22</div>
+          </div>
+          <span className="status-pill-s">활성</span>
+          <div className="tog"></div>
+        </div>
+
+        <div className="tog-row">
+          <div className="info">
+            <div className="t">복구 코드</div>
+            <div className="s">인증 앱을 분실했을 때 사용 · 8개 중 6개 남음</div>
+          </div>
+          <button className="btn btn-outline sm">코드 보기</button>
+          <button className="btn btn-outline sm">재발급</button>
+        </div>
+
+        <div className="tog-row">
+          <div className="info">
+            <div className="t">로그인 알림</div>
+            <div className="s">새 기기에서 로그인 시 이메일 알림 발송</div>
+          </div>
+          <div className="tog"></div>
+        </div>
+      </div>
+
+      <div className="set-card">
+        <h3>활성 세션 <span style={{fontSize:"12px", color:"var(--fg-muted)", fontWeight:400, marginLeft:"6px"}}>(3개)</span></h3>
+        <div className="desc">현재 로그인되어 있는 기기 목록입니다. 의심스러운 세션은 즉시 종료하세요.</div>
+
+        <div className="session-row">
+          <div className="dev-ic">💻</div>
+          <div className="info">
+            <div className="t">MacBook Pro 14" · Chrome 145<span className="now">현재 세션</span></div>
+            <div className="s">서울, 대한민국 · 211.36.•.•</div>
+          </div>
+          <div className="last">방금</div>
+          <button className="btn btn-ghost sm" disabled style={{opacity:0.5}}>종료</button>
+        </div>
+        <div className="session-row">
+          <div className="dev-ic">📱</div>
+          <div className="info">
+            <div className="t">iPhone 16 · Safari Mobile</div>
+            <div className="s">서울, 대한민국 · 211.36.•.•</div>
+          </div>
+          <div className="last">2시간 전</div>
+          <button className="btn btn-outline sm">종료</button>
+        </div>
+        <div className="session-row">
+          <div className="dev-ic">💻</div>
+          <div className="info">
+            <div className="t">Windows 11 · Edge 132</div>
+            <div className="s">대전, 대한민국 · 175.197.•.•</div>
+          </div>
+          <div className="last">3일 전</div>
+          <button className="btn btn-destructive sm">종료</button>
+        </div>
+
+        <div style={{marginTop:"14px"}}>
+          <button className="btn btn-outline sm">현재 세션 외 모두 종료</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Notifications() {
+  const cats = [
+    { nm: "결재 요청 도착", desc: "결재할 문서가 도착했을 때", inapp: true, email: true, slack: true, push: true },
+    { nm: "결재 결과 (승인/반려)", desc: "내가 요청한 문서의 결재 결과", inapp: true, email: true, slack: false, push: true },
+    { nm: "휴가 요청 알림", desc: "팀원의 휴가 신청이 들어왔을 때", inapp: true, email: true, slack: true, push: false },
+    { nm: "공지사항", desc: "회사 공지/필독 게시물", inapp: true, email: false, slack: true, push: false },
+    { nm: "@ 멘션", desc: "댓글 · 문서에서 내가 멘션되었을 때", inapp: true, email: false, slack: true, push: true },
+    { nm: "생일 · 입사일 알림", desc: "동료의 생일·입사 기념일", inapp: false, email: false, slack: true, push: false },
+    { nm: "로그인 알림", desc: "새 기기에서 로그인했을 때", inapp: false, email: true, slack: false, push: true },
+  ];
+  return (
+    <>
+      <div className="page-h">
+        <div>
+          <h1 className="h-title">알림</h1>
+          <div className="h-sub">알림 종류별로 채널을 선택할 수 있어요</div>
+        </div>
+      </div>
+
+      <div className="set-card">
+        <h3>알림 채널</h3>
+        <div className="desc">각 알림 종류마다 어디로 받을지 선택하세요.</div>
+
+        <table className="notif-table">
+          <thead>
+            <tr>
+              <th className="first">알림 종류</th>
+              <th>앱 내</th>
+              <th>이메일</th>
+              <th>Slack</th>
+              <th>모바일 푸시</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cats.map((c, i) => (
+              <tr key={i}>
+                <td className="first">
+                  <div className="nm">{c.nm}</div>
+                  <div className="desc">{c.desc}</div>
+                </td>
+                <td className="ck-c"><span className={"cbx" + (c.inapp ? " on" : "")}></span></td>
+                <td className="ck-c"><span className={"cbx" + (c.email ? " on" : "")}></span></td>
+                <td className="ck-c"><span className={"cbx" + (c.slack ? " on" : "")}></span></td>
+                <td className="ck-c"><span className={"cbx" + (c.push ? " on" : "")}></span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="set-card">
+        <h3>방해 금지 시간</h3>
+        <div className="field">
+          <div className="label">근무 시간 외 알림<span className="help">설정 시간 외에는 알림 보류 (긴급 결재 제외)</span></div>
+          <div className="ctl">
+            <div className="row-2">
+              <input className="in" defaultValue="19:00" style={{maxWidth:"100px"}} />
+              <span style={{color:"var(--fg-muted)"}}>~</span>
+              <input className="in" defaultValue="09:00" style={{maxWidth:"100px"}} />
+              <button className="btn btn-outline sm">주말 포함</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="set-card">
+        <h3>Slack 연동</h3>
+        <div className="tog-row">
+          <div className="info">
+            <div className="t">teamlet-workspace.slack.com</div>
+            <div className="s">@charles · 연결 2026. 4. 22</div>
+          </div>
+          <span className="status-pill-s">연결됨</span>
+          <button className="btn btn-outline sm">재연동</button>
+          <button className="btn btn-destructive sm">연결 해제</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function CompanyInfo() {
+  return (
+    <>
+      <div className="page-h">
+        <div>
+          <h1 className="h-title">회사 정보</h1>
+          <div className="h-sub">전사 표시되는 회사 기본 정보 · 최고 관리자 전용</div>
+        </div>
+        <button className="btn btn-primary">변경 사항 저장</button>
+      </div>
+
+      <div className="set-card">
+        <h3>회사 로고</h3>
+        <div className="desc">사이드바·증명서·결재 문서 상단에 표시됩니다.</div>
+        <div className="av-edit">
+          <div className="av" style={{width:"72px", height:"72px", borderRadius:"14px", fontSize:"22px"}}>T</div>
+          <div className="file-up" style={{flex:1, maxWidth:"380px"}}>
+            <div className="ic-up">↑</div>
+            <div>
+              <div className="t">새 로고 업로드</div>
+              <div className="s">SVG 권장 · PNG 최소 256×256 · 최대 1MB</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="set-card">
+        <h3>기본 정보</h3>
+        <div className="field">
+          <div className="label">회사명</div>
+          <div className="ctl"><input className="in" defaultValue="팀렛 주식회사 (Teamlet Inc.)" /></div>
+        </div>
+        <div className="field">
+          <div className="label">사업자등록번호</div>
+          <div className="ctl">
+            <input className="in" defaultValue="289-87-03180" style={{maxWidth:"220px"}} />
+            <div className="help-row">국세청 데이터와 매월 자동 검증 · 마지막 검증: <b>2026. 5. 1</b></div>
+          </div>
+        </div>
+        <div className="field">
+          <div className="label">대표자</div>
+          <div className="ctl"><input className="in" defaultValue="김민호" style={{maxWidth:"220px"}} /></div>
+        </div>
+        <div className="field">
+          <div className="label">설립일</div>
+          <div className="ctl"><input className="in" defaultValue="2021. 3. 18" style={{maxWidth:"220px"}} /></div>
+        </div>
+      </div>
+
+      <div className="set-card">
+        <h3>연락 · 주소</h3>
+        <div className="field">
+          <div className="label">대표 전화</div>
+          <div className="ctl"><input className="in" defaultValue="02-1234-5678" style={{maxWidth:"260px"}} /></div>
+        </div>
+        <div className="field">
+          <div className="label">본사 주소</div>
+          <div className="ctl"><input className="in" defaultValue="서울특별시 강남구 테헤란로 152, 강남파이낸스센터 12F" /></div>
+        </div>
+        <div className="field">
+          <div className="label">홈페이지</div>
+          <div className="ctl"><input className="in" defaultValue="https://teamlet.io" /></div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Holidays() {
+  const rows = [
+    { date: "2026. 1. 1", name: "신정", type: "legal", typeLabel: "법정", source: "한국 자동" },
+    { date: "2026. 2. 16~18", name: "설날 연휴", type: "legal", typeLabel: "법정", source: "한국 자동" },
+    { date: "2026. 3. 1", name: "삼일절", type: "legal", typeLabel: "법정", source: "한국 자동" },
+    { date: "2026. 5. 5", name: "어린이날", type: "legal", typeLabel: "법정", source: "한국 자동" },
+    { date: "2026. 5. 25", name: "부처님 오신 날", type: "legal", typeLabel: "법정", source: "한국 자동" },
+    { date: "2026. 5. 31", name: "회사 창립일", type: "cust", typeLabel: "회사", source: "회사 자율" },
+    { date: "2026. 6. 6", name: "현충일", type: "legal", typeLabel: "법정", source: "한국 자동" },
+    { date: "2026. 7. 31", name: "여름 휴양 (자율)", type: "opt", typeLabel: "권장", source: "회사 자율" },
+    { date: "2026. 8. 15", name: "광복절", type: "legal", typeLabel: "법정", source: "한국 자동" },
+    { date: "2026. 9. 24~26", name: "추석 연휴", type: "legal", typeLabel: "법정", source: "한국 자동" },
+  ];
+  return (
+    <>
+      <div className="page-h">
+        <div>
+          <h1 className="h-title">공휴일</h1>
+          <div className="h-sub">법정 공휴일 자동 + 회사 자율 휴일 · 최고 관리자 전용</div>
+        </div>
+        <button className="btn btn-primary"><Icon name="plus"/>회사 자율 휴일 추가</button>
+      </div>
+
+      <div className="set-card">
+        <h3>2026년 공휴일 <span style={{fontSize:"12px", color:"var(--fg-muted)", fontWeight:400, marginLeft:"6px"}}>(법정 15 · 회사 2)</span></h3>
+        <div className="desc">법정 공휴일은 자동으로 업데이트됩니다. 회사 자율 휴일은 직접 추가/수정 가능합니다.</div>
+
+        <div className="filters" style={{marginBottom:"16px"}}>
+          <span className="chip"><span className="lbl">연도</span><span className="val">2026</span><span className="x">⌄</span></span>
+          <span className="chip"><span className="lbl">구분</span><span className="val">전체</span><span className="x">⌄</span></span>
+          <span className="chip add">+ 필터</span>
+        </div>
+
+        {rows.map((r, i) => (
+          <div key={i} className="holiday-row">
+            <div className="h-date">{r.date}</div>
+            <div>
+              <div className="h-name">{r.name}</div>
+              <div className="h-source">{r.source}</div>
+            </div>
+            <div><span className={"h-type " + r.type}>{r.typeLabel}</span></div>
+            <div>
+              {r.type !== "legal" && <button className="btn btn-ghost sm">편집</button>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+
+</body>
+</html>

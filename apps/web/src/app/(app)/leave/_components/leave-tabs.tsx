@@ -3,8 +3,8 @@
 import Link from "next/link";
 
 const TABS = [
-  { id: "dashboard", label: "대시보드" },
-  { id: "history", label: "신청 내역" },
+  { id: "overview", label: "휴가 개요" },
+  { id: "history", label: "신청 이력" },
 ] as const;
 
 export function LeaveTabs({
@@ -15,12 +15,12 @@ export function LeaveTabs({
   pendingCount: number;
 }) {
   return (
-    <nav className="flex gap-1 border-b border-border mb-6">
+    <nav className="flex gap-0">
       {TABS.map((tab) => (
         <Link
           key={tab.id}
           href={`/leave?tab=${tab.id}`}
-          className={`relative flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+          className={`relative flex items-center gap-1.5 border-b-2 -mb-px px-4 py-2.5 text-sm font-medium transition-colors ${
             activeTab === tab.id
               ? "border-foreground text-foreground"
               : "border-transparent text-foreground-muted hover:text-foreground hover:border-border"

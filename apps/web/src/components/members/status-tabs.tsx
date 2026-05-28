@@ -35,7 +35,7 @@ export function StatusTabs({ counts }: { counts: Record<string, number> }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       {/* 상태 탭 */}
-      <div className="flex rounded-lg border border-border bg-background-secondary p-0.5">
+      <div className="flex rounded-[8px] border border-border bg-background-secondary p-0.5">
         {TABS.map(({ key, label }) => (
           <Link
             key={key}

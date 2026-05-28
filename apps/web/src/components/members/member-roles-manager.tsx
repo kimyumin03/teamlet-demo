@@ -77,7 +77,7 @@ export function MemberRolesManager({
   }
 
   return (
-    <section className="rounded-lg border border-border bg-background-primary p-5">
+    <section className="rounded-[14px] border border-border bg-background-primary p-5">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Shield className="size-4 text-foreground-subtle" />
@@ -101,7 +101,7 @@ export function MemberRolesManager({
       {error && (
         <p
           role="alert"
-          className="mb-3 rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700"
+          className="mb-3 rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
         >
           {error}
         </p>
@@ -256,7 +256,7 @@ function AssignRoleDialog({
           {fieldError && (
             <p
               role="alert"
-              className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700"
+              className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
             >
               {fieldError}
             </p>

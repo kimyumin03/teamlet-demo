@@ -35,8 +35,8 @@ export default async function AdminDashboardPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-zinc-900">운영 대시보드</h1>
-        <p className="mt-1 text-sm text-zinc-500">Teamlet 플랫폼 전체 현황</p>
+        <h1 className="text-xl font-semibold text-foreground">운영 대시보드</h1>
+        <p className="mt-1 text-sm text-foreground-muted">Teamlet 플랫폼 전체 현황</p>
       </div>
 
       {/* 통계 카드 */}
@@ -47,16 +47,16 @@ export default async function AdminDashboardPage() {
               className={`rounded-lg border p-5 transition-shadow hover:shadow-sm ${
                 c.accent
                   ? "border-amber-200 bg-amber-50"
-                  : "border-zinc-200 bg-white"
+                  : "border-border bg-background-primary"
               }`}
             >
-              <p className={`text-xs font-medium ${c.accent ? "text-amber-600" : "text-zinc-500"}`}>
+              <p className={`text-xs font-medium ${c.accent ? "text-amber-600" : "text-foreground-muted"}`}>
                 {c.label}
               </p>
-              <p className={`mt-2 text-3xl font-semibold tabular-nums ${c.accent ? "text-amber-700" : "text-zinc-900"}`}>
+              <p className={`mt-2 text-3xl font-semibold tabular-nums ${c.accent ? "text-amber-700" : "text-foreground"}`}>
                 {c.value.toLocaleString()}
               </p>
-              <p className={`mt-1 text-xs ${c.accent ? "text-amber-500" : "text-zinc-400"}`}>
+              <p className={`mt-1 text-xs ${c.accent ? "text-amber-500" : "text-foreground-subtle"}`}>
                 {c.desc}
               </p>
             </div>
@@ -91,7 +91,7 @@ export default async function AdminDashboardPage() {
 
       {/* 빠른 링크 */}
       <div className="mt-8">
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">빠른 이동</h2>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground-subtle">빠른 이동</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {[
             { label: "회사 신청 검토", href: "/admin/applications", desc: "신규 회사 등록 승인·반려" },
@@ -101,13 +101,13 @@ export default async function AdminDashboardPage() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-4 py-3 transition-colors hover:bg-zinc-50"
+              className="flex items-center justify-between rounded-lg border border-border bg-background-primary px-4 py-3 transition-colors hover:bg-background-secondary"
             >
               <div>
-                <p className="text-sm font-medium text-zinc-800">{item.label}</p>
-                <p className="text-xs text-zinc-400">{item.desc}</p>
+                <p className="text-sm font-medium text-foreground">{item.label}</p>
+                <p className="text-xs text-foreground-subtle">{item.desc}</p>
               </div>
-              <svg viewBox="0 0 16 16" fill="currentColor" className="size-4 text-zinc-300">
+              <svg viewBox="0 0 16 16" fill="currentColor" className="size-4 text-foreground-subtle">
                 <path fillRule="evenodd" d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L8.94 8 6.22 5.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
               </svg>
             </Link>

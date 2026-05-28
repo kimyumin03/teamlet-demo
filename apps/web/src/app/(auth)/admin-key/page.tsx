@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Button, Input } from "@teamlet/ui";
+import { AuthLogo } from "@/components/auth/auth-logo";
 import { adminKeyLoginAction, type ActionState } from "@/lib/actions/auth";
 
 const initial: ActionState = { error: null };
@@ -14,10 +15,12 @@ function AdminKeyForm() {
   const [state, formAction, isPending] = useActionState(adminKeyLoginAction, initial);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
+      <AuthLogo />
+
       <div>
-        <h1 className="text-xl font-semibold text-foreground">관리자 인증</h1>
-        <p className="mt-1 text-sm text-foreground-muted">
+        <h2 className="text-[22px] font-bold leading-tight tracking-tight">관리자 인증</h2>
+        <p className="mt-1.5 text-[13.5px] text-foreground-muted">
           플랫폼 관리자 접근을 위한 비밀키를 입력하세요.
         </p>
       </div>
@@ -26,14 +29,14 @@ function AdminKeyForm() {
         <input type="hidden" name="email" value={email} />
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm text-foreground-muted">이메일</label>
+          <label className="text-xs font-medium text-foreground-muted">이메일</label>
           <p className="rounded-md border border-border bg-background-secondary px-3 py-2 text-sm text-foreground-muted">
             {email}
           </p>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="adminKey" className="text-sm text-foreground-muted">
+          <label htmlFor="adminKey" className="text-xs font-medium text-foreground-muted">
             관리자 비밀키
           </label>
           <Input
@@ -53,11 +56,11 @@ function AdminKeyForm() {
         )}
 
         <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? "인증 중…" : "관리자 콘솔 접속"}
+          {isPending ? "인증 중…" : "관리자 콘솔 접속 →"}
         </Button>
       </form>
 
-      <a href="/login" className="text-center text-sm text-foreground-subtle hover:text-foreground transition-colors">
+      <a href="/login" className="text-center text-[12.5px] text-foreground-muted hover:text-foreground transition-colors">
         ← 일반 로그인으로 돌아가기
       </a>
     </div>

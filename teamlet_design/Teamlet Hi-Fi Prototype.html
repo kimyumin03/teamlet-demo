@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Teamlet — Hi-Fi Prototype</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Pretendard:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="teamlet-design.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body data-screen-label="Teamlet Hi-Fi">
+
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react" src="tweaks-panel.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="teamlet-shared.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="pages/home.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="pages/leave.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="pages/members.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="pages/workflow.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="pages/admin.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "light",
+  "accent": "indigo",
+  "density": "regular",
+  "page": "home"
+}/*EDITMODE-END*/;
+
+const ACCENT_LABELS = {
+  indigo: "Indigo (default)",
+  blue: "Blue",
+  emerald: "Emerald",
+  amber: "Amber",
+  slate: "Slate (mono)"
+};
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [page, setPage] = React.useState(t.page || "home");
+
+  React.useEffect(() => {
+    document.documentElement.dataset.theme = t.theme;
+    document.documentElement.dataset.accent = t.accent;
+    document.documentElement.dataset.density = t.density;
+  }, [t.theme, t.accent, t.density]);
+
+  const navigate = (id) => {
+    // Only the 5 main pages have content; others are mock
+    const validPages = ["home", "members", "leave", "workflow", "perm"];
+    if (validPages.includes(id)) {
+      const newPage = id === "perm" ? "admin" : id;
+      setPage(newPage);
+      setTweak("page", newPage);
+    } else {
+      // For other nav items (org, search, bell, docs, insight, settings),
+      // we don't have pages yet but keep them visually clickable in the sidebar
+    }
+  };
+
+  // The Admin page has its own 3-col shell (sidebar + sub-nav + main).
+  // Other pages use the standard 2-col shell.
+  const sidebarActive = page === "admin" ? "perm" : page;
+
+  const topbarProps = {
+    home: { placeholder: "구성원, 문서, 휴가 신청 검색…", actions: <><button className="btn btn-outline">+ 새 글</button><button className="btn btn-primary"><Icon name="plus"/>휴가 신청</button></> },
+    members: { placeholder: "구성원 이름 · 사번 · 이메일 검색…", actions: <><button className="btn btn-outline">엑셀 일괄 추가</button><button className="btn btn-primary"><Icon name="plus"/>구성원 초대</button></> },
+    leave: { placeholder: "구성원 · 휴가 종류 · 신청 내역…", actions: <><button className="btn btn-outline">⬇ CSV</button><button className="btn btn-primary"><Icon name="plus"/>휴가 부여</button></> },
+    workflow: { placeholder: "문서 제목 · 신청자 · 결재 번호…", actions: <><button className="btn btn-outline">템플릿 관리</button><button className="btn btn-primary"><Icon name="plus"/>새 문서</button></> }
+  };
+
+  return (
+    <>
+      <div className={page === "admin" ? "app-admin" : "app"}>
+        <Sidebar active={sidebarActive} onNavigate={navigate} />
+        {page === "admin" ? (
+          <PageAdmin />
+        ) : (
+          <div className="main">
+            <Topbar {...topbarProps[page]} />
+            {page === "home" && <PageHome />}
+            {page === "members" && <PageMembers />}
+            {page === "leave" && <PageLeave />}
+            {page === "workflow" && <PageWorkflow />}
+          </div>
+        )}
+      </div>
+
+      <TweaksPanel>
+        <TweakSection label="Page" />
+        <TweakSelect label="페이지"
+                     value={page}
+                     options={[
+                       {value: "home", label: "홈"},
+                       {value: "members", label: "구성원"},
+                       {value: "leave", label: "휴가 관리"},
+                       {value: "workflow", label: "워크플로우"},
+                       {value: "admin", label: "권한·문서 (어드민)"}
+                     ]}
+                     onChange={(v) => { setPage(v); setTweak("page", v); }} />
+        <TweakSection label="Theme" />
+        <TweakRadio label="모드"
+                    value={t.theme}
+                    options={["light", "dark"]}
+                    onChange={(v) => setTweak("theme", v)} />
+        <TweakSelect label="액센트 컬러"
+                     value={t.accent}
+                     options={Object.keys(ACCENT_LABELS).map(k => ({value: k, label: ACCENT_LABELS[k]}))}
+                     onChange={(v) => setTweak("accent", v)} />
+        <TweakSection label="Density" />
+        <TweakRadio label="간격"
+                    value={t.density}
+                    options={["compact", "regular", "comfy"]}
+                    onChange={(v) => setTweak("density", v)} />
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+
+</body>
+</html>

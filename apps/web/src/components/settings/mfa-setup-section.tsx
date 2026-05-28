@@ -112,7 +112,7 @@ export function MfaSetupSection({ initial }: { initial: MfaStatus }) {
             />
           </div>
           {error && (
-            <p className="text-sm text-destructive-700">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
           )}
           <div className="flex gap-2">
             <Button size="sm" onClick={handleEnable} disabled={isPending || code.length !== 6}>
@@ -143,7 +143,7 @@ export function MfaSetupSection({ initial }: { initial: MfaStatus }) {
             />
           </div>
           {error && (
-            <p className="text-sm text-destructive-700">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
           )}
           <div className="flex gap-2">
             <Button size="sm" variant="destructive" onClick={handleDisable} disabled={isPending || code.length !== 6}>

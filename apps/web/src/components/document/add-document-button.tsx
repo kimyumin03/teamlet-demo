@@ -35,7 +35,7 @@ export function AddDocumentButton() {
     });
   }
 
-  const selectClass = "h-10 w-full rounded-md border border-border bg-background-primary px-3 text-sm text-foreground focus-visible:border-border-focus focus-visible:outline-none";
+  const selectClass = "h-10 w-full rounded-[8px] border border-border bg-background-primary px-3 text-[13px] text-foreground focus-visible:border-border-focus focus-visible:outline-none";
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (isPending) return; if (!o) reset(); setOpen(o); }}>
@@ -44,20 +44,20 @@ export function AddDocumentButton() {
         <DialogHeader><DialogTitle>문서 추가</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-foreground-muted">제목</label>
+            <label className="text-[13px] text-foreground-muted">제목</label>
             <Input required maxLength={100} value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-foreground-muted">분류</label>
+            <label className="text-[13px] text-foreground-muted">분류</label>
             <select value={category} onChange={(e) => setCategory(e.target.value as CompanyDocumentCategory)} className={selectClass}>
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-foreground-muted">파일 URL</label>
+            <label className="text-[13px] text-foreground-muted">파일 URL</label>
             <Input required type="url" placeholder="https://..." value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} />
           </div>
-          {error && <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>}
+          {error && <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>}
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="secondary" disabled={isPending}>취소</Button></DialogClose>
             <Button type="submit" disabled={isPending || !title.trim() || !fileUrl.trim()}>

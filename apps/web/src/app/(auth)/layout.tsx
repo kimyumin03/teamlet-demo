@@ -29,11 +29,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
       )}
 
       <div className="w-full max-w-[400px]">
-        <div className="mb-8 text-center">
-          <span className="text-2xl font-semibold tracking-tight text-foreground">Teamlet</span>
-          <p className="mt-1 text-sm text-foreground-muted">팀을 위한 HR 플랫폼</p>
-        </div>
-        <div className="rounded-xl border border-border bg-background-primary p-6">
+        <div className="rounded-2xl border border-border bg-background-primary p-8 shadow-md">
           {children}
         </div>
       </div>

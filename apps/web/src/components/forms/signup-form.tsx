@@ -23,7 +23,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
     <div className="flex flex-col gap-1.5">
       <label className="text-sm text-foreground-muted">{label}</label>
       {children}
-      {error && <p className="text-xs text-destructive-700">{error}</p>}
+      {error && <p className="text-[12px] text-destructive">{error}</p>}
     </div>
   );
 }
@@ -104,7 +104,7 @@ export function SignupForm({ callbackUrl }: { callbackUrl?: string }) {
       </Field>
 
       {serverError && (
-        <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">
+        <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">
           {serverError}
         </p>
       )}

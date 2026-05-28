@@ -56,10 +56,10 @@ export default async function AdminCompaniesPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-md px-2 py-0.5 text-xs ${
+                      className={`rounded-md border px-2 py-0.5 text-xs ${
                         c.isActive
-                          ? "bg-green-50 text-green-700"
-                          : "bg-background-secondary text-foreground-subtle"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                          : "border-border bg-background-secondary text-foreground-subtle"
                       }`}
                     >
                       {c.isActive ? "활성" : "비활성"}

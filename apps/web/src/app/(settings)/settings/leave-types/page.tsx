@@ -20,23 +20,27 @@ export default async function LeaveTypesPage() {
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">휴가 종류</h1>
-          <p className="mt-0.5 text-sm text-foreground-muted">
+          <h1 className="text-[20px] font-bold tracking-tight text-foreground">휴가 종류</h1>
+          <p className="mt-0.5 text-[13px] text-foreground-muted">
             회사에서 사용하는 휴가 종류를 관리해요
           </p>
         </div>
       </div>
 
       {noAccess ? (
-        <div className="flex flex-col items-center gap-2 py-20 text-center">
-          <p className="text-sm font-medium text-foreground">휴가 종류를 볼 권한이 없어요</p>
-          <p className="text-xs text-foreground-muted">
-            <code className="rounded bg-background-secondary px-1 py-0.5">leave.policy.manage</code>{" "}
+        <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-16 text-center">
+          <p className="text-[14px] font-medium text-foreground">휴가 종류를 볼 권한이 없어요</p>
+          <p className="mt-1 text-[12.5px] text-foreground-muted">
+            <code className="rounded bg-background-secondary px-1 py-0.5 text-[11.5px]">leave.policy.manage</code>{" "}
             권한이 필요해요
           </p>
         </div>
       ) : (
-        <LeaveTypesClient types={types} />
+        <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+          <h3 className="mb-1.5 text-[15px] font-bold text-foreground">휴가 종류 목록</h3>
+          <p className="mb-5 text-[12.5px] text-foreground-muted">법정·회사 자율 휴가 종류를 정의해요. 법정 종류는 삭제할 수 없어요.</p>
+          <LeaveTypesClient types={types} />
+        </div>
       )}
     </div>
   );

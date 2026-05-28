@@ -21,12 +21,12 @@ export default async function CertificatePrintPage({ params }: { params: Promise
 
   return (
     <div className="min-h-screen bg-background-secondary px-4 py-10 print:bg-white print:p-0">
-      <div className="mx-auto max-w-2xl rounded-lg border border-border bg-background-primary p-10 print:border-none print:shadow-none">
+      <div className="mx-auto max-w-2xl rounded-[14px] border border-border bg-background-primary p-10 print:border-none print:shadow-none">
         {/* 인쇄 버튼 */}
         <div className="mb-8 flex justify-end print:hidden">
           <button
             onClick={() => window.print()}
-            className="rounded-md border border-border px-4 py-1.5 text-sm text-foreground hover:bg-background-secondary"
+            className="rounded-[8px] border border-border px-4 py-1.5 text-[13px] text-foreground hover:bg-background-secondary transition-colors"
           >
             인쇄하기
           </button>
@@ -38,7 +38,7 @@ export default async function CertificatePrintPage({ params }: { params: Promise
             <h1 className="text-2xl font-bold tracking-wide">{TYPE_LABEL[cert.type]}</h1>
           </div>
 
-          <table className="w-full border-collapse text-sm">
+          <table className="w-full border-collapse text-[13px]">
             <tbody>
               <tr className="border border-border">
                 <th className="w-1/3 bg-background-secondary px-4 py-3 text-left font-medium">성명</th>
@@ -67,21 +67,19 @@ export default async function CertificatePrintPage({ params }: { params: Promise
             </tbody>
           </table>
 
-          <p className="text-center text-sm text-foreground-muted">
-            위 사실을 증명합니다.
-          </p>
+          <p className="text-center text-[13px] text-foreground-muted">위 사실을 증명합니다.</p>
 
           <div className="text-center">
-            <p className="text-sm text-foreground-muted">{issuedAt}</p>
+            <p className="text-[13px] text-foreground-muted">{issuedAt}</p>
           </div>
 
           <div className="mt-6 border-t border-border pt-6 text-center">
-            <p className="text-sm font-medium text-foreground">Teamlet</p>
+            <p className="text-[13px] font-medium text-foreground">Teamlet</p>
           </div>
         </div>
 
         {/* 발급 정보 */}
-        <div className="mt-8 rounded-md bg-background-secondary px-4 py-3 text-xs text-foreground-subtle print:hidden">
+        <div className="mt-8 rounded-[14px] bg-background-secondary px-4 py-3 font-mono text-[11px] text-foreground-subtle print:hidden">
           발급번호: {cert.issueNumber} · 발급자: {cert.issuerName} · {issuedAt}
         </div>
       </div>

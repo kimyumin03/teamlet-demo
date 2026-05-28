@@ -9,11 +9,11 @@ const EVENT_LABEL: Record<string, string> = {
   CREATE: "생성", READ: "조회", UPDATE: "수정", DELETE: "삭제", DOWNLOAD: "다운로드",
 };
 const EVENT_CLASS: Record<string, string> = {
-  CREATE: "bg-green-50 text-green-700",
-  READ: "bg-background-secondary text-foreground-muted",
-  UPDATE: "bg-blue-50 text-blue-700",
-  DELETE: "bg-destructive-50 text-destructive-700",
-  DOWNLOAD: "bg-amber-50 text-amber-700",
+  CREATE: "border-emerald-300 bg-emerald-50 text-emerald-700",
+  READ: "border-border bg-background-secondary text-foreground-muted",
+  UPDATE: "border-blue-300 bg-blue-50 text-blue-700",
+  DELETE: "border-destructive/40 bg-destructive/5 text-destructive",
+  DOWNLOAD: "border-amber-300 bg-amber-50 text-amber-700",
 };
 
 const ACTIVITY_LABEL: Record<string, string> = {
@@ -21,17 +21,17 @@ const ACTIVITY_LABEL: Record<string, string> = {
   workflow: "워크플로우", security: "보안", role: "권한",
 };
 const ACTIVITY_CLASS: Record<string, string> = {
-  auth: "bg-purple-50 text-purple-700",
-  tenancy: "bg-blue-50 text-blue-700",
-  member: "bg-teal-50 text-teal-700",
-  leave: "bg-green-50 text-green-700",
-  workflow: "bg-amber-50 text-amber-700",
-  security: "bg-destructive-50 text-destructive-700",
-  role: "bg-background-secondary text-foreground-muted",
+  auth: "border-purple-300 bg-purple-50 text-purple-700",
+  tenancy: "border-blue-300 bg-blue-50 text-blue-700",
+  member: "border-teal-300 bg-teal-50 text-teal-700",
+  leave: "border-emerald-300 bg-emerald-50 text-emerald-700",
+  workflow: "border-amber-300 bg-amber-50 text-amber-700",
+  security: "border-destructive/40 bg-destructive/5 text-destructive",
+  role: "border-border bg-background-secondary text-foreground-muted",
 };
 
 const ACTIVITY_TYPES = [
-  { value: "", label: "전체 유형" },
+  { value: "", label: "전체" },
   { value: "auth", label: "인증" },
   { value: "tenancy", label: "회사" },
   { value: "member", label: "구성원" },
@@ -42,7 +42,7 @@ const ACTIVITY_TYPES = [
 ];
 
 const EVENT_TYPES = [
-  { value: "", label: "전체 이벤트" },
+  { value: "", label: "전체" },
   { value: "CREATE", label: "생성" },
   { value: "READ", label: "조회" },
   { value: "UPDATE", label: "수정" },
@@ -89,115 +89,130 @@ export default async function AuditLogPage({
   const baseParams = { q, type: activityType, event: eventType };
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-foreground">감사 로그</h1>
-        <p className="mt-0.5 text-sm text-foreground-muted">
+    <div className="flex h-full flex-col">
+      {/* 헤더 */}
+      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-5">
+        <h1 className="text-[22px] font-bold leading-tight tracking-tight">감사 로그</h1>
+        <p className="mt-0.5 text-[13px] text-foreground-muted">
           회사 내 활동 이력 · 총 {total.toLocaleString()}건
         </p>
       </div>
 
-      {/* 필터 바 */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        <form method="get" action="/audit-log" className="flex">
-          <input type="hidden" name="type" value={activityType} />
-          <input type="hidden" name="event" value={eventType} />
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="설명·담당자 검색"
-            className="h-9 w-52 rounded-lg border border-border bg-background-primary px-3 text-sm text-foreground placeholder:text-foreground-subtle focus-visible:outline-none"
-          />
-        </form>
+      {/* 본문 */}
+      <div className="flex-1 overflow-auto px-6 py-6">
+        {/* 필터 바 */}
+        <div className="mb-4 flex flex-wrap gap-2">
+          <form method="get" action="/audit-log" className="flex">
+            <input type="hidden" name="type" value={activityType} />
+            <input type="hidden" name="event" value={eventType} />
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="설명·담당자 검색"
+              className="h-9 w-52 rounded-[8px] border border-border bg-background-primary px-3 text-[13px] text-foreground placeholder:text-foreground-subtle focus-visible:outline-none"
+            />
+          </form>
 
-        <div className="flex gap-1 rounded-lg border border-border bg-background-secondary p-0.5">
-          {ACTIVITY_TYPES.map((t) => (
-            <Link
-              key={t.value}
-              href={buildHref(baseParams, { type: t.value })}
-              className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                activityType === t.value
-                  ? "bg-background-primary font-medium text-foreground shadow-sm"
-                  : "text-foreground-muted hover:text-foreground"
-              }`}
-            >
-              {t.label}
-            </Link>
-          ))}
-        </div>
-
-        <div className="flex gap-1 rounded-lg border border-border bg-background-secondary p-0.5">
-          {EVENT_TYPES.map((t) => (
-            <Link
-              key={t.value}
-              href={buildHref(baseParams, { event: t.value })}
-              className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                eventType === t.value
-                  ? "bg-background-primary font-medium text-foreground shadow-sm"
-                  : "text-foreground-muted hover:text-foreground"
-              }`}
-            >
-              {t.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* 로그 목록 */}
-      {items.length === 0 ? (
-        <p className="mt-8 text-center text-sm text-foreground-muted">
-          {q || activityType || eventType ? "검색 결과가 없어요." : "기록된 감사 로그가 없어요."}
-        </p>
-      ) : (
-        <div className="overflow-hidden rounded-lg border border-border text-sm">
-          <div className="grid grid-cols-[155px_68px_78px_1fr_110px] gap-3 border-b border-border bg-background-secondary px-4 py-2 text-xs font-medium text-foreground-muted">
-            <span>시각</span><span>이벤트</span><span>유형</span><span>내용</span>
-            <span className="text-right">담당자</span>
-          </div>
-          <div className="divide-y divide-border">
-            {items.map((log) => (
-              <div
-                key={log.id}
-                className="grid grid-cols-[155px_68px_78px_1fr_110px] items-center gap-3 px-4 py-2.5 hover:bg-background-secondary"
+          <div className="flex gap-1 rounded-lg border border-border bg-background-secondary p-0.5">
+            {ACTIVITY_TYPES.map((t) => (
+              <Link
+                key={t.value}
+                href={buildHref(baseParams, { type: t.value })}
+                className={`rounded-md px-2.5 py-1 text-[12px] transition-colors ${
+                  activityType === t.value
+                    ? "bg-background-primary font-medium text-foreground shadow-sm"
+                    : "text-foreground-muted hover:text-foreground"
+                }`}
               >
-                <span className="text-xs tabular-nums text-foreground-subtle">
-                  {log.occurredAt.toLocaleString("ko-KR", {
-                    month: "2-digit", day: "2-digit",
-                    hour: "2-digit", minute: "2-digit", second: "2-digit",
-                  })}
-                </span>
-                <span className={`inline-flex justify-center rounded px-1.5 py-0.5 text-xs ${EVENT_CLASS[log.eventType] ?? "bg-background-secondary text-foreground-muted"}`}>
-                  {EVENT_LABEL[log.eventType] ?? log.eventType}
-                </span>
-                <span className={`inline-flex justify-center rounded px-1.5 py-0.5 text-xs ${ACTIVITY_CLASS[log.activityType] ?? "bg-background-secondary text-foreground-muted"}`}>
-                  {ACTIVITY_LABEL[log.activityType] ?? log.activityType}
-                </span>
-                <span className="truncate text-foreground">{log.description}</span>
-                <span className="truncate text-right text-xs text-foreground-subtle">
-                  {log.actorName ?? log.actorEmail ?? "—"}
-                </span>
-              </div>
+                {t.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex gap-1 rounded-lg border border-border bg-background-secondary p-0.5">
+            {EVENT_TYPES.map((t) => (
+              <Link
+                key={t.value}
+                href={buildHref(baseParams, { event: t.value })}
+                className={`rounded-md px-2.5 py-1 text-[12px] transition-colors ${
+                  eventType === t.value
+                    ? "bg-background-primary font-medium text-foreground shadow-sm"
+                    : "text-foreground-muted hover:text-foreground"
+                }`}
+              >
+                {t.label}
+              </Link>
             ))}
           </div>
         </div>
-      )}
 
-      {/* 페이지네이션 */}
-      {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-2">
-          {page > 1 && (
-            <Link href={buildHref(baseParams, { page: String(page - 1) })} className="rounded border border-border px-3 py-1.5 text-sm hover:bg-background-secondary">
-              이전
-            </Link>
-          )}
-          <span className="px-3 py-1.5 text-sm text-foreground-muted">{page} / {totalPages}</span>
-          {page < totalPages && (
-            <Link href={buildHref(baseParams, { page: String(page + 1) })} className="rounded border border-border px-3 py-1.5 text-sm hover:bg-background-secondary">
-              다음
-            </Link>
-          )}
-        </div>
-      )}
+        {/* 로그 목록 */}
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-20 text-center">
+            <p className="text-[14px] font-medium text-foreground">
+              {q || activityType || eventType ? "검색 결과가 없어요." : "기록된 감사 로그가 없어요."}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-[14px] border border-border text-[13px]">
+            <div className="grid grid-cols-[155px_72px_80px_1fr_110px] gap-3 border-b border-border bg-background-secondary px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-foreground-muted">
+              <span>시각</span>
+              <span>이벤트</span>
+              <span>유형</span>
+              <span>내용</span>
+              <span className="text-right">담당자</span>
+            </div>
+            <div className="divide-y divide-border">
+              {items.map((log) => (
+                <div
+                  key={log.id}
+                  className="grid grid-cols-[155px_72px_80px_1fr_110px] items-center gap-3 px-4 py-2.5 hover:bg-background-secondary"
+                >
+                  <span className="font-mono text-[11px] tabular-nums text-foreground-subtle">
+                    {log.occurredAt.toLocaleString("ko-KR", {
+                      month: "2-digit", day: "2-digit",
+                      hour: "2-digit", minute: "2-digit", second: "2-digit",
+                    })}
+                  </span>
+                  <span className={`inline-flex justify-center rounded-[5px] border px-1.5 py-0.5 font-mono text-[11px] font-semibold ${EVENT_CLASS[log.eventType] ?? "border-border bg-background-secondary text-foreground-muted"}`}>
+                    {EVENT_LABEL[log.eventType] ?? log.eventType}
+                  </span>
+                  <span className={`inline-flex justify-center rounded-[5px] border px-1.5 py-0.5 font-mono text-[11px] font-semibold ${ACTIVITY_CLASS[log.activityType] ?? "border-border bg-background-secondary text-foreground-muted"}`}>
+                    {ACTIVITY_LABEL[log.activityType] ?? log.activityType}
+                  </span>
+                  <span className="truncate text-[13px] text-foreground">{log.description}</span>
+                  <span className="truncate text-right text-[11px] text-foreground-subtle">
+                    {log.actorName ?? log.actorEmail ?? "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 페이지네이션 */}
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            {page > 1 && (
+              <Link
+                href={buildHref(baseParams, { page: String(page - 1) })}
+                className="rounded-[8px] border border-border px-3 py-1.5 text-[13px] hover:bg-background-secondary transition-colors"
+              >
+                이전
+              </Link>
+            )}
+            <span className="px-3 py-1.5 text-[13px] text-foreground-muted">{page} / {totalPages}</span>
+            {page < totalPages && (
+              <Link
+                href={buildHref(baseParams, { page: String(page + 1) })}
+                className="rounded-[8px] border border-border px-3 py-1.5 text-[13px] hover:bg-background-secondary transition-colors"
+              >
+                다음
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

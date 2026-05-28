@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronLeft, UserPlus } from "lucide-react";
 import { getPosting } from "@teamlet/modules/recruit";
-import type { PostingDetail, CandidateListItem } from "@teamlet/modules/recruit";
-import { Button, EmptyState } from "@teamlet/ui";
+import type { CandidateListItem } from "@teamlet/modules/recruit";
 import { auth } from "@/auth";
 import { AddCandidateButton } from "@/components/recruit/add-candidate-button";
 import { CandidateActions } from "@/components/recruit/candidate-actions";
@@ -15,12 +13,11 @@ export const dynamic = "force-dynamic";
 const RESULT_LABEL: Record<CandidateListItem["result"], string> = {
   IN_PROGRESS: "진행중", PASSED: "합격", FAILED: "불합격", WITHDRAWN: "사퇴",
 };
-
-const RESULT_CLASS: Record<CandidateListItem["result"], string> = {
-  IN_PROGRESS: "bg-amber-50 text-amber-700",
-  PASSED: "bg-background-secondary text-foreground-muted",
-  FAILED: "bg-destructive-50 text-destructive-700",
-  WITHDRAWN: "bg-background-secondary text-foreground-subtle",
+const RESULT_CLS: Record<CandidateListItem["result"], string> = {
+  IN_PROGRESS: "border-amber-300 bg-amber-50 text-amber-700",
+  PASSED: "border-emerald-300 bg-emerald-50 text-emerald-700",
+  FAILED: "border-destructive bg-destructive-50 text-destructive",
+  WITHDRAWN: "border-border bg-background-secondary text-foreground-subtle",
 };
 
 export default async function PostingDetailPage({
@@ -42,52 +39,65 @@ export default async function PostingDetailPage({
   const posting = result.data;
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
-      <header className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="icon">
-            <Link href="/recruit"><ChevronLeft /></Link>
-          </Button>
+    <div className="flex h-full flex-col">
+      {/* 헤더 */}
+      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-5">
+        <Link
+          href="/recruit"
+          className="mb-3 inline-flex items-center gap-1 text-[12px] text-foreground-subtle hover:text-foreground transition-colors"
+        >
+          <svg viewBox="0 0 16 16" fill="currentColor" className="size-3.5">
+            <path fillRule="evenodd" d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 1.06L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z" clipRule="evenodd" />
+          </svg>
+          채용 목록
+        </Link>
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-foreground">{posting.title}</h1>
-            <p className="mt-1 text-sm text-foreground-muted">
+            <h1 className="text-[22px] font-bold leading-tight tracking-tight">{posting.title}</h1>
+            <p className="mt-0.5 text-[13px] text-foreground-muted">
               담당자 {posting.managerName} · 후보자 {posting.candidates.length}명
             </p>
           </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <PostingStatusButton postingId={posting.id} currentStatus={posting.status} />
+            <AddCandidateButton postingId={posting.id} stages={posting.stages} />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <PostingStatusButton postingId={posting.id} currentStatus={posting.status} />
-          <AddCandidateButton postingId={posting.id} stages={posting.stages} />
-        </div>
-      </header>
+      </div>
 
-      {posting.description && (
-        <section className="mb-8 rounded-lg border border-border bg-background-primary p-4">
-          <p className="whitespace-pre-wrap text-sm text-foreground">{posting.description}</p>
-        </section>
-      )}
+      {/* 본문 */}
+      <div className="flex-1 overflow-auto px-6 py-6">
+        {posting.description && (
+          <div className="mb-6 rounded-[14px] border border-border bg-background-primary p-5">
+            <p className="whitespace-pre-wrap text-[13px] text-foreground">{posting.description}</p>
+          </div>
+        )}
 
-      {posting.stages.length > 0 && (
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-          {posting.stages.map((s) => (
-            <span key={s.id} className="shrink-0 rounded-full border border-border bg-background-secondary px-3 py-1 text-xs text-foreground-muted">
-              {s.order}. {s.name}
-            </span>
-          ))}
-        </div>
-      )}
+        {/* 전형 단계 */}
+        {posting.stages.length > 0 && (
+          <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+            {posting.stages.map((s) => (
+              <span
+                key={s.id}
+                className="shrink-0 rounded-full border border-border bg-background-secondary px-3 py-1 font-mono text-[11px] text-foreground-muted"
+              >
+                {s.order}. {s.name}
+              </span>
+            ))}
+          </div>
+        )}
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-foreground-muted">
+        {/* 후보자 섹션 헤더 */}
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-[12px] font-semibold uppercase tracking-wider text-foreground-muted">
             후보자 {posting.candidates.length}명
-          </h2>
+          </p>
           <div className="flex gap-1 rounded-lg border border-border bg-background-secondary p-0.5">
             {[{ v: "list", label: "목록" }, { v: "kanban", label: "칸반" }].map(({ v, label }) => (
               <Link
                 key={v}
                 href={`/recruit/postings/${posting.id}?view=${v}`}
-                className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                className={`rounded-md px-2.5 py-1 text-[12px] transition-colors ${
                   view === v
                     ? "bg-background-primary font-medium text-foreground shadow-sm"
                     : "text-foreground-muted hover:text-foreground"
@@ -99,32 +109,32 @@ export default async function PostingDetailPage({
           </div>
         </div>
 
+        {/* 후보자 목록/칸반 */}
         {posting.candidates.length === 0 ? (
-          <EmptyState
-            icon={<UserPlus />}
-            title="등록된 후보자가 없어요"
-            description="후보자 추가 버튼을 눌러 첫 지원자를 등록해 보세요."
-          />
+          <div className="flex flex-col items-center gap-2 py-20 text-center">
+            <p className="text-[14px] font-medium text-foreground">등록된 후보자가 없어요</p>
+            <p className="text-[12.5px] text-foreground-muted">후보자 추가 버튼을 눌러 첫 지원자를 등록해 보세요.</p>
+          </div>
         ) : view === "kanban" ? (
           <CandidateKanban stages={posting.stages} candidates={posting.candidates} postingId={posting.id} />
         ) : (
-          <ul className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             {posting.candidates.map((c) => (
-              <li
+              <div
                 key={c.id}
-                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 rounded-lg border border-border bg-background-primary px-4 py-3"
+                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 rounded-[14px] border border-border bg-background-primary px-5 py-4"
               >
                 <Link
                   href={`/recruit/postings/${posting.id}/candidates/${c.id}`}
-                  className="flex flex-col gap-0.5 hover:underline"
+                  className="min-w-0"
                 >
-                  <span className="font-medium text-foreground">{c.name}</span>
-                  <span className="text-sm text-foreground-muted">{c.email}</span>
+                  <p className="text-[13.5px] font-semibold text-foreground truncate hover:text-primary transition-colors">{c.name}</p>
+                  <p className="mt-0.5 text-[12px] text-foreground-muted truncate">{c.email}</p>
                 </Link>
-                <span className="text-sm text-foreground-muted">
+                <span className="text-[12px] text-foreground-muted shrink-0">
                   {c.currentStageName ?? "단계 미배정"}
                 </span>
-                <span className={`rounded-md px-2 py-0.5 text-xs ${RESULT_CLASS[c.result]}`}>
+                <span className={`rounded-[5px] border px-2 py-0.5 font-mono text-[11px] font-semibold shrink-0 ${RESULT_CLS[c.result]}`}>
                   {RESULT_LABEL[c.result]}
                 </span>
                 <CandidateActions
@@ -132,11 +142,11 @@ export default async function PostingDetailPage({
                   stages={posting.stages}
                   currentResult={c.result}
                 />
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
-      </section>
+      </div>
     </div>
   );
 }

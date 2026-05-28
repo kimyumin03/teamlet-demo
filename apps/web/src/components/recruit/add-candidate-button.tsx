@@ -55,7 +55,7 @@ export function AddCandidateButton({
           {stages.length > 0 && (
             <p className="text-xs text-foreground-subtle">첫 단계({stages[0]?.name})로 자동 배정돼요.</p>
           )}
-          {error && <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>}
+          {error && <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>}
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="secondary" disabled={isPending}>취소</Button></DialogClose>
             <Button type="submit" disabled={isPending || !name.trim() || !email.trim()}>

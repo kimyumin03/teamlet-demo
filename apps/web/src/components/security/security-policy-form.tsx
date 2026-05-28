@@ -159,7 +159,7 @@ export function SecurityPolicyForm({ initialPolicy }: { initialPolicy: SecurityP
         </div>
       </section>
 
-      {error && <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>}
+      {error && <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>}
       {saved && <p className="text-sm text-foreground-muted">저장되었어요.</p>}
 
       <Button type="submit" disabled={isPending}>

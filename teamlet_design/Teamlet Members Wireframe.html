@@ -1,0 +1,1462 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Teamlet — Members Wireframe v1</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #111418; --ink-2: #3b4149; --ink-3: #6b7280; --ink-4: #9aa1ab; --ink-5: #c4c9d0;
+    --line: #d9dde2; --line-2: #e6e9ed;
+    --bg: #f6f7f8; --paper: #ffffff;
+    --hatch: repeating-linear-gradient(135deg, #eef0f3 0 6px, #f6f7f8 6px 12px);
+    --hatch-na: repeating-linear-gradient(135deg, #f1f2f4 0 4px, #fafbfc 4px 8px);
+    --note: #1e6cff; --note-bg: #eef3ff;
+    --font-kr: "Noto Sans KR", "Inter", system-ui, sans-serif;
+    --font-en: "Inter", "Noto Sans KR", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-kr); color: var(--ink); background: #ecedef;
+    -webkit-font-smoothing: antialiased; font-size: 13px; line-height: 1.45;
+  }
+
+  .sheet { max-width: 1480px; margin: 32px auto 64px; padding: 0 28px; }
+  .doc-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 24px; padding: 8px 0 20px;
+    border-bottom: 1px dashed var(--ink-5); margin-bottom: 24px;
+  }
+  .doc-head h1 { font-family: var(--font-en); font-size: 20px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .doc-head .sub { color: var(--ink-3); font-size: 12px; font-family: var(--font-mono); }
+  .doc-meta { text-align: right; color: var(--ink-3); font-size: 11px; font-family: var(--font-mono); line-height: 1.7; }
+  .doc-meta b { color: var(--ink); font-weight: 600; }
+  .pagenav { display: flex; gap: 8px; margin-top: 12px; font-family: var(--font-mono); font-size: 11px; }
+  .pagenav a {
+    text-decoration: none; color: var(--ink-3); padding: 5px 10px;
+    border: 1px solid var(--line); border-radius: 6px; background: var(--paper);
+  }
+  .pagenav a:hover { color: var(--ink); }
+  .pagenav a.cur { color: var(--ink); font-weight: 600; border-color: var(--ink); }
+
+  /* frame shell */
+  .frame {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,0.02), 0 24px 48px -32px rgba(20,30,50,0.18);
+    margin-bottom: 32px;
+  }
+  .frame-bar {
+    height: 36px; background: #fafbfc; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; padding: 0 14px; gap: 10px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+  .url { flex: 1; text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+  .url b { color: var(--ink-2); }
+  .frame-label {
+    font-family: var(--font-en); font-size: 10px; font-weight: 600;
+    color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 0 6px;
+  }
+
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 760px; }
+
+  /* sidebar */
+  .side {
+    border-right: 1px solid var(--line); background: #fafbfc;
+    padding: 14px 12px 18px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .org { display: flex; align-items: center; gap: 10px; padding: 6px 6px 10px; border-bottom: 1px solid var(--line-2); }
+  .org-logo {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--ink); color: white;
+    display: grid; place-items: center;
+    font-family: var(--font-en); font-weight: 700; font-size: 12px; letter-spacing: -0.02em;
+  }
+  .org-name { font-size: 13px; font-weight: 600; }
+  .org-name small { display:block; color: var(--ink-3); font-weight: 400; font-size: 11px; }
+  .org-caret { margin-left: auto; color: var(--ink-4); }
+  .status-pill {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 12px;
+  }
+  .status-pill .tag {
+    font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    background: #e8f3ec; color: #1b6b3b; font-weight: 600; font-family: var(--font-en); letter-spacing: 0.02em;
+  }
+  .status-pill .t { color: var(--ink-2); font-family: var(--font-mono); font-size: 11px; }
+  .status-pill .caret { margin-left: auto; color: var(--ink-4); }
+  .nav-group { display: flex; flex-direction: column; gap: 1px; }
+  .nav-label {
+    padding: 12px 8px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--ink-4); font-family: var(--font-en); font-weight: 600;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 7px 8px;
+    border-radius: 6px; color: var(--ink-2); font-size: 13px;
+    text-decoration: none; user-select: none; cursor: pointer;
+  }
+  .nav-item:hover { background: #eef0f3; }
+  .nav-item.active { background: #eef0f3; color: var(--ink); font-weight: 600; }
+  .nav-item svg.ico {
+    width: 18px; height: 18px; flex-shrink: 0; color: var(--ink-3);
+    stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .nav-item.active svg.ico { color: var(--ink); stroke-width: 1.8; }
+  .nav-item .kbd {
+    margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--ink-4);
+    border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; background: var(--paper);
+  }
+  .nav-item .badge {
+    margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--ink);
+    background: #e6e9ed; border-radius: 10px; padding: 1px 6px; font-weight: 600;
+  }
+  .me {
+    margin-top: auto; display: flex; align-items: center; gap: 10px;
+    padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper);
+  }
+  .me .av { width: 28px; height: 28px; border-radius: 50%; background-image: var(--hatch); }
+  .me .name { font-size: 12px; font-weight: 600; }
+  .me .role { font-size: 10px; color: var(--ink-3); font-family: var(--font-mono); }
+
+  /* main */
+  .main { display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+  .topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 24px; border-bottom: 1px solid var(--line-2); background: var(--paper);
+  }
+  .search {
+    flex: 1; max-width: 480px; display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px;
+    background: #fafbfc; color: var(--ink-4); font-size: 12px;
+  }
+  .search .glyph { width: 12px; height: 12px; border-radius: 50%; border: 1.25px solid var(--ink-4); }
+  .top-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px;
+    background: var(--paper); display: grid; place-items: center; color: var(--ink-3); position: relative;
+  }
+  .icon-btn .pip {
+    position: absolute; top: 5px; right: 5px; width: 7px; height: 7px;
+    border-radius: 50%; background: var(--ink); border: 1.5px solid var(--paper);
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px;
+    border-radius: 7px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--ink); background: var(--ink); color: var(--paper); cursor: pointer;
+  }
+  .btn.ghost { background: var(--paper); color: var(--ink); }
+  .btn.sm { padding: 5px 10px; font-size: 11px; }
+
+  /* page header */
+  .page-h { display: flex; align-items: flex-end; justify-content: space-between; }
+  .h-title { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 4px; }
+  .h-sub { font-size: 12px; color: var(--ink-3); font-family: var(--font-mono); }
+
+  /* view toggle (list / org) */
+  .vtog {
+    display: inline-flex; padding: 3px; background: #eef0f3;
+    border-radius: 8px; gap: 2px;
+  }
+  .vtog .v {
+    padding: 5px 12px; font-size: 12px; color: var(--ink-3);
+    border-radius: 6px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center;
+    font-weight: 500;
+  }
+  .vtog .v.active { background: var(--paper); color: var(--ink); font-weight: 600; box-shadow: 0 1px 0 rgba(0,0,0,0.04); }
+  .vtog .v svg { width: 13px; height: 13px; stroke: currentColor; stroke-width: 1.6; fill: none; }
+
+  /* KPI */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0 18px; }
+  .kpi { padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); }
+  .kpi .l { font-size: 10px; color: var(--ink-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; }
+  .kpi .v { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; margin-top: 2px; }
+  .kpi .v small { font-size: 11px; color: var(--ink-3); font-weight: 500; margin-left: 4px; font-family: var(--font-mono); }
+  .kpi .d { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 2px; }
+  .kpi .d b { color: var(--ink); font-weight: 600; }
+
+  /* body */
+  .body-col { padding: 22px 24px 28px; min-width: 0; }
+
+  /* filter row */
+  .filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px;
+    font-size: 12px; background: var(--paper); color: var(--ink-2);
+  }
+  .chip .lbl { color: var(--ink-3); }
+  .chip .val { color: var(--ink); font-weight: 600; }
+  .chip .x { color: var(--ink-4); margin-left: 2px; }
+  .chip.add { color: var(--ink-3); border-style: dashed; }
+  .filters .spread { margin-left: auto; display: flex; gap: 6px; }
+  .col-toggle {
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
+    border: 1px solid var(--line); padding: 5px 10px; border-radius: 6px; background: var(--paper);
+  }
+
+  /* members table */
+  .mtable {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--paper);
+    overflow: hidden; font-size: 12px;
+  }
+  .mtable thead th {
+    text-align: left; background: #fafbfc;
+    border-bottom: 1px solid var(--line);
+    padding: 10px 12px;
+    font-size: 11px; font-weight: 600; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.04em; font-family: var(--font-en);
+  }
+  .mtable thead th .arr { color: var(--ink-4); font-family: var(--font-mono); margin-left: 4px; }
+  .mtable thead th.cb { width: 32px; padding-right: 0; }
+  .mtable td {
+    border-bottom: 1px solid var(--line-2);
+    padding: 12px; vertical-align: middle;
+  }
+  .mtable tbody tr:last-child td { border-bottom: none; }
+  .mtable tbody tr:hover { background: #fafbfc; cursor: pointer; }
+  .mtable tbody tr.active { background: #eef0f3; }
+  .cb-box {
+    width: 14px; height: 14px; border: 1.25px solid var(--ink-4); border-radius: 3px;
+    display: inline-block; vertical-align: middle;
+  }
+  .cb-box.on {
+    background: var(--ink); border-color: var(--ink); position: relative;
+  }
+  .cb-box.on::after {
+    content: ""; position: absolute; left: 3px; top: 1px;
+    width: 4px; height: 8px; border: 1.5px solid white; border-top: 0; border-left: 0;
+    transform: rotate(45deg);
+  }
+  .ppl { display: flex; align-items: center; gap: 10px; }
+  .ppl .av {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--hatch);
+    border: 1px solid var(--line); flex-shrink: 0;
+    display: grid; place-items: center;
+    font-family: var(--font-en); font-size: 11px; font-weight: 600; color: var(--ink-3);
+  }
+  .ppl .n { font-weight: 600; color: var(--ink); }
+  .ppl .m { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); }
+  .sn { font-family: var(--font-mono); color: var(--ink-3); }
+  .em { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+
+  /* role + status */
+  .role-cell { font-size: 12px; }
+  .role-cell .r { font-weight: 600; }
+  .role-cell .o { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 1px; }
+
+  .st { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--font-en); font-weight: 600; }
+  .st::before { content: ""; width: 8px; height: 8px; flex-shrink: 0; background: var(--ink-4); border-radius: 50%; }
+  .st.work::before { background: #1b6b3b; }
+  .st.leave::before { background: #c2832a; border-radius: 1px; transform: rotate(45deg); width: 6px; height: 6px; }
+  .st.coming::before { background: var(--ink); border-radius: 1px; }
+  .st.gone::before { background: var(--ink-4); border-radius: 50%; opacity: 0.4; }
+
+  .perm {
+    font-size: 11px; padding: 2px 8px; border-radius: 4px;
+    background: #eef0f3; color: var(--ink-2); font-weight: 600; font-family: var(--font-en);
+  }
+  .perm.admin { background: var(--ink); color: white; }
+  .perm.lead { background: #fbf5e3; color: #7a5b00; }
+
+  .row-caret { color: var(--ink-4); font-family: var(--font-mono); }
+
+  /* org chart (alt view) */
+  .orgchart {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--paper);
+    padding: 24px; min-height: 280px; position: relative;
+    overflow: auto;
+  }
+  .ot { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+  .ot .root, .ot .node {
+    padding: 10px 14px; border: 1px solid var(--ink); border-radius: 9px;
+    background: var(--paper); font-size: 12px; font-weight: 600; display: inline-flex; gap: 8px; align-items: center;
+  }
+  .ot .node { border-color: var(--line); font-weight: 500; color: var(--ink-2); }
+  .ot .ct { font-family: var(--font-mono); color: var(--ink-3); font-size: 11px; }
+  .ot-level { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; position: relative; }
+  .ot-branch {
+    display: flex; flex-direction: column; align-items: center; gap: 18px; position: relative;
+  }
+  .ot-branch::before {
+    content: ""; position: absolute; top: -18px; left: 50%;
+    width: 1px; height: 18px; background: var(--line);
+  }
+  .ot-l2 {
+    display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+  }
+  .ot-l2 .node {
+    background: #fafbfc;
+  }
+
+  /* PROFILE DETAIL FRAME */
+  .profile-shell {
+    display: grid; grid-template-columns: 240px 1fr; min-height: 1020px;
+  }
+  .prof-main { display: grid; grid-template-rows: auto auto 1fr; min-width: 0; }
+
+  /* Profile hero */
+  .phero {
+    padding: 24px 28px 20px;
+    border-bottom: 1px solid var(--line-2);
+    display: grid; grid-template-columns: 64px 1fr auto; gap: 18px; align-items: flex-start;
+  }
+  .phero .pav {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--hatch); border: 1px solid var(--line);
+    display: grid; place-items: center;
+    font-family: var(--font-en); font-size: 18px; font-weight: 700; color: var(--ink-3);
+  }
+  .phero .pname { font-size: 24px; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 4px; }
+  .phero .pname .nick { color: var(--ink-3); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .phero .pmeta { font-size: 12px; color: var(--ink-3); font-family: var(--font-mono); }
+  .phero .pmeta span { margin-right: 12px; }
+  .phero .pmeta b { color: var(--ink); font-family: var(--font-kr); font-weight: 600; }
+  .phero .pquick {
+    margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .phero .pquick .q {
+    font-size: 11px; padding: 3px 8px; border-radius: 5px;
+    background: var(--paper); border: 1px solid var(--line); color: var(--ink-2);
+    font-family: var(--font-mono);
+  }
+  .phero .pquick .q b { color: var(--ink); font-family: var(--font-kr); font-weight: 600; margin-right: 4px; }
+  .phero .pactions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .phero .pactions .row { display: flex; gap: 6px; }
+
+  /* Profile tabs */
+  .ptabs {
+    display: flex; gap: 4px; border-bottom: 1px solid var(--line);
+    padding: 0 28px;
+  }
+  .ptab {
+    padding: 11px 14px 13px; font-size: 13px; color: var(--ink-3);
+    border-bottom: 2px solid transparent; cursor: pointer; font-weight: 500;
+    margin-bottom: -1px; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .ptab.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+  .ptab .count { font-family: var(--font-mono); font-size: 10px; background: #e6e9ed; color: var(--ink-2); padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+
+  /* Profile body */
+  .pbody { display: grid; grid-template-columns: 1fr 280px; min-height: 0; }
+  .pbody-main { padding: 22px 28px 28px; overflow: auto; }
+  .pbody-rail {
+    background: #fafbfc; border-left: 1px solid var(--line-2);
+    padding: 22px; display: flex; flex-direction: column; gap: 14px;
+  }
+
+  /* Accordion sections */
+  .acc {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--paper);
+    margin-bottom: 10px; overflow: hidden;
+  }
+  .acc-h {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px; cursor: pointer; user-select: none;
+  }
+  .acc-h .num {
+    font-family: var(--font-mono); font-size: 10px; color: var(--ink-4);
+    border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
+    font-weight: 600;
+  }
+  .acc-h .t { font-size: 13px; font-weight: 600; }
+  .acc-h .s { margin-left: auto; font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); }
+  .acc-h .car { color: var(--ink-4); font-family: var(--font-mono); margin-left: 8px; }
+  .acc-h:hover { background: #fafbfc; }
+  .acc.open .car { color: var(--ink); }
+  .acc-b {
+    padding: 0 16px 16px;
+    display: none;
+  }
+  .acc.open .acc-b { display: block; border-top: 1px solid var(--line-2); padding-top: 14px; }
+
+  /* field grid */
+  .fg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
+  .f { padding: 4px 0; }
+  .f .l { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .f .v { font-size: 13px; color: var(--ink); }
+  .f .v .badge {
+    display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px;
+    background: #e8f3ec; color: #1b6b3b; font-family: var(--font-en); font-weight: 600; margin-left: 6px;
+    letter-spacing: 0.02em;
+  }
+  .f .v.na { color: var(--ink-4); }
+  .f .v .small { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); margin-left: 6px; }
+
+  /* posting history (timeline) */
+  .ptline { padding-left: 18px; position: relative; }
+  .ptline::before {
+    content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px;
+    width: 1px; background: var(--line);
+  }
+  .ptline .ev {
+    position: relative; padding: 10px 0 14px 14px;
+    border-bottom: 1px dashed var(--line-2);
+  }
+  .ptline .ev:last-child { border-bottom: none; }
+  .ptline .ev::before {
+    content: ""; position: absolute; left: -12px; top: 14px;
+    width: 11px; height: 11px; background: var(--paper);
+    border: 1.5px solid var(--ink-3); border-radius: 50%;
+  }
+  .ptline .ev.now::before { background: var(--ink); border-color: var(--ink); }
+  .ptline .ev .when {
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); margin-bottom: 2px;
+  }
+  .ptline .ev .t { font-size: 14px; font-weight: 600; }
+  .ptline .ev .d { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+  .ptline .ev .delta {
+    display: flex; gap: 14px; margin-top: 8px;
+    padding: 8px 10px; background: #fafbfc; border-radius: 6px;
+    font-size: 11px; font-family: var(--font-mono);
+  }
+  .ptline .ev .delta b { color: var(--ink); font-family: var(--font-kr); font-weight: 600; }
+  .ptline .ev .delta .arr { color: var(--ink-4); }
+
+  /* permission tab */
+  .pg-card {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--paper);
+    padding: 14px 16px; margin-bottom: 8px;
+    display: grid; grid-template-columns: 32px 1fr auto; gap: 12px; align-items: center;
+  }
+  .pg-card .ico-c {
+    width: 32px; height: 32px; border-radius: 7px;
+    display: grid; place-items: center;
+    background: #fbf5e3;
+  }
+  .pg-card .nm { font-size: 13px; font-weight: 700; }
+  .pg-card .s { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 2px; }
+  .pg-card .scope { font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); }
+
+  .perm-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--paper);
+    overflow: hidden; font-size: 12px;
+  }
+  .perm-table thead th {
+    text-align: left; padding: 9px 12px; background: #fafbfc;
+    border-bottom: 1px solid var(--line); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); font-family: var(--font-en); font-weight: 600;
+  }
+  .perm-table td { padding: 10px 12px; border-bottom: 1px solid var(--line-2); }
+  .perm-table tr:last-child td { border-bottom: none; }
+  .perm-table .check {
+    display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--ink); color: white; font-size: 10px;
+  }
+  .perm-table .nope { color: var(--ink-5); font-family: var(--font-mono); }
+
+  /* rail in profile */
+  .r-card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 9px;
+    padding: 12px;
+  }
+  .r-card h5 {
+    margin: 0 0 10px; font-size: 11px; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-en); font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .r-card h5 .all { font-family: var(--font-mono); font-size: 10px; color: var(--ink-4); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .r-line {
+    display: flex; align-items: center; gap: 8px; padding: 6px 0;
+    border-bottom: 1px dashed var(--line-2); font-size: 12px;
+  }
+  .r-line:last-child { border-bottom: none; }
+  .r-line .l { color: var(--ink-3); }
+  .r-line .v { margin-left: auto; font-family: var(--font-mono); font-weight: 600; color: var(--ink); }
+
+  /* hidden views */
+  [data-view] { display: none; }
+  [data-view].is-active { display: block; }
+
+  /* annotation */
+  .annot {
+    position: absolute;
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px 10px; border: 1px solid var(--note); background: var(--note-bg); border-radius: 6px;
+    font-size: 11px; line-height: 1.5; color: #173f9c; max-width: 240px;
+    font-family: var(--font-en); font-weight: 500; pointer-events: none;
+  }
+  .annot::before {
+    content: attr(data-n); flex-shrink: 0;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--note); color: white;
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 700; font-family: var(--font-mono);
+  }
+  .annot b { color: #0a2a73; font-weight: 700; }
+  .annot code { font-family: var(--font-mono); font-size: 10px; background: white; padding: 1px 4px; border-radius: 3px; }
+  .pin-n {
+    display: inline-grid; place-items: center; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--note); color: white;
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+    vertical-align: middle; margin-left: 6px;
+  }
+
+  /* RATIONALE */
+  .rationale {
+    margin-top: 32px; padding: 24px 28px; background: var(--paper);
+    border: 1px solid var(--line); border-radius: 10px;
+  }
+  .rationale h2 { margin: 0 0 4px; font-size: 14px; font-family: var(--font-en); letter-spacing: -0.01em; }
+  .rationale .ratio-sub { color: var(--ink-3); font-size: 11px; font-family: var(--font-mono); margin-bottom: 18px; }
+  .compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;
+    padding: 16px; background: #fafbfc; border: 1px dashed var(--line); border-radius: 8px;
+  }
+  .compare h3 {
+    font-size: 11px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.06em;
+    font-family: var(--font-en); color: var(--ink-3); font-weight: 600;
+  }
+  .compare .flex h3 { color: #9a3b3b; }
+  .compare .tlt h3 { color: #1b6b3b; }
+  .compare ul { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.6; color: var(--ink-2); }
+  .compare ul li + li { margin-top: 4px; }
+  .compare ul b { color: var(--ink); }
+  .compare ul code { font-family: var(--font-mono); font-size: 11px; background: white; padding: 1px 4px; border-radius: 3px; }
+  .rationale-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .rationale-col h3 {
+    font-size: 12px; margin: 0 0 8px; color: var(--ink);
+    text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-en);
+  }
+  .rationale-col ul { margin: 0; padding-left: 18px; font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+  .rationale-col ul li + li { margin-top: 6px; }
+  .rationale-col ul li b { color: var(--ink); }
+  .rationale-col ul li code { font-family: var(--font-mono); font-size: 11px; background: #eef0f3; padding: 1px 4px; border-radius: 3px; color: var(--ink-2); }
+
+  /* spec strip */
+  .spec {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 14px;
+    font-family: var(--font-mono); font-size: 10px; color: var(--ink-3);
+  }
+  .spec div { padding: 7px 9px; border: 1px dashed var(--line); border-radius: 6px; background: var(--paper); }
+  .spec b { color: var(--ink); display: block; font-weight: 600; margin-bottom: 2px; letter-spacing: 0.04em; text-transform: uppercase; font-size: 9px; }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <div class="doc-head">
+    <div>
+      <h1>Teamlet — Members Wireframe <span style="color:var(--ink-4);font-weight:400">/ v1</span></h1>
+      <div class="sub">List + 조직도 toggle · row-expand to side sheet · profile detail with collapsible sections (was 16-item jump nav)</div>
+      <div class="pagenav">
+        <a href="Teamlet Home Wireframe.html">← 홈</a>
+        <a href="Teamlet Leave Management Wireframe.html">휴가 관리</a>
+        <a class="cur">구성원</a>
+        <a>워크플로우 (next)</a>
+        <a>권한·문서</a>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <b>Status</b> Working draft<br/>
+      <b>Reduced</b> 16 jumps → 7 acc · 16+ cols → 8 default<br/>
+      <b>Ref</b> flex /people · /user-invite
+    </div>
+  </div>
+
+  <!-- ============ FRAME 1: 구성원 목록 ============ -->
+  <div class="frame">
+    <div class="frame-bar">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="url">app.teamlet.io<b>/members</b></div>
+      <div class="frame-label">LIST</div>
+    </div>
+
+    <div class="app" style="position: relative;">
+
+      <!-- sidebar -->
+      <aside class="side">
+        <div class="org">
+          <div class="org-logo">T</div>
+          <div class="org-name">팀렛 주식회사<small>Pro · 142명</small></div>
+          <div class="org-caret">⌄</div>
+        </div>
+        <div class="status-pill">
+          <span class="tag">근무중</span>
+          <span class="t">09:12 · 2h 47m</span>
+          <span class="caret">⌄</span>
+        </div>
+        <div class="nav-group">
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>홈</a>
+          <a class="nav-item active"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15 14c2.8 0 5.5 1.6 5.5 5"/></svg>구성원</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M4 12a8 8 0 0 1 16 0"/><path d="M9 20l3-3 3 3"/></svg>휴가<span class="badge">3</span></a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h6M10 16h4"/></svg>워크플로우<span class="badge">7</span></a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></svg>조직도</a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">Workspace</div>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg>검색<span class="kbd">⌘K</span></a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0v5l1.5 2h-15L6 14z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>알림<span class="badge">12</span></a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">Admin</div>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2L10 21h4l.6-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5a7 7 0 0 0 .1-1.2z"/></svg>설정</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>권한 관리</a>
+        </div>
+        <div class="me">
+          <div class="av"></div>
+          <div><div class="name">김유민</div><div class="role">PRODUCT · ADMIN</div></div>
+        </div>
+      </aside>
+
+      <!-- main -->
+      <div class="main">
+        <div class="topbar">
+          <div class="search">
+            <span class="glyph"></span>
+            구성원 이름, 사번, 이메일, 조직 검색…
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px">⌘ K</span>
+          </div>
+          <div class="top-actions">
+            <button class="icon-btn"><span style="font-size:14px">◔</span><span class="pip"></span></button>
+            <button class="icon-btn">?</button>
+            <button class="btn ghost">엑셀 일괄 추가</button>
+            <button class="btn">+ 구성원 초대</button>
+          </div>
+        </div>
+
+        <main class="body-col">
+          <div class="page-h">
+            <div>
+              <h1 class="h-title">구성원</h1>
+              <div class="h-sub">전체 142명 · 재직 134 · 휴직 5 · 입사 예정 3</div>
+            </div>
+            <div class="vtog">
+              <span class="v active">
+                <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+                리스트
+              </span>
+              <span class="v">
+                <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></svg>
+                조직도
+              </span>
+            </div>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div class="l">재직</div>
+              <div class="v">134<small>명</small></div>
+              <div class="d">정규 <b>118</b> · 계약 16</div>
+            </div>
+            <div class="kpi">
+              <div class="l">이번 달 입사</div>
+              <div class="v">3<small>명</small></div>
+              <div class="d">온보딩 완료 <b>1</b> / 3</div>
+            </div>
+            <div class="kpi">
+              <div class="l">휴직</div>
+              <div class="v">5<small>명</small></div>
+              <div class="d">육아 <b>3</b> · 질병 2</div>
+            </div>
+            <div class="kpi">
+              <div class="l">평가/리뷰 미진행</div>
+              <div class="v">8<small>명</small></div>
+              <div class="d">2026 Q2 진행 <b>134/142</b></div>
+            </div>
+          </div>
+
+          <div class="filters">
+            <span class="chip"><span class="lbl">조직</span><span class="val">전사</span> <span class="x">⌄</span></span>
+            <span class="chip"><span class="lbl">재직 상태</span><span class="val">재직</span> <span class="x">⌄</span></span>
+            <span class="chip"><span class="lbl">근로유형</span><span class="val">전체</span> <span class="x">⌄</span></span>
+            <span class="chip add">+ 필터</span>
+            <span class="spread">
+              <span class="col-toggle">컬럼 8 / 24 표시 <span class="pin-n" data-n="1">1</span></span>
+              <button class="btn ghost sm">⬇ 내보내기</button>
+            </span>
+          </div>
+
+          <table class="mtable">
+            <thead>
+              <tr>
+                <th class="cb"><span class="cb-box"></span></th>
+                <th style="width: 22%">이름 <span class="arr">↑</span></th>
+                <th>사번</th>
+                <th>이메일</th>
+                <th>조직 · 직책</th>
+                <th>입사일</th>
+                <th>근로유형</th>
+                <th>상태</th>
+                <th>권한</th>
+                <th style="width: 16px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="active">
+                <td><span class="cb-box on"></span></td>
+                <td>
+                  <div class="ppl">
+                    <div class="av">유민</div>
+                    <div><div class="n">김유민</div><div class="m">charles@…</div></div>
+                  </div>
+                </td>
+                <td class="sn">001</td>
+                <td class="em">charles@jocodingax.ai</td>
+                <td>
+                  <div class="role-cell"><div class="r">Product</div><div class="o">프로덕트 매니저</div></div>
+                </td>
+                <td class="sn">2026. 5. 18</td>
+                <td><span class="perm">정규</span></td>
+                <td><span class="st work">재직</span></td>
+                <td><span class="perm admin">최고관리자</span></td>
+                <td><span class="row-caret">›</span></td>
+              </tr>
+
+              <tr>
+                <td><span class="cb-box"></span></td>
+                <td>
+                  <div class="ppl">
+                    <div class="av">수빈</div>
+                    <div><div class="n">강수빈</div><div class="m">DESIGN</div></div>
+                  </div>
+                </td>
+                <td class="sn">033</td>
+                <td class="em">subin@team.io</td>
+                <td>
+                  <div class="role-cell"><div class="r">Design</div><div class="o">시니어 디자이너</div></div>
+                </td>
+                <td class="sn">2025. 7. 18</td>
+                <td><span class="perm">정규</span></td>
+                <td><span class="st work">재직</span></td>
+                <td><span class="perm lead">조직장</span></td>
+                <td><span class="row-caret">›</span></td>
+              </tr>
+
+              <tr>
+                <td><span class="cb-box"></span></td>
+                <td>
+                  <div class="ppl">
+                    <div class="av">성현</div>
+                    <div><div class="n">고성현</div><div class="m">PM</div></div>
+                  </div>
+                </td>
+                <td class="sn">5001</td>
+                <td class="em">sh.ko@team.io</td>
+                <td>
+                  <div class="role-cell"><div class="r">PM</div><div class="o">프로덕트 매니저</div></div>
+                </td>
+                <td class="sn">2025. 2. 19</td>
+                <td><span class="perm">정규</span></td>
+                <td><span class="st work">재직</span></td>
+                <td><span class="perm">일반</span></td>
+                <td><span class="row-caret">›</span></td>
+              </tr>
+
+              <tr>
+                <td><span class="cb-box"></span></td>
+                <td>
+                  <div class="ppl">
+                    <div class="av">서연</div>
+                    <div><div class="n">박서연</div><div class="m">DESIGN</div></div>
+                  </div>
+                </td>
+                <td class="sn">042</td>
+                <td class="em">sy.park@team.io</td>
+                <td>
+                  <div class="role-cell"><div class="r">Design</div><div class="o">디자이너</div></div>
+                </td>
+                <td class="sn">2026. 4. 22</td>
+                <td><span class="perm">수습</span></td>
+                <td><span class="st work">재직</span></td>
+                <td><span class="perm">일반</span></td>
+                <td><span class="row-caret">›</span></td>
+              </tr>
+
+              <tr>
+                <td><span class="cb-box"></span></td>
+                <td>
+                  <div class="ppl">
+                    <div class="av">원재</div>
+                    <div><div class="n">허원재</div><div class="m">ENG</div></div>
+                  </div>
+                </td>
+                <td class="sn">013</td>
+                <td class="em">wj.heo@team.io</td>
+                <td>
+                  <div class="role-cell"><div class="r">Engineering</div><div class="o">백엔드 엔지니어</div></div>
+                </td>
+                <td class="sn">2024. 11. 4</td>
+                <td><span class="perm">정규</span></td>
+                <td><span class="st leave">군 휴직</span></td>
+                <td><span class="perm">일반</span></td>
+                <td><span class="row-caret">›</span></td>
+              </tr>
+
+              <tr>
+                <td><span class="cb-box"></span></td>
+                <td>
+                  <div class="ppl">
+                    <div class="av">도윤</div>
+                    <div><div class="n">한도윤</div><div class="m">DESIGN</div></div>
+                  </div>
+                </td>
+                <td class="sn">044</td>
+                <td class="em">dy.han@team.io</td>
+                <td>
+                  <div class="role-cell"><div class="r">Design</div><div class="o">디자이너</div></div>
+                </td>
+                <td class="sn">2026. 5. 26</td>
+                <td><span class="perm">수습</span></td>
+                <td><span class="st coming">입사 예정</span></td>
+                <td><span class="perm">일반</span></td>
+                <td><span class="row-caret">›</span></td>
+              </tr>
+
+              <tr>
+                <td><span class="cb-box"></span></td>
+                <td>
+                  <div class="ppl">
+                    <div class="av">민영</div>
+                    <div><div class="n">박민영</div><div class="m">DESIGN</div></div>
+                  </div>
+                </td>
+                <td class="sn">035</td>
+                <td class="em">my.park@team.io</td>
+                <td>
+                  <div class="role-cell"><div class="r">Design</div><div class="o">디자이너</div></div>
+                </td>
+                <td class="sn">2025. 7. 14</td>
+                <td><span class="perm">정규</span></td>
+                <td><span class="st work">재직</span></td>
+                <td><span class="perm">일반</span></td>
+                <td><span class="row-caret">›</span></td>
+              </tr>
+
+              <tr>
+                <td><span class="cb-box"></span></td>
+                <td>
+                  <div class="ppl">
+                    <div class="av">정협</div>
+                    <div><div class="n">오정협</div><div class="m">ENG</div></div>
+                  </div>
+                </td>
+                <td class="sn">032</td>
+                <td class="em">jh.oh@team.io</td>
+                <td>
+                  <div class="role-cell"><div class="r">Engineering</div><div class="o">시니어 엔지니어</div></div>
+                </td>
+                <td class="sn">2024. 5. 19</td>
+                <td><span class="perm">정규</span></td>
+                <td><span class="st gone">퇴직 예정</span></td>
+                <td><span class="perm">일반</span></td>
+                <td><span class="row-caret">›</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top: 12px; display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
+            <span>선택 1명 · 일괄 액션: 권한 변경 / 조직 이동 / 발령 / 비활성화</span>
+            <span>‹ 1 2 3 … 18 ›</span>
+          </div>
+
+        </main>
+
+        <!-- annotations -->
+        <div class="annot" data-n="1" style="top: 432px; left: 1100px;">
+          <div><b>기본 8 / 전체 24 컬럼</b> flex는 24컬럼 가로 스크롤이 기본. Teamlet은 자주 쓰는 8개만 default, 나머지는 토글.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FRAME 2: 조직도 뷰 ============ -->
+  <div class="frame">
+    <div class="frame-bar">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="url">app.teamlet.io<b>/members?view=org</b></div>
+      <div class="frame-label">ORG CHART</div>
+    </div>
+
+    <div class="app" style="min-height: 580px; position: relative;">
+      <aside class="side">
+        <div class="org">
+          <div class="org-logo">T</div>
+          <div class="org-name">팀렛 주식회사<small>Pro · 142명</small></div>
+          <div class="org-caret">⌄</div>
+        </div>
+        <div class="nav-group" style="margin-top: 8px;">
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>홈</a>
+          <a class="nav-item active"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15 14c2.8 0 5.5 1.6 5.5 5"/></svg>구성원</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M4 12a8 8 0 0 1 16 0"/><path d="M9 20l3-3 3 3"/></svg>휴가</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h6M10 16h4"/></svg>워크플로우</a>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <div class="search">
+            <span class="glyph"></span>구성원 이름, 사번, 이메일, 조직 검색…
+          </div>
+          <div class="top-actions">
+            <button class="btn ghost">엑셀 내보내기</button>
+            <button class="btn">+ 조직 추가</button>
+          </div>
+        </div>
+
+        <main class="body-col">
+          <div class="page-h">
+            <div>
+              <h1 class="h-title">조직도 <span class="pin-n" data-n="2">2</span></h1>
+              <div class="h-sub">4개 본부 · 11개 팀 · 142명</div>
+            </div>
+            <div class="vtog">
+              <span class="v"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>리스트</span>
+              <span class="v active"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></svg>조직도</span>
+            </div>
+          </div>
+
+          <div style="margin: 14px 0 14px;">
+            <div class="filters">
+              <span class="chip"><span class="lbl">기준</span><span class="val">현재 조직</span> <span class="x">⌄</span></span>
+              <span class="chip"><span class="lbl">표시</span><span class="val">팀장 + 인원수</span> <span class="x">⌄</span></span>
+              <span class="chip add">+ 필터</span>
+              <span class="spread">
+                <span class="col-toggle">확장 ⊕ &nbsp;&nbsp; 축소 ⊖ &nbsp;&nbsp; 100%</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="orgchart">
+            <div class="ot">
+              <div class="root">팀렛 주식회사 <span class="ct">142명</span></div>
+              <div class="ot-level">
+                <div class="ot-branch">
+                  <div class="node">프로덕트 본부 <span class="ct">42</span></div>
+                  <div class="ot-l2">
+                    <div class="node">디자인 <span class="ct">8</span></div>
+                    <div class="node">PM <span class="ct">6</span></div>
+                  </div>
+                </div>
+                <div class="ot-branch">
+                  <div class="node">엔지니어링 본부 <span class="ct">68</span></div>
+                  <div class="ot-l2">
+                    <div class="node">프론트엔드 <span class="ct">14</span></div>
+                    <div class="node">백엔드 <span class="ct">21</span></div>
+                    <div class="node">풀스택 <span class="ct">9</span></div>
+                    <div class="node">AI <span class="ct">7</span></div>
+                  </div>
+                </div>
+                <div class="ot-branch">
+                  <div class="node">사업 본부 <span class="ct">21</span></div>
+                  <div class="ot-l2">
+                    <div class="node">세일즈 <span class="ct">12</span></div>
+                    <div class="node">CS <span class="ct">9</span></div>
+                  </div>
+                </div>
+                <div class="ot-branch">
+                  <div class="node">경영지원 <span class="ct">11</span></div>
+                  <div class="ot-l2">
+                    <div class="node">HR <span class="ct">5</span></div>
+                    <div class="node">재무 <span class="ct">4</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <div class="annot" data-n="2" style="top: 96px; left: 1130px; max-width: 220px;">
+        <div><b>같은 데이터, 같은 라우트</b> 리스트 ↔ 조직도 토글로만 전환 (URL <code>?view=org</code>). 별도 페이지 X.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FRAME 3: 구성원 상세 (프로필) ============ -->
+  <div class="frame">
+    <div class="frame-bar">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="url">app.teamlet.io<b>/members/박서연</b></div>
+      <div class="frame-label">PROFILE DETAIL</div>
+    </div>
+
+    <div class="profile-shell" style="position: relative;">
+      <!-- sidebar -->
+      <aside class="side">
+        <div class="org">
+          <div class="org-logo">T</div>
+          <div class="org-name">팀렛 주식회사<small>Pro · 142명</small></div>
+        </div>
+        <div class="nav-group" style="margin-top: 8px;">
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>홈</a>
+          <a class="nav-item active"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15 14c2.8 0 5.5 1.6 5.5 5"/></svg>구성원</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M4 12a8 8 0 0 1 16 0"/><path d="M9 20l3-3 3 3"/></svg>휴가</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h6M10 16h4"/></svg>워크플로우</a>
+        </div>
+        <div style="margin-top: auto; padding: 10px; font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); border-top: 1px solid var(--line-2);">
+          ← 구성원 목록
+        </div>
+      </aside>
+
+      <div class="prof-main">
+
+        <!-- breadcrumb in topbar -->
+        <div class="topbar">
+          <div style="font-size: 12px; color: var(--ink-3); font-family: var(--font-mono);">
+            <a style="text-decoration: none; color: var(--ink-3);">구성원</a>
+            <span style="margin: 0 6px;">/</span>
+            <span style="color: var(--ink); font-weight: 600;">박서연</span>
+          </div>
+          <div class="top-actions">
+            <button class="icon-btn">‹</button>
+            <button class="icon-btn">›</button>
+            <button class="btn ghost sm">⬇ 다운로드</button>
+            <button class="btn ghost sm">⋯ 더보기</button>
+            <button class="btn sm">정보 변경</button>
+          </div>
+        </div>
+
+        <!-- HERO -->
+        <div class="phero">
+          <div class="pav">서연</div>
+          <div>
+            <h2 class="pname">박서연 <span class="nick">@sy.park</span></h2>
+            <div class="pmeta">
+              <span><b>디자이너</b></span>
+              <span>DESIGN · 프로덕트 본부</span>
+              <span>사번 <b>042</b></span>
+              <span>입사 <b>2026. 4. 22</b> (재직 35일)</span>
+            </div>
+            <div class="pquick">
+              <span class="q"><b>연차</b> 0.5 / 7.5일</span>
+              <span class="q"><b>이번 주 근무</b> 32:14 / 40h</span>
+              <span class="q"><b>결재 대기</b> 1건</span>
+              <span class="q"><b>온보딩</b> 8/12 완료</span>
+              <span class="q"><b>2FA</b> 활성</span>
+            </div>
+          </div>
+          <div class="pactions">
+            <div class="row"><button class="btn ghost sm">메시지</button><button class="btn ghost sm">조직 이동</button></div>
+            <div class="row"><button class="btn ghost sm">발령</button><button class="btn sm">정보 변경</button></div>
+          </div>
+        </div>
+
+        <!-- TABS (3 per brief) -->
+        <div class="ptabs">
+          <div class="ptab active" data-ptab="info">기본 정보 <span class="pin-n" data-n="3">3</span></div>
+          <div class="ptab" data-ptab="posting">발령 이력 <span class="count">4</span></div>
+          <div class="ptab" data-ptab="perm">권한 <span class="count">2</span></div>
+        </div>
+
+        <div class="pbody">
+          <!-- pbody-main -->
+          <div class="pbody-main">
+
+            <!-- VIEW: info -->
+            <section data-view="info" class="is-active">
+
+              <div class="acc open">
+                <div class="acc-h">
+                  <span class="num">01</span>
+                  <span class="t">인사 정보</span>
+                  <span class="s">사번 · 직무 · 직군 · 조직 · 직책</span>
+                  <span class="car">⌃</span>
+                </div>
+                <div class="acc-b">
+                  <div class="fg">
+                    <div class="f"><div class="l">사번</div><div class="v">042</div></div>
+                    <div class="f"><div class="l">직무</div><div class="v">디자이너</div></div>
+                    <div class="f"><div class="l">직군</div><div class="v">Design</div></div>
+                    <div class="f"><div class="l">직책</div><div class="v na">미지정</div></div>
+                    <div class="f"><div class="l">조직</div><div class="v">디자인 팀 <span class="badge">기본</span></div></div>
+                    <div class="f"><div class="l">조직장 여부</div><div class="v">아니오</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="acc open">
+                <div class="acc-h">
+                  <span class="num">02</span>
+                  <span class="t">기본 정보</span>
+                  <span class="s">이름 · 연락처 · 주소 · 국적</span>
+                  <span class="car">⌃</span>
+                </div>
+                <div class="acc-b">
+                  <div class="fg">
+                    <div class="f"><div class="l">본명 · 닉네임</div><div class="v">박서연 <span class="small">@sy.park</span></div></div>
+                    <div class="f"><div class="l">이메일</div><div class="v">sy.park@team.io</div></div>
+                    <div class="f"><div class="l">개인 이메일</div><div class="v na">미입력</div></div>
+                    <div class="f"><div class="l">휴대전화</div><div class="v">010-****-3180</div></div>
+                    <div class="f"><div class="l">주민등록번호</div><div class="v">******-1******</div></div>
+                    <div class="f"><div class="l">생일</div><div class="v">5월 22일</div></div>
+                    <div class="f"><div class="l">국적</div><div class="v">대한민국 (KOR)</div></div>
+                    <div class="f"><div class="l">주소</div><div class="v na">미입력</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="acc open">
+                <div class="acc-h">
+                  <span class="num">03</span>
+                  <span class="t">근로 계약</span>
+                  <span class="s">계약 기간 · 근로유형 · 수습 · 근무지</span>
+                  <span class="car">⌃</span>
+                </div>
+                <div class="acc-b">
+                  <div class="fg">
+                    <div class="f"><div class="l">입사 유형</div><div class="v">신규 입사</div></div>
+                    <div class="f"><div class="l">근로유형</div><div class="v">정규직 <span class="badge" style="background:#fbf5e3;color:#7a5b00;">수습 중</span></div></div>
+                    <div class="f"><div class="l">계약 시작</div><div class="v">2026. 4. 22</div></div>
+                    <div class="f"><div class="l">계약 종료</div><div class="v na">정함 없음</div></div>
+                    <div class="f"><div class="l">수습 기간</div><div class="v">2026. 4. 22 ~ 7. 21 (90일)</div></div>
+                    <div class="f"><div class="l">근무지</div><div class="v">본사 (서울)</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="acc">
+                <div class="acc-h">
+                  <span class="num">04</span>
+                  <span class="t">임금 · 급여</span>
+                  <span class="s">연봉 · 급여 항목 · 지급 계좌 · 원천징수</span>
+                  <span class="car">⌄</span>
+                </div>
+              </div>
+
+              <div class="acc">
+                <div class="acc-h">
+                  <span class="num">05</span>
+                  <span class="t">근무 · 휴가</span>
+                  <span class="s">근무 정책 · 연차 정책 · 초과 근무 보상</span>
+                  <span class="car">⌄</span>
+                </div>
+              </div>
+
+              <div class="acc">
+                <div class="acc-h">
+                  <span class="num">06</span>
+                  <span class="t">학력 · 경력 · 자격</span>
+                  <span class="s">학력 1 · 경력 2 · 자격증 0</span>
+                  <span class="car">⌄</span>
+                </div>
+              </div>
+
+              <div class="acc">
+                <div class="acc-h">
+                  <span class="num">07</span>
+                  <span class="t">가족 · 특이사항 · 기타</span>
+                  <span class="s">부양가족 · 비상연락처 · 메모</span>
+                  <span class="car">⌄</span>
+                </div>
+              </div>
+
+            </section>
+
+            <!-- VIEW: posting -->
+            <section data-view="posting">
+
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                <div>
+                  <div style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em;">발령 이력</div>
+                  <div style="font-size: 16px; font-weight: 700; margin-top: 2px;">총 4건 · 마지막 발령 2026. 4. 22</div>
+                </div>
+                <div style="margin-left: auto; display: flex; gap: 6px;">
+                  <button class="btn ghost sm">⬇ 발령 명부</button>
+                  <button class="btn sm">+ 발령 추가</button>
+                </div>
+              </div>
+
+              <div class="ptline">
+                <div class="ev now">
+                  <div class="when">2026. 4. 22 (월) · 1달 전</div>
+                  <div class="t">신규 입사 — 디자인 팀 / 디자이너</div>
+                  <div class="d">정규직 입사 (수습 90일) · 신규 사번 042 발급</div>
+                  <div class="delta">
+                    <span><b>조직</b> ─ <span class="arr">→</span> 디자인 팀</span>
+                    <span><b>직무</b> ─ <span class="arr">→</span> 디자이너</span>
+                    <span><b>근로유형</b> ─ <span class="arr">→</span> 정규직 (수습)</span>
+                  </div>
+                </div>
+                <div class="ev">
+                  <div class="when">2026. 4. 18 (목) · 입사 4일 전</div>
+                  <div class="t">입사 확정 — 계약서 서명 완료</div>
+                  <div class="d">근로계약서 · 연봉계약서 · 개인정보 동의서 3종 서명</div>
+                </div>
+                <div class="ev">
+                  <div class="when">2026. 4. 5 (토) · 입사 17일 전</div>
+                  <div class="t">처우 협의 완료 — 디자이너 (D2 트랙)</div>
+                  <div class="d">최종 면접 결과 통보 · 처우 협의 1회</div>
+                </div>
+                <div class="ev">
+                  <div class="when">2026. 3. 12 (목)</div>
+                  <div class="t">채용 지원 — Designer (Senior) 공고</div>
+                  <div class="d">서류 통과 → 1차 면접 → 최종 면접 → 처우 협의</div>
+                </div>
+              </div>
+
+            </section>
+
+            <!-- VIEW: perm -->
+            <section data-view="perm">
+
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                <div>
+                  <div style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em;">권한 그룹</div>
+                  <div style="font-size: 16px; font-weight: 700; margin-top: 2px;">2개 그룹 · 일반 구성원</div>
+                </div>
+                <div style="margin-left: auto;">
+                  <button class="btn ghost sm">+ 권한 그룹 추가</button>
+                </div>
+              </div>
+
+              <div class="pg-card">
+                <div class="ico-c">👤</div>
+                <div>
+                  <div class="nm">일반 구성원</div>
+                  <div class="s">기본 권한 · 자동 부여</div>
+                </div>
+                <div class="scope">전사 적용</div>
+              </div>
+
+              <div class="pg-card">
+                <div class="ico-c" style="background: #eef0f3;">🎨</div>
+                <div>
+                  <div class="nm">디자인 팀</div>
+                  <div class="s">팀 내부 자료 열람 · 동료 평가 작성</div>
+                </div>
+                <div class="scope">디자인 팀 한정</div>
+              </div>
+
+              <h4 style="margin: 22px 0 10px; font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-en);">
+                실제 가지고 있는 권한 <span style="font-family: var(--font-mono); color: var(--ink-4); text-transform: none; letter-spacing: 0;">(그룹 합산)</span>
+              </h4>
+
+              <table class="perm-table">
+                <thead>
+                  <tr>
+                    <th style="width: 32%">권한</th>
+                    <th>적용 범위</th>
+                    <th style="width: 70px;" class="num">읽기</th>
+                    <th style="width: 70px;" class="num">쓰기</th>
+                    <th style="width: 70px;" class="num">승인</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>본인 인사 정보</td><td>본인</td><td style="text-align:right;"><span class="check">✓</span></td><td style="text-align:right;"><span class="check">✓</span></td><td style="text-align:right;"><span class="nope">─</span></td></tr>
+                  <tr><td>본인 휴가 신청</td><td>본인</td><td style="text-align:right;"><span class="check">✓</span></td><td style="text-align:right;"><span class="check">✓</span></td><td style="text-align:right;"><span class="nope">─</span></td></tr>
+                  <tr><td>팀 내부 문서</td><td>디자인 팀</td><td style="text-align:right;"><span class="check">✓</span></td><td style="text-align:right;"><span class="nope">─</span></td><td style="text-align:right;"><span class="nope">─</span></td></tr>
+                  <tr><td>동료 평가 작성</td><td>디자인 팀</td><td style="text-align:right;"><span class="check">✓</span></td><td style="text-align:right;"><span class="check">✓</span></td><td style="text-align:right;"><span class="nope">─</span></td></tr>
+                  <tr><td>구성원 인사 정보 열람</td><td>전사</td><td style="text-align:right;"><span class="nope">─</span></td><td style="text-align:right;"><span class="nope">─</span></td><td style="text-align:right;"><span class="nope">─</span></td></tr>
+                  <tr><td>휴가 부여 / 조정</td><td>전사</td><td style="text-align:right;"><span class="nope">─</span></td><td style="text-align:right;"><span class="nope">─</span></td><td style="text-align:right;"><span class="nope">─</span></td></tr>
+                </tbody>
+              </table>
+
+            </section>
+
+          </div>
+
+          <!-- pbody-rail -->
+          <aside class="pbody-rail">
+            <div class="r-card">
+              <h5>요약 <span class="pin-n" data-n="4">4</span></h5>
+              <div class="r-line"><span class="l">근속</span><span class="v">35일</span></div>
+              <div class="r-line"><span class="l">연차 잔여</span><span class="v">0.5 / 7.5</span></div>
+              <div class="r-line"><span class="l">근무 시간 (이번 주)</span><span class="v">32:14</span></div>
+              <div class="r-line"><span class="l">총 근무 (입사~)</span><span class="v">240:00</span></div>
+              <div class="r-line"><span class="l">미완료 결재</span><span class="v">1</span></div>
+            </div>
+
+            <div class="r-card">
+              <h5>온보딩 진행 <span class="all">8 / 12</span></h5>
+              <div style="background: var(--line-2); height: 5px; border-radius: 3px; overflow: hidden; margin-bottom: 10px;">
+                <div style="background: var(--ink); height: 100%; width: 66%; border-radius: 3px;"></div>
+              </div>
+              <div style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); line-height: 1.7;">
+                ✓ 입사 서류 제출<br/>
+                ✓ 사번 발급<br/>
+                ✓ 노트북 수령<br/>
+                ✓ 메일 계정 생성<br/>
+                ✓ 2FA 설정<br/>
+                ✓ 입사 오리엔테이션<br/>
+                ✓ 팀 소개 미팅<br/>
+                ✓ 초기 비밀번호 변경<br/>
+                <span style="color: var(--ink-4);">◯ 멘토 매칭</span><br/>
+                <span style="color: var(--ink-4);">◯ 첫 1:1 일정</span><br/>
+                <span style="color: var(--ink-4);">◯ 30일 회고</span><br/>
+                <span style="color: var(--ink-4);">◯ 수습 평가</span>
+              </div>
+            </div>
+
+            <div class="r-card">
+              <h5>최근 활동</h5>
+              <div style="font-size: 11px; color: var(--ink-2); line-height: 1.7;">
+                <b style="font-family: var(--font-kr); font-weight: 600;">반차 신청</b> · 오늘 09:12<br/>
+                <span style="font-family: var(--font-mono); color: var(--ink-3);">5. 22 (금) · 승인완료</span><br/><br/>
+                <b style="font-family: var(--font-kr); font-weight: 600;">2FA 설정 완료</b><br/>
+                <span style="font-family: var(--font-mono); color: var(--ink-3);">5일 전</span><br/><br/>
+                <b style="font-family: var(--font-kr); font-weight: 600;">근로계약서 서명</b><br/>
+                <span style="font-family: var(--font-mono); color: var(--ink-3);">2026. 4. 18</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- annotations -->
+      <div class="annot" data-n="3" style="top: 318px; left: 1130px; max-width: 220px;">
+        <div><b>16 점프 → 7 acc</b> flex 우측 16개 점프 메뉴를 본문 collapse 7개로 통합. 필요한 것만 펼침.</div>
+      </div>
+      <div class="annot" data-n="4" style="top: 462px; left: 25px; max-width: 200px;">
+        <div><b>우측 레일은 "요약·진행·활동"</b>으로 단순화. 점프 메뉴가 아닌 정보성 위젯. 온보딩 진행률이 모든 신입의 1번 위젯.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec">
+    <div><b>Grid</b>240 + 1fr + 280 / 1440</div>
+    <div><b>List cols</b>8 default · 24 total</div>
+    <div><b>Profile tabs</b>3 (per brief)</div>
+    <div><b>Acc sections</b>7 (was 16 jumps)</div>
+    <div><b>Hero quick stats</b>5 chips</div>
+    <div><b>Status</b>4 dot shapes</div>
+  </div>
+
+  <!-- RATIONALE -->
+  <div class="rationale">
+    <h2>flex와의 차이 — 구성원 영역</h2>
+    <div class="ratio-sub">brief의 3탭 구조(기본 정보 / 발령 이력 / 권한)를 그대로 따르되, 정보 위계를 재구성</div>
+
+    <div class="compare">
+      <div class="flex">
+        <h3>flex (현재)</h3>
+        <ul>
+          <li><b>여러 명 추가</b> 화면이 24컬럼 가로 스크롤 인라인 테이블</li>
+          <li><b>프로필 우측 16개 점프 메뉴</b> (인사/기본/근로계약/임금계약/급여지급/근무/초과근무보상/휴가/쉬는 날/휴직 이력/수상/징계/경력/학력/특이사항/가족)</li>
+          <li><b>프로필 5탭</b> 정보/성장/교육/문서·증명서/인사노트</li>
+          <li><b>"입력하기"</b>가 모든 빈 필드에 반복 — 시각적 노이즈</li>
+          <li><b>발령 이력</b>이 별도 페이지로 분리</li>
+        </ul>
+      </div>
+      <div class="tlt">
+        <h3>Teamlet (이번)</h3>
+        <ul>
+          <li><b>리스트 8컬럼 + 컬럼 토글</b> · 가로 스크롤 0</li>
+          <li><b>본문 acc 7개</b> 인사 / 기본 / 근로계약 / 임금·급여 / 근무·휴가 / 학력·경력·자격 / 가족·기타</li>
+          <li><b>프로필 3탭</b> (brief 준수) 기본 정보 / 발령 이력 / 권한</li>
+          <li><b>빈 값은 "미입력"</b> 한 가지로 통일 + na 컬러 — 액션은 acc 펼친 후 한 번에</li>
+          <li><b>발령 이력은 프로필 안의 탭</b> · 채용/처우협의/입사/발령이 하나의 타임라인</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>세부 설계 결정</h2>
+    <div class="ratio-sub">정보 그룹화 · 빈 상태 · 권한 가시화</div>
+
+    <div class="rationale-grid">
+      <div class="rationale-col">
+        <h3>1. 리스트 전략</h3>
+        <ul>
+          <li>기본 컬럼 <b>8개</b>: 이름 · 사번 · 이메일 · 조직·직책 · 입사일 · 근로유형 · 상태 · 권한</li>
+          <li>나머지 16개는 <b>컬럼 토글</b>로. 사용자별로 본 컬럼 조합은 로컬 저장</li>
+          <li>일괄 액션은 <b>선택 후 footer bar</b>로 노출 — 모달 stack 없음</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>2. 리스트 ↔ 조직도</h3>
+        <ul>
+          <li>같은 데이터의 두 단면 — URL <code>?view=org</code>로만 분기, 별도 페이지 X</li>
+          <li>조직도는 <b>"팀 + 인원수"</b> 카드만 표시. 클릭 시 해당 팀 리스트로 drill</li>
+          <li>flex는 조직도가 미완성 — Teamlet은 v1부터 1-depth 카드로 시작, 2-depth는 옵션</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>3. 프로필 hero</h3>
+        <ul>
+          <li>상단에 <b>5개 quick chips</b>: 연차 · 근무 · 결재 · 온보딩 · 2FA — 가장 자주 확인</li>
+          <li>flex의 우측 사이드(profile + jump menu)를 hero로 위로 끌어올림</li>
+          <li>액션 4개 (메시지/조직 이동/발령/정보 변경)만 노출. 그 외는 <code>⋯ 더보기</code></li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>4. acc 그룹화</h3>
+        <ul>
+          <li>16개 jump → <b>7개 의미 그룹</b>: 인사/기본/근로계약/임금급여/근무휴가/학력경력자격/가족기타</li>
+          <li>첫 3개 (인사·기본·근로계약)는 <b>기본 펼침</b> — 90% 케이스 커버</li>
+          <li>각 acc에 <b>요약 sub-text</b> (예: "학력 1 · 경력 2 · 자격증 0") 펼치기 전 의사결정 가능</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>5. 발령 이력</h3>
+        <ul>
+          <li>채용 지원부터 입사·발령까지 <b>하나의 타임라인</b>으로 연결</li>
+          <li>각 이벤트에 <b>delta box</b> (조직/직무/근로유형의 before → after)</li>
+          <li>flex는 발령 이력에 채용 단계 미포함 — Teamlet은 한 사람의 전체 경로 가시화</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>6. 권한 가시화</h3>
+        <ul>
+          <li>flex는 "권한 그룹"만 보임 → 실제 무슨 권한인지 모름</li>
+          <li>Teamlet은 <b>그룹 + 실제 권한 표</b> 2단으로 (읽기/쓰기/승인 × 범위)</li>
+          <li>그룹은 add/remove, 실제 권한은 자동 계산 — 권한 인지 비용 ↓</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // sidebar nav
+  document.querySelectorAll('.nav-item').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const sb = a.closest('.side');
+      if (!sb) return;
+      sb.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+      a.classList.add('active');
+    });
+  });
+
+  // view toggle (list / org)
+  document.querySelectorAll('.vtog').forEach(g => {
+    g.querySelectorAll('.v').forEach(v => {
+      v.addEventListener('click', () => {
+        g.querySelectorAll('.v').forEach(x => x.classList.remove('active'));
+        v.classList.add('active');
+      });
+    });
+  });
+
+  // profile tabs
+  const ptabs = document.querySelectorAll('.ptab');
+  ptabs.forEach(t => {
+    t.addEventListener('click', () => {
+      const root = t.closest('.prof-main');
+      root.querySelectorAll('.ptab').forEach(x => x.classList.remove('active'));
+      root.querySelectorAll('[data-view]').forEach(v => v.classList.remove('is-active'));
+      t.classList.add('active');
+      const key = t.dataset.ptab;
+      root.querySelector(`[data-view="${key}"]`).classList.add('is-active');
+    });
+  });
+
+  // accordions
+  document.querySelectorAll('.acc-h').forEach(h => {
+    h.addEventListener('click', () => h.parentElement.classList.toggle('open'));
+  });
+
+  // table row click
+  document.querySelectorAll('.mtable tbody tr').forEach(tr => {
+    tr.addEventListener('click', () => {
+      tr.closest('tbody').querySelectorAll('tr').forEach(x => x.classList.remove('active'));
+      tr.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

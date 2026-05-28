@@ -204,7 +204,7 @@ export function EditMemberButton({ employee }: { employee: EmployeeDetail }) {
           {error && (
             <p
               role="alert"
-              className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700"
+              className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
             >
               {error}
             </p>

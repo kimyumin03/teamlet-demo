@@ -3,7 +3,7 @@
 > 세션 시작 시 이 파일을 먼저 읽고, 작업이 끝나면 **다음에 할 일** 섹션을 업데이트하세요.
 > 상세 스펙은 `CLAUDE.md` + `/docs` 참조.
 
-## 전체 진행도 (2026-05-26 세션5 기준)
+## 전체 진행도 (2026-05-28 기준)
 
 | 영역 | 상태 | 비고 |
 |---|---|---|
@@ -11,26 +11,28 @@
 | DB 스키마 + 시드 | ✅ P1~P5 + 확장 | 마이그레이션 12개 (`0_init` ~ `12_google_oauth`) + announcements/cc 테이블 (db push) |
 | Shared 패키지 | ✅ 스키마 확장 중 | schemas: 사원/정책/휴가/양식/회사/공휴일/프로필/비밀번호 |
 | UI 시스템 | 🟡 기초만 | theme + primitives 3 / patterns 3 |
+| **디자인 시스템 교체** | ✅ 완료 | `teamlet_design/` 기반 전면 교체 — 토큰/컴포넌트/레이아웃 (⚠️ 런타임 미검증) |
 | **P1 인증/가입** | ✅ 완료 + 강화 | 이메일 전용 로그인 + 플랫폼 관리자 2단계 비밀키 + 회원가입 이름/이메일/연락처만 + 회사 문서 업로드 |
 | **P1 권한** | ✅ 완료 | 평가/CRUD/UserRole/락아웃/부트스트랩 + isOrgHead 동적역할 + 권한 운영 UI(배정·매트릭스) ✓ |
 | **P2 Core HR (구성원/조직/직책)** | ✅ 완료 | 탭 상세 + 확장 필드 + 상태/고용형태 필터 + CSV 일괄 등록 + 휴가·결재 탭 + **인사 발령 이력 탭** |
-| **P3 휴가** | ✅ UX 고도화 완료 | /leave 탭 구조(대시보드/신청내역) + 진행 바 잔여 카드 + 상태 필터 + 팀 캘린더 ✓ |
+| **P3 휴가** | ✅ 디자인 교체 완료 | 히어로 카드 + 연간 분석 바 + 타입 그리드 + 신청 이력 탭 |
 | **P3 휴가 정책** | 🟡 부분 | LeavePolicy CRUD·배정 + **연차 자동부여 엔진(MVP)** ✓ / 소멸·이월 미구현 |
-| **P4 워크플로우** | ✅ MVP 완료 | /workflow + 3단계 위저드 + 순차 결재 강제 ✓ |
+| **P4 워크플로우** | ✅ 디자인 교체 완료 | DocKindBadge + WaitBadge + StepLine + SectionDivider + 3탭 |
 | **P4 양식 빌더** | ✅ 완료 | FormTemplate CRUD + 필드 편집 UI (`/settings/form-templates`) |
 | **P5 채용** | ✅ 강화 완료 | 공고 목록 + 상태 필터 + 후보자 목록/칸반/상세 + 메모 ✓ |
 | **구성원 CSV** | ✅ 완료 | 가져오기 + 내보내기 (`/api/members/export`) |
 | **P6 문서·증명서** | ✅ MVP 완료 | /documents 보관소 + /documents/certificates 발급/인쇄 ✓ |
 | **P7 보안** | 🟡 강화 | 보안 정책 CRUD + 감사 로그 ✓ / **TOTP 2FA 개인 설정·로그인 검증 구현** / IP 제한은 정책 저장만(강제 미적용) |
 | **P8 알림** | ✅ 강화 완료 | 알림 벨 패널 + /notifications 전용 페이지 (탭/읽음 처리) ✓ |
-| **회사 설정** | ✅ 완료 | 회사 정보 수정 + 공휴일 관리 |
-| **개인 설정** | ✅ 완료 | /settings/profile — 프로필 수정 + 비밀번호 변경 |
+| **회사 설정** | ✅ 디자인 교체 완료 | 로고 카드 + set-card + 2열 필드 + 공휴일 4열 그리드 |
+| **개인 설정** | ✅ 디자인 교체 완료 | 그라디언트 아바타 카드 + set-card + 2열 필드 |
+| **설정 운영 페이지** | ✅ 디자인 교체 완료 | permissions/leave-policies/leave-types/approval-policies/form-templates/join-requests — set-card 패턴 |
 | **⌘K 커맨드 팔레트** | ✅ 완료 | 구성원 검색 + 전체 페이지 네비게이션 |
-| **홈 대시보드** | ✅ 고도화 완료 | 3탭(홈피드/회사소식/할일) + 미니 캘린더 사이드바 + 스탯카드 + 빠른 이동 |
+| **홈 대시보드** | ✅ 디자인 교체 완료 | 2-col grid + HomeRail + 히어로 인사말 + KPI 카드 + PostCard |
+| **구성원 페이지** | ✅ 디자인 교체 완료 | KPI 카드 3개 + 뷰 토글 + MembersFilterBar + 전체 테이블 |
 | 도메인 권한 가드 | ✅ 완료 | 휴가/채용/증명서/문서/설정 모듈 assertPermission 적용 |
-| **플랫폼 운영 콘솔** | ✅ 강화 완료 | `/admin` — 전용 콘솔 UI(dark sidebar) + 사용자 관리 + 회사 신청/목록/통계 |
-| **설정 레이아웃** | ✅ 고도화 완료 | (settings) 독립 라우트 그룹 + UX 고도화(홈 아이콘 브레드크럼·아바타·구분선·sticky 사이드) |
-| **HR 휴가 관리** | 🟡 구현됨 | `/hr/leave` — 보유현황 + 사용내역 + 맞춤 부여 + **연차 소멸·이월 버튼** ⚠️ 런타임 미검증 |
+| **플랫폼 운영 콘솔** | ✅ 디자인 교체 완료 | `/admin` — 디자인 토큰 전체 교체 (zinc 제거) |
+| **HR 휴가 관리** | ✅ 디자인 교체 완료 | 2열 레이아웃(테이블+상세패널) + KPI 4개 + 미적용 타입 점선 배지 ⚠️ 런타임 미검증 |
 | **연차 소멸·이월** | 🟡 구현됨 | `processLeaveExpiry` + `ExpiryButton` — 정책 기반 소멸·이월 (멱등) ⚠️ 런타임 미검증 |
 | **실시간 알림(SSE)** | ✅ 완료 | `/api/notifications/stream` — 15초 폴링 SSE + `NotificationBell` liveCount 구독 |
 | **공지사항 수정/삭제** | ✅ 완료 | `AnnouncementActions` 드롭다운 (수정 다이얼로그·삭제·고정 토글), 작성자만 노출 |
@@ -40,10 +42,10 @@
 
 ## 현재 위치
 
-- **Phase**: P1~P8 + UX 고도화(구성원/어드민) + Flex 레퍼런스 기반 리디자인 진행 중
+- **Phase**: 디자인 시스템 교체 완료 → 기능 작업 재개 단계
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: `37e1a1f docs: 2026-05-22 세션2 진행 내역 정리` (오늘 작업은 미커밋)
+- **마지막 커밋**: `37e1a1f docs: 2026-05-22 세션2 진행 내역 정리` (2026-05-28 작업 전체 미커밋)
 - **dev 서버**: `http://localhost:3001` (포트 3001 고정)
 - **마이그레이션**: 12개 + `appointments` 테이블 — db push 적용
 
@@ -62,6 +64,20 @@
 - 휴가-워크플로우 통합 Bridge — `LeaveRequest.formDocumentId` FK + `requestLeave`가 FormDocument/ApprovalLine 동시 생성 + `approveDocument`/`rejectDocument` 최종 승인 시 `finalizeLeave*` 자동 호출 + 결재자 선택 UI
 - 신규 직원 등록 시 HIRE 발령 자동 생성
 - **TOTP 2FA** — `UserMFA` 모델 + `otplib` + 개인 설정 QR 설정 흐름 + 로그인 `mfaCode` 검증
+
+### ✅ 완료 (2026-05-28 — 디자인 시스템 교체)
+- **전체 디자인 토큰 교체** — zinc/slate 하드코딩 → `foreground/background/border` 토큰 + 뱃지 `border` 통일 (컴포넌트 57개)
+- **홈** — 2-col grid + HomeRail 340px + 히어로 인사말(웨이브) + KPI 카드 + PostCard + 탭(홈피드/회사소식/할일)
+- **구성원** — KPI 카드 3개 + 뷰 토글(리스트/조직도) + MembersFilterBar + 전체 테이블(체크박스·아바타·상태 배지)
+- **워크플로우** — DocKindBadge + WaitBadge(D+n) + StepLine + SectionDivider + 3탭(결재대기/내가요청한/완료·참조)
+- **개인 휴가** — 그라디언트 히어로 카드(연차 잔여 56px) + 연간 분석 바 + 타입 그리드 + 탭("휴가 개요/신청 이력")
+- **HR 휴가 관리** — 2열 레이아웃(테이블+상세패널 360px) + KPI 4개 + 미적용 타입 점선 배지
+- **설정 프로필** — 그라디언트 아바타 카드 + set-card 구조 + 220px 레이블 2열 필드
+- **설정 회사 정보** — 로고 업로드 카드 + 읽기전용 카드 + set-card + 2열 필드
+- **설정 공휴일** — 4열 그리드(날짜·이름·타입 배지·버튼) + 법정(destructive)/회사(purple) 배지
+- **설정 운영 6페이지** — permissions/leave-policies/leave-types/approval-policies/form-templates/join-requests — set-card 패턴 + h3 + 설명
+- **설정 네비게이션** — 회사 그룹 ADMIN 배지 추가
+- **어드민 콘솔** — zinc 완전 제거 → 디자인 토큰
 
 ### 🟡 다음 (UX 고도화 — Flex 레퍼런스 기반)
 1. ~~**홈 대시보드**~~ ✅ 완료 — 3탭(홈피드/회사소식/할일) + 미니 캘린더 + 스탯카드
@@ -85,6 +101,33 @@
 - 모바일 반응형 (웹 우선이라 후순위)
 
 ## 최근 한 일
+
+### 2026-05-28 — 디자인 시스템 전면 교체 (`teamlet_design/` 기반)
+
+**설계**
+- `teamlet_design/` 폴더의 JSX/HTML 프로토타입을 기준으로 전체 UI 교체
+- 디자인 토큰: `--bg-primary/secondary/tertiary`, `--fg/fg-muted/fg-subtle`, `--border/border-strong`, `--primary`, `--destructive` 등
+- 뱃지 패턴: `border + rounded + font-mono + 색상별 조합` 통일
+
+**페이지별 교체 내용**
+- **홈**: `grid-cols-[1fr_340px]` 레이아웃 + `HomeRail` + 히어로 인사말(wave 애니메이션) + KPI 카드 + `PostCard` (공지사항 피드) + `WelcomeTabs`
+- **구성원**: KPI 카드 3개(재직/이번달입사/휴직) + 리스트↔조직도 뷰 토글 + `MembersFilterBar` + 체크박스·아바타·상태 배지 테이블 + 하단 카운트 바
+- **워크플로우**: `DocKindBadge` + `WaitBadge(D+n/오늘)` + `StepLine` + `SectionDivider` + 3탭(결재대기/내가요청한/완료·참조) + `PendingDocCard/MyDocCard/DoneDocCard/CcCard`
+- **개인 휴가**: `linear-gradient` 히어로 카드(연차 잔여 52px) + 분석 바(사용/잔여) + 타입 카드 그리드(3열) + 탭 레이블 "휴가 개요/신청 이력"
+- **HR 휴가 관리**: `grid-cols-[1fr_360px]` 2열 레이아웃 + KPI 4개(전사평균/소진임박/이번달사용/오늘휴가중) + 테이블 + 상세 패널 + 미적용 타입 점선 배지
+- **어드민 콘솔**: zinc 전체 제거 → 디자인 토큰
+
+**설정 섹션**
+- `settings-nav.tsx`: 회사 그룹 ADMIN 배지 추가
+- `profile/page.tsx`: 그라디언트 아바타 카드 + `set-card` 구조
+- `profile-form.tsx`: 220px 레이블 + 컨텐츠 2열 필드 레이아웃
+- `company-info-form.tsx`: 로고 업로드 카드 + 읽기전용 카드 + set-card + 2열 필드
+- `holidays-client.tsx`: 4열 그리드(날짜·이름·타입배지·버튼) + 법정(destructive)/회사(purple) 배지
+- 운영 6페이지(`permissions/leave-policies/leave-types/approval-policies/form-templates/join-requests`): set-card 패턴 + h3 + 설명 추가
+
+**컴포넌트 57개**: 디자인 토큰 전면 교체 완료 (zinc/slate → foreground/background/border)
+
+⚠️ 타입체크 통과. 런타임 미검증 (Docker dev 서버 재기동 필요).
 
 ### 2026-05-26 세션5 — 인증 간소화 + 회사 문서 업로드 + 플랫폼 관리자 2단계 인증
 

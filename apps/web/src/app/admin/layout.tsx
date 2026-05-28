@@ -14,7 +14,7 @@ export default async function AdminLayout({
   const stats = await getPlatformStats();
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
+    <div className="flex min-h-screen bg-background">
       <AdminSidebar
         adminName={admin.name}
         adminEmail={admin.email}
@@ -23,17 +23,17 @@ export default async function AdminLayout({
 
       <div className="flex flex-1 flex-col min-w-0">
         {/* 상단 바 */}
-        <header className="flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-6">
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <span className="font-medium text-zinc-700">Teamlet 운영 콘솔</span>
+        <header className="flex h-14 items-center justify-between border-b border-border bg-background-primary px-6">
+          <div className="flex items-center gap-2 text-xs text-foreground-subtle">
+            <span className="font-medium text-foreground">Teamlet 운영 콘솔</span>
           </div>
           <div className="flex items-center gap-3">
             {stats.pendingApplications > 0 && (
-              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+              <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
                 신청 대기 {stats.pendingApplications}건
               </span>
             )}
-            <span className="text-xs text-zinc-400">{admin.email}</span>
+            <span className="text-xs text-foreground-subtle">{admin.email}</span>
             <form
               action={async () => {
                 "use server";
@@ -42,7 +42,7 @@ export default async function AdminLayout({
             >
               <button
                 type="submit"
-                className="rounded px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition-colors"
+                className="rounded px-2 py-1 text-xs text-foreground-subtle hover:bg-background-secondary hover:text-foreground transition-colors"
               >
                 로그아웃
               </button>

@@ -86,7 +86,7 @@ function FieldEditor({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-background-secondary p-3">
+    <div className="rounded-[14px] border border-border bg-background-secondary p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="text-xs font-medium text-foreground-muted">필드 {index + 1}</span>
         <div className="flex gap-1">
@@ -109,7 +109,7 @@ function FieldEditor({
           <button
             type="button"
             onClick={onRemove}
-            className="rounded px-1.5 py-0.5 text-xs text-destructive-600 hover:bg-destructive-50"
+            className="rounded px-1.5 py-0.5 text-[12px] text-destructive hover:bg-destructive/5"
           >
             삭제
           </button>
@@ -169,7 +169,7 @@ function FieldEditor({
               {(field.options ?? []).map((opt) => (
                 <span key={opt} className="flex items-center gap-1 rounded-full bg-background-primary border border-border px-2 py-0.5 text-xs text-foreground">
                   {opt}
-                  <button type="button" onClick={() => removeOption(opt)} className="text-foreground-muted hover:text-destructive-600">×</button>
+                  <button type="button" onClick={() => removeOption(opt)} className="text-foreground-muted hover:text-destructive">×</button>
                 </span>
               ))}
             </div>
@@ -332,13 +332,13 @@ export function FormTemplatesClient({ initialTemplates }: { initialTemplates: Fo
       </div>
 
       {templates.length === 0 ? (
-        <div className="rounded-lg border border-border bg-background-primary p-10 text-center text-sm text-foreground-muted">
+        <div className="rounded-[14px] border border-border bg-background-primary p-10 text-center text-sm text-foreground-muted">
           등록된 양식이 없어요. 양식을 추가해 결재 프로세스를 시작하세요.
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {templates.map((t) => (
-            <div key={t.id} className="rounded-lg border border-border bg-background-primary p-4">
+            <div key={t.id} className="rounded-[14px] border border-border bg-background-primary p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
@@ -371,7 +371,7 @@ export function FormTemplatesClient({ initialTemplates }: { initialTemplates: Fo
           <DialogHeader><DialogTitle>양식 추가</DialogTitle></DialogHeader>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
             <TemplateForm form={form} setForm={setForm} />
-            {error && <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>}
+            {error && <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>}
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="secondary" disabled={isPending}>취소</Button></DialogClose>
               <Button type="submit" disabled={isPending || !form.name.trim()}>{isPending ? "저장 중…" : "저장"}</Button>
@@ -386,7 +386,7 @@ export function FormTemplatesClient({ initialTemplates }: { initialTemplates: Fo
           <DialogHeader><DialogTitle>양식 수정</DialogTitle></DialogHeader>
           <form onSubmit={handleEdit} className="flex flex-col gap-4">
             <TemplateForm form={form} setForm={setForm} />
-            {error && <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>}
+            {error && <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>}
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="secondary" disabled={isPending}>취소</Button></DialogClose>
               <Button type="submit" disabled={isPending || !form.name.trim()}>{isPending ? "저장 중…" : "저장"}</Button>
@@ -402,10 +402,10 @@ export function FormTemplatesClient({ initialTemplates }: { initialTemplates: Fo
           <p className="text-sm text-foreground-muted">
             <strong className="text-foreground">{deleteTarget?.name}</strong> 양식을 삭제할까요?
             {deleteTarget && deleteTarget.documentCount > 0 && (
-              <span className="mt-1 block text-destructive-600">사용된 문서가 있어 삭제할 수 없어요.</span>
+              <span className="mt-1 block text-destructive">사용된 문서가 있어 삭제할 수 없어요.</span>
             )}
           </p>
-          {error && <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>}
+          {error && <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>}
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="secondary" disabled={isPending}>취소</Button></DialogClose>
             <Button variant="destructive" disabled={isPending || (deleteTarget?.documentCount ?? 0) > 0} onClick={handleDelete}>

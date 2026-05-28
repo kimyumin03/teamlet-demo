@@ -22,8 +22,8 @@ export default async function HolidaysPage({
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-foreground">공휴일 관리</h1>
-        <p className="mt-0.5 text-sm text-foreground-muted">법정·자체 공휴일을 등록해 휴가 계산에 반영해요</p>
+        <h1 className="text-[20px] font-bold tracking-tight text-foreground">공휴일 관리</h1>
+        <p className="mt-0.5 text-[13px] text-foreground-muted">법정·자체 공휴일을 등록해 휴가 계산에 반영해요</p>
       </div>
       <HolidaysClient initialHolidays={holidays} year={year} />
     </div>

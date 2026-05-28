@@ -20,7 +20,7 @@ export function DeleteDocumentButton({ documentId, title }: { documentId: string
     <button
       onClick={handleClick}
       disabled={isPending}
-      className="shrink-0 rounded px-2 py-1 text-xs text-foreground-muted hover:bg-destructive-50 hover:text-destructive-700 disabled:opacity-50"
+      className="shrink-0 rounded px-2 py-1 text-xs text-foreground-muted hover:bg-destructive/5 hover:text-destructive disabled:opacity-50"
     >
       {isPending ? "…" : "삭제"}
     </button>

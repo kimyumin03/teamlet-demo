@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Teamlet — My Leave Hi-Fi</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Pretendard:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="teamlet-design.css" />
+<style>
+  /* Page-specific */
+  .lv-hero {
+    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+    color: var(--primary-on);
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-bottom: 18px;
+    display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center;
+  }
+  .lv-hero .l { font-size: 12px; color: rgba(255,255,255,0.72); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; }
+  .lv-hero .v {
+    font-size: 56px; font-weight: 800; line-height: 1; letter-spacing: -0.02em;
+    margin-top: 4px;
+    font-family: "Inter", system-ui;
+    font-variant-numeric: tabular-nums;
+  }
+  .lv-hero .v small { font-size: 18px; font-weight: 500; color: rgba(255,255,255,0.8); margin-left: 6px; }
+  .lv-hero .d { font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 6px; }
+  .lv-hero .d b { color: white; font-weight: 600; }
+  .lv-hero .actions { display: flex; gap: 8px; }
+  .lv-hero .btn { background: white; color: var(--primary); border: none; padding: 12px 18px; font-weight: 700; }
+  .lv-hero .btn:hover { background: rgba(255,255,255,0.92); }
+  .lv-hero .btn.outline { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.4); }
+  .lv-hero .btn.outline:hover { background: rgba(255,255,255,0.1); }
+
+  /* breakdown */
+  .breakdown {
+    background: var(--bg-primary); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 22px; margin-bottom: 18px;
+  }
+  .breakdown h3 {
+    font-size: 14px; font-weight: 700; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .breakdown h3 .sub { color: var(--fg-muted); font-weight: 400; font-size: 12px; margin-left: auto; font-family: "JetBrains Mono", monospace; }
+  .bd-bar { height: 12px; border-radius: 6px; overflow: hidden; background: var(--bg-tertiary); display: flex; }
+  .bd-bar .seg { height: 100%; }
+  .bd-bar .seg.used { background: var(--primary); }
+  .bd-bar .seg.scheduled { background: var(--primary-soft); border-right: 1px solid var(--bg-primary); }
+  .bd-bar .seg.remaining { background: var(--bg-tertiary); }
+  .bd-legend { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--fg-muted); }
+  .bd-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .bd-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+  .bd-legend .used i { background: var(--primary); }
+  .bd-legend .scheduled i { background: var(--primary-soft); border: 1px solid var(--primary); }
+  .bd-legend .remaining i { background: var(--bg-tertiary); }
+  .bd-legend b { color: var(--fg); font-weight: 600; font-family: "JetBrains Mono", monospace; margin-left: 3px; }
+
+  /* leave types list */
+  .types-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+  .type {
+    padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg-primary);
+  }
+  .type .t { font-size: 12.5px; font-weight: 600; }
+  .type .vt { font-size: 18px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .type .vt small { font-size: 11px; color: var(--fg-muted); font-weight: 500; margin-left: 3px; }
+  .type .s { font-size: 11px; color: var(--fg-muted); margin-top: 2px; font-family: "JetBrains Mono", monospace; }
+  .type.na { background: var(--bg-secondary); border-style: dashed; }
+  .type.na .vt { color: var(--fg-subtle); }
+
+  /* Apply form */
+  .apply-card {
+    background: var(--bg-primary); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 24px; margin-bottom: 18px;
+  }
+  .apply-card h3 { font-size: 14px; font-weight: 700; margin: 0 0 14px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid .field.full { grid-column: 1 / -1; }
+  .form-grid .field label { display: block; font-size: 12px; font-weight: 500; color: var(--fg-muted); margin-bottom: 6px; }
+  .form-grid .field .ctl {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border-strong); border-radius: 8px;
+    background: var(--bg-primary); font-size: 13px; font-family: inherit; color: var(--fg);
+  }
+  .form-grid .field .ctl:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .form-grid .field .estimate {
+    margin-top: 8px; padding: 10px 12px;
+    background: var(--primary-soft); border-radius: 8px;
+    font-size: 12.5px; color: var(--fg);
+  }
+  .form-grid .field .estimate .v { font-family: "JetBrains Mono", monospace; font-weight: 700; color: var(--primary); }
+  .apply-actions { margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* History */
+  .hist-row {
+    display: grid; grid-template-columns: 100px 1fr 100px 100px 110px;
+    gap: 12px; align-items: center;
+    padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--bg-primary); margin-bottom: 6px;
+  }
+  .hist-row .date { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--fg-muted); }
+  .hist-row .date b { color: var(--fg); display: block; font-size: 14px; font-weight: 700; font-family: inherit; }
+  .hist-row .kind {
+    font-size: 11px; padding: 3px 9px; border-radius: 999px;
+    background: var(--bg-tertiary); color: var(--fg-muted); font-weight: 600;
+    width: fit-content;
+  }
+  .hist-row .kind.연차 { background: var(--success-50); color: var(--success); }
+  .hist-row .kind.반차 { background: var(--info-50); color: var(--info); }
+  .hist-row .kind.보건 { background: var(--purple-50); color: var(--purple); }
+  .hist-row .dur { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 13px; }
+  .hist-row .desc .t { font-weight: 600; font-size: 13.5px; }
+  .hist-row .desc .s { font-size: 11.5px; color: var(--fg-muted); margin-top: 2px; }
+</style>
+</head>
+<body data-screen-label="My Leave Hi-Fi">
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" data-presets="env,react" src="tweaks-panel.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="teamlet-shared.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "light",
+  "accent": "indigo"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [tab, setTab] = React.useState("overview");
+
+  React.useEffect(() => {
+    document.documentElement.dataset.theme = t.theme;
+    document.documentElement.dataset.accent = t.accent;
+    document.documentElement.dataset.density = "regular";
+  }, [t.theme, t.accent]);
+
+  return (
+    <>
+      <div className="app">
+        <Sidebar active="leave" />
+        <div className="main">
+          <Topbar
+            placeholder="휴가 종류 · 신청 검색…"
+            actions={
+              <>
+                <button className="btn btn-outline">정책 보기</button>
+                <button className="btn btn-primary"><Icon name="plus" />휴가 신청</button>
+              </>
+            }
+          />
+
+          <main className="page-body">
+            <div className="page-h">
+              <div>
+                <h1 className="h-title">내 휴가</h1>
+                <div className="h-sub">박지훈 · ENG · 백엔드 · 사번 048 · 입사 2024. 8. 5</div>
+              </div>
+            </div>
+
+            <div className="tabs">
+              <button className={"tab" + (tab === "overview" ? " active" : "")} onClick={() => setTab("overview")}>휴가 개요</button>
+              <button className={"tab" + (tab === "apply" ? " active" : "")} onClick={() => setTab("apply")}>휴가 신청</button>
+              <button className={"tab" + (tab === "history" ? " active" : "")} onClick={() => setTab("history")}>신청 이력 <span className="count">12</span></button>
+            </div>
+
+            {tab === "overview" && <Overview onApply={() => setTab("apply")} />}
+            {tab === "apply" && <ApplyForm onCancel={() => setTab("overview")} />}
+            {tab === "history" && <History />}
+          </main>
+        </div>
+      </div>
+
+      <TweaksPanel>
+        <TweakSection label="Theme" />
+        <TweakRadio label="모드" value={t.theme} options={["light", "dark"]} onChange={(v) => setTweak("theme", v)} />
+        <TweakSelect label="액센트" value={t.accent}
+          options={[
+            {value:"indigo", label:"Indigo"},
+            {value:"blue", label:"Blue"},
+            {value:"emerald", label:"Emerald"},
+            {value:"amber", label:"Amber"},
+            {value:"slate", label:"Slate"}
+          ]}
+          onChange={(v) => setTweak("accent", v)} />
+      </TweaksPanel>
+    </>
+  );
+}
+
+function Overview({ onApply }) {
+  const used = 3.5;
+  const scheduled = 2;
+  const remaining = 11.5;
+  const total = used + scheduled + remaining;
+  return (
+    <>
+      <div className="lv-hero">
+        <div>
+          <div className="l">연차 잔여 — 2026년</div>
+          <div className="v num">{remaining}<small>/ {total}일</small></div>
+          <div className="d">사용 <b>{used}일</b> · 사용 예정 <b>{scheduled}일</b> · 소멸 임박 없음 ✓</div>
+        </div>
+        <div className="actions">
+          <button className="btn outline">정책 보기</button>
+          <button className="btn" onClick={onApply}>+ 휴가 신청</button>
+        </div>
+      </div>
+
+      <div className="breakdown">
+        <h3>연간 사용 현황 <span className="sub">2026. 1. 1 — 2026. 12. 31</span></h3>
+        <div className="bd-bar">
+          <div className="seg used" style={{width: (used/total*100) + "%"}}></div>
+          <div className="seg scheduled" style={{width: (scheduled/total*100) + "%"}}></div>
+          <div className="seg remaining" style={{width: (remaining/total*100) + "%"}}></div>
+        </div>
+        <div className="bd-legend">
+          <span className="used"><i></i>사용 <b>{used}일</b></span>
+          <span className="scheduled"><i></i>사용 예정 <b>{scheduled}일</b></span>
+          <span className="remaining"><i></i>잔여 <b>{remaining}일</b></span>
+        </div>
+
+        <div className="types-grid">
+          <div className="type">
+            <div className="t">연차</div>
+            <div className="vt num">{remaining}<small>/ {total}일</small></div>
+            <div className="s">매년 부여 · 사용 {used}일</div>
+          </div>
+          <div className="type">
+            <div className="t">반차</div>
+            <div className="vt num">2<small>/ 4회</small></div>
+            <div className="s">연 4회 부여</div>
+          </div>
+          <div className="type">
+            <div className="t">보건휴가</div>
+            <div className="vt num">1<small>일</small></div>
+            <div className="s">매월 부여 · 사용 0</div>
+          </div>
+          <div className="type">
+            <div className="t">가족돌봄</div>
+            <div className="vt num">1<small>일</small></div>
+            <div className="s">신청 시 부여 (연 10회)</div>
+          </div>
+          <div className="type">
+            <div className="t">배우자 출산</div>
+            <div className="vt num">20<small>일</small></div>
+            <div className="s">신청 시 부여 (1회)</div>
+          </div>
+          <div className="type na">
+            <div className="t">난임 치료</div>
+            <div className="vt num">─</div>
+            <div className="s">정책 미적용</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="breakdown">
+        <h3>예정된 휴가 <span className="sub">2건</span></h3>
+        <div style={{display:"flex", flexDirection:"column", gap:"6px"}}>
+          <div className="hist-row">
+            <div className="date"><b>5. 26</b>월 ~ 5. 27 화</div>
+            <div className="desc"><div className="t">연차 사용 (2일)</div><div className="s">사유: 부모님 환갑 행사 · 대체 인력 박혜진</div></div>
+            <div></div>
+            <div className="dur num">2일</div>
+            <div><span className="st wait">결재 중</span></div>
+          </div>
+          <div className="hist-row">
+            <div className="date"><b>6. 3</b>수</div>
+            <div className="desc"><div className="t">반차 (오후)</div><div className="s">개인 사유</div></div>
+            <div></div>
+            <div className="dur num">0.5일</div>
+            <div><span className="st run">신청 중</span></div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ApplyForm({ onCancel }) {
+  const [kind, setKind] = React.useState("연차");
+  return (
+    <div className="apply-card">
+      <h3>새 휴가 신청</h3>
+      <div className="form-grid">
+        <div className="field">
+          <label>휴가 종류 *</label>
+          <select className="ctl" value={kind} onChange={e => setKind(e.target.value)}>
+            <option>연차</option>
+            <option>반차</option>
+            <option>보건휴가</option>
+            <option>가족돌봄</option>
+            <option>배우자 출산</option>
+          </select>
+        </div>
+        <div className="field">
+          <label>사용 기간 *</label>
+          <input className="ctl" type="text" defaultValue="2026. 5. 26 (월) ~ 5. 27 (화)" />
+        </div>
+        <div className="field">
+          <label>시작 시간</label>
+          <input className="ctl" type="text" defaultValue="09:00 · 종일" />
+        </div>
+        <div className="field">
+          <label>대체 인력</label>
+          <input className="ctl" type="text" defaultValue="박혜진 (디자인)" />
+        </div>
+        <div className="field full">
+          <label>사유 *</label>
+          <textarea className="ctl" rows="3" defaultValue="부모님 환갑 행사 참석을 위해 휴가 신청드립니다. 업무는 박혜진 매니저께서 대신 처리해주시기로 양해 구했습니다."></textarea>
+        </div>
+        <div className="field full">
+          <div className="estimate">
+            <b>사용 후 잔여</b> · 연차 11.5일 → <span className="v">9.5일</span> &nbsp;|&nbsp;
+            결재선: <span className="v">박지훈 → 김유민 (팀장) → 송재희 (HR)</span> · 예상 소요 <span className="v">1~2일</span>
+          </div>
+        </div>
+      </div>
+      <div className="apply-actions">
+        <button className="btn btn-outline" onClick={onCancel}>취소</button>
+        <button className="btn btn-outline">임시 저장</button>
+        <button className="btn btn-primary">상신하기 →</button>
+      </div>
+    </div>
+  );
+}
+
+function History() {
+  const rows = [
+    { date: "2026. 5. 22", kind: "반차", title: "반차 (오전)", sub: "WF-0420 · HR 결재 중", dur: "0.5일", status: "wait", statusLabel: "결재 중" },
+    { date: "2026. 5. 14", kind: "연차", title: "연차 (1일)", sub: "WF-0312 · 부모님 행사", dur: "1일", status: "ok", statusLabel: "승인" },
+    { date: "2026. 4. 8", kind: "보건", title: "보건휴가", sub: "WF-0245 · 4월 정기", dur: "1일", status: "ok", statusLabel: "승인" },
+    { date: "2026. 3. 22", kind: "연차", title: "연차 (0.5일)", sub: "WF-0203 · 오전 반차", dur: "0.5일", status: "ok", statusLabel: "승인" },
+    { date: "2026. 2. 5", kind: "연차", title: "연차 (1일)", sub: "WF-0142 · 영수증 누락", dur: "1일", status: "rej", statusLabel: "반려" },
+    { date: "2026. 1. 22", kind: "연차", title: "연차 (2일)", sub: "WF-0089 · 설 연휴 연장", dur: "2일", status: "ok", statusLabel: "승인" },
+  ];
+  return (
+    <>
+      <div className="filters">
+        <span className="chip"><span className="lbl">기간</span><span className="val">2026년 전체</span><span className="x">⌄</span></span>
+        <span className="chip"><span className="lbl">종류</span><span className="val">전체</span><span className="x">⌄</span></span>
+        <span className="chip"><span className="lbl">상태</span><span className="val">전체</span><span className="x">⌄</span></span>
+        <span className="chip add">+ 필터</span>
+        <span className="spread"><button className="btn btn-outline sm"><Icon name="download"/>내보내기</button></span>
+      </div>
+
+      {rows.map((r, i) => (
+        <div key={i} className="hist-row">
+          <div className="date"><b>{r.date.split(". ").slice(1).join(". ")}</b>{r.date.split(". ")[0]}</div>
+          <div className="desc">
+            <div className="t">{r.title}</div>
+            <div className="s">{r.sub}</div>
+          </div>
+          <div><span className={"kind " + r.kind}>{r.kind}</span></div>
+          <div className="dur num">{r.dur}</div>
+          <div><span className={"st " + r.status}>{r.statusLabel}</span></div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+
+</body>
+</html>

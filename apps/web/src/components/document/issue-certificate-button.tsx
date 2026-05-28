@@ -40,7 +40,7 @@ export function IssueCertificateButton({
     });
   }
 
-  const selectClass = "h-10 w-full rounded-md border border-border bg-background-primary px-3 text-sm text-foreground focus-visible:border-border-focus focus-visible:outline-none";
+  const selectClass = "h-10 w-full rounded-[8px] border border-border bg-background-primary px-3 text-[13px] text-foreground focus-visible:border-border-focus focus-visible:outline-none";
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (isPending) return; if (!o) reset(); setOpen(o); }}>
@@ -49,7 +49,7 @@ export function IssueCertificateButton({
         <DialogHeader><DialogTitle>증명서 발급</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-foreground-muted">대상 직원</label>
+            <label className="text-[13px] text-foreground-muted">대상 직원</label>
             <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className={selectClass}>
               {employees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
@@ -59,16 +59,16 @@ export function IssueCertificateButton({
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-foreground-muted">증명서 종류</label>
+            <label className="text-[13px] text-foreground-muted">증명서 종류</label>
             <select value={type} onChange={(e) => setType(e.target.value as CertificateType)} className={selectClass}>
               {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-foreground-muted">발급 목적</label>
+            <label className="text-[13px] text-foreground-muted">발급 목적</label>
             <Input required maxLength={100} placeholder="예: 금융기관 제출용" value={purpose} onChange={(e) => setPurpose(e.target.value)} />
           </div>
-          {error && <p role="alert" className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700">{error}</p>}
+          {error && <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>}
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="secondary" disabled={isPending}>취소</Button></DialogClose>
             <Button type="submit" disabled={isPending || !purpose.trim()}>

@@ -72,7 +72,7 @@ export function GrantLeaveButton({
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-foreground-muted">대상자</label>
               <select
-                className="w-full rounded-lg border border-border bg-background-primary px-3 py-2 text-sm text-foreground outline-none focus:border-foreground-subtle"
+                className="w-full rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground outline-none focus:border-foreground-subtle"
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
                 disabled={isPending}
@@ -89,7 +89,7 @@ export function GrantLeaveButton({
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-foreground-muted">휴가 종류</label>
               <select
-                className="w-full rounded-lg border border-border bg-background-primary px-3 py-2 text-sm text-foreground outline-none focus:border-foreground-subtle"
+                className="w-full rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground outline-none focus:border-foreground-subtle"
                 value={leaveTypeId}
                 onChange={(e) => setLeaveTypeId(e.target.value)}
                 disabled={isPending}
@@ -108,7 +108,7 @@ export function GrantLeaveButton({
                   type="number"
                   min={0.5}
                   step={0.5}
-                  className="w-28 rounded-lg border border-border bg-background-primary px-3 py-2 text-sm text-foreground outline-none focus:border-foreground-subtle"
+                  className="w-28 rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground outline-none focus:border-foreground-subtle"
                   value={days}
                   onChange={(e) => setDays(e.target.value === "" ? "" : Number(e.target.value))}
                   disabled={isPending}
@@ -120,7 +120,7 @@ export function GrantLeaveButton({
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-foreground-muted">사유 <span className="text-foreground-subtle">(선택)</span></label>
               <input
-                className="w-full rounded-lg border border-border bg-background-primary px-3 py-2 text-sm text-foreground placeholder:text-foreground-subtle outline-none focus:border-foreground-subtle"
+                className="w-full rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground placeholder:text-foreground-subtle outline-none focus:border-foreground-subtle"
                 placeholder="부여 사유"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
@@ -128,7 +128,7 @@ export function GrantLeaveButton({
               />
             </div>
 
-            {error && <p className="text-xs text-destructive-700">{error}</p>}
+            {error && <p className="text-[12px] text-destructive">{error}</p>}
           </div>
 
           <DialogFooter>

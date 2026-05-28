@@ -4,21 +4,27 @@ import Link from "next/link";
 
 const TABS = [
   { id: "feed", label: "홈 피드" },
-  { id: "news", label: "회사소식" },
-  { id: "tasks", label: "할일" },
+  { id: "news", label: "소식" },
+  { id: "tasks", label: "할 일" },
 ] as const;
 
 export function HomeTabs({
   activeTab,
   pendingCount,
+  announcementCount,
 }: {
   activeTab: string;
   pendingCount: number;
+  announcementCount: number;
 }) {
   return (
-    <nav className="flex gap-1 border-b border-border mb-6">
+    <nav className="flex gap-0 border-b border-border mb-6">
       {TABS.map((tab) => {
         const isActive = activeTab === tab.id;
+        const count =
+          tab.id === "tasks" ? pendingCount :
+          tab.id === "news" ? announcementCount :
+          0;
         return (
           <Link
             key={tab.id}
@@ -30,9 +36,9 @@ export function HomeTabs({
             }`}
           >
             {tab.label}
-            {tab.id === "tasks" && pendingCount > 0 && (
-              <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-white">
-                {pendingCount > 99 ? "99+" : pendingCount}
+            {count > 0 && (
+              <span className="rounded-full bg-background-secondary px-1.5 font-mono text-[10.5px] font-bold text-foreground">
+                {count}
               </span>
             )}
           </Link>

@@ -47,7 +47,7 @@ export function InviteLinkButton({ employeeId }: { employeeId: string }) {
     <form action={formAction}>
       <input type="hidden" name="employeeId" value={employeeId} />
       {state.error && (
-        <p className="mb-1 text-xs text-destructive-600">{state.error}</p>
+        <p className="mb-1 text-[12px] text-destructive">{state.error}</p>
       )}
       <button
         type="submit"

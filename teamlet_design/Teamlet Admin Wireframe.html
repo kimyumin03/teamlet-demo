@@ -1,0 +1,1100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Teamlet — Admin Wireframe v1</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #111418; --ink-2: #3b4149; --ink-3: #6b7280; --ink-4: #9aa1ab; --ink-5: #c4c9d0;
+    --line: #d9dde2; --line-2: #e6e9ed;
+    --bg: #f6f7f8; --paper: #ffffff;
+    --hatch: repeating-linear-gradient(135deg, #eef0f3 0 6px, #f6f7f8 6px 12px);
+    --note: #1e6cff; --note-bg: #eef3ff;
+    --font-kr: "Noto Sans KR", "Inter", system-ui, sans-serif;
+    --font-en: "Inter", "Noto Sans KR", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: var(--font-kr); color: var(--ink); background: #ecedef; font-size: 13px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+
+  .sheet { max-width: 1480px; margin: 32px auto 64px; padding: 0 28px; }
+  .doc-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 8px 0 20px; border-bottom: 1px dashed var(--ink-5); margin-bottom: 24px; }
+  .doc-head h1 { font-family: var(--font-en); font-size: 20px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .doc-head .sub { color: var(--ink-3); font-size: 12px; font-family: var(--font-mono); }
+  .doc-meta { text-align: right; color: var(--ink-3); font-size: 11px; font-family: var(--font-mono); line-height: 1.7; }
+  .doc-meta b { color: var(--ink); font-weight: 600; }
+  .pagenav { display: flex; gap: 8px; margin-top: 12px; font-family: var(--font-mono); font-size: 11px; flex-wrap: wrap; }
+  .pagenav a { text-decoration: none; color: var(--ink-3); padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+  .pagenav a:hover { color: var(--ink); }
+  .pagenav a.cur { color: var(--ink); font-weight: 600; border-color: var(--ink); }
+
+  .frame { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,0.02), 0 24px 48px -32px rgba(20,30,50,0.18); margin-bottom: 32px; }
+  .frame-bar { height: 36px; background: #fafbfc; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 14px; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+  .url { flex: 1; text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+  .url b { color: var(--ink-2); }
+  .frame-label { font-family: var(--font-en); font-size: 10px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; padding: 0 6px; }
+
+  .app { display: grid; grid-template-columns: 240px 200px 1fr; min-height: 900px; }
+
+  /* SIDEBAR (main app) */
+  .side { border-right: 1px solid var(--line); background: #fafbfc; padding: 14px 12px 18px; display: flex; flex-direction: column; gap: 14px; }
+  .org { display: flex; align-items: center; gap: 10px; padding: 6px 6px 10px; border-bottom: 1px solid var(--line-2); }
+  .org-logo { width: 28px; height: 28px; border-radius: 6px; background: var(--ink); color: white; display: grid; place-items: center; font-family: var(--font-en); font-weight: 700; font-size: 12px; }
+  .org-name { font-size: 13px; font-weight: 600; }
+  .org-name small { display:block; color: var(--ink-3); font-weight: 400; font-size: 11px; }
+  .org-caret { margin-left: auto; color: var(--ink-4); }
+  .nav-group { display: flex; flex-direction: column; gap: 1px; }
+  .nav-label { padding: 12px 8px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-4); font-family: var(--font-en); font-weight: 600; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 6px; color: var(--ink-2); font-size: 13px; text-decoration: none; cursor: pointer; }
+  .nav-item:hover { background: #eef0f3; }
+  .nav-item.active { background: #eef0f3; color: var(--ink); font-weight: 600; }
+  .nav-item svg.ico { width: 18px; height: 18px; flex-shrink: 0; color: var(--ink-3); stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .nav-item.active svg.ico { color: var(--ink); stroke-width: 1.8; }
+  .nav-item .badge { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--ink); background: #e6e9ed; border-radius: 10px; padding: 1px 6px; font-weight: 600; }
+  .me { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+  .me .av { width: 28px; height: 28px; border-radius: 50%; background-image: var(--hatch); }
+  .me .name { font-size: 12px; font-weight: 600; }
+  .me .role { font-size: 10px; color: var(--ink-3); font-family: var(--font-mono); }
+
+  /* SETTINGS SIDE NAV */
+  .snav { background: #fafbfc; border-right: 1px solid var(--line-2); padding: 18px 10px; }
+  .snav h4 {
+    font-size: 10px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.08em;
+    margin: 0 8px 6px; font-family: var(--font-en); font-weight: 600;
+  }
+  .snav h4.gated::after {
+    content: "ADMIN"; font-family: var(--font-mono); font-size: 9px;
+    background: var(--ink); color: white; padding: 1px 5px; border-radius: 3px;
+    margin-left: 6px; letter-spacing: 0;
+  }
+  .snav-group { margin-bottom: 18px; }
+  .snav a {
+    display: block; padding: 6px 10px; border-radius: 6px;
+    font-size: 12.5px; color: var(--ink-2); text-decoration: none;
+    line-height: 1.6;
+  }
+  .snav a:hover { background: #eef0f3; }
+  .snav a.active { background: #eef0f3; color: var(--ink); font-weight: 600; }
+  .snav a small {
+    display: block; font-size: 10px; color: var(--ink-3); font-family: var(--font-mono); font-weight: 500;
+    margin-top: 1px;
+  }
+
+  /* MAIN */
+  .main { display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-bottom: 1px solid var(--line-2); background: var(--paper); }
+  .search { flex: 1; max-width: 480px; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: #fafbfc; color: var(--ink-4); font-size: 12px; }
+  .search .glyph { width: 12px; height: 12px; border-radius: 50%; border: 1.25px solid var(--ink-4); }
+  .top-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .icon-btn { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); display: grid; place-items: center; color: var(--ink-3); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); cursor: pointer; }
+  .btn.ghost { background: var(--paper); color: var(--ink); }
+  .btn.sm { padding: 5px 10px; font-size: 11px; }
+  .btn.danger { border-color: #9a3b3b; color: #9a3b3b; background: var(--paper); }
+
+  .body-col { padding: 22px 28px 32px; min-width: 0; }
+  .page-h { display: flex; align-items: flex-end; justify-content: space-between; }
+  .h-title { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 4px; }
+  .h-sub { font-size: 12px; color: var(--ink-3); font-family: var(--font-mono); }
+
+  /* PERMISSION GROUP LIST + DETAIL — split layout */
+  .perm-split { display: grid; grid-template-columns: 280px 1fr; gap: 18px; margin-top: 18px; }
+  .pg-list {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px; height: fit-content;
+  }
+  .pg-list h5 {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: var(--ink-3); font-family: var(--font-en);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+    margin: 4px 6px 8px;
+  }
+  .pg-list h5 .add {
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
+    background: var(--paper); border: 1px solid var(--line); padding: 2px 8px; border-radius: 5px;
+    cursor: pointer; text-transform: none; letter-spacing: 0; font-weight: 500;
+  }
+  .pg-list .grp {
+    display: grid; grid-template-columns: 28px 1fr auto; gap: 10px;
+    padding: 9px 10px; border-radius: 7px; cursor: pointer;
+    align-items: center;
+  }
+  .pg-list .grp:hover { background: #fafbfc; }
+  .pg-list .grp.active { background: #eef0f3; }
+  .pg-list .grp .ic {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: grid; place-items: center; font-size: 14px;
+    background: #fbf5e3;
+  }
+  .pg-list .grp .nm { font-size: 13px; font-weight: 600; }
+  .pg-list .grp .s { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 1px; }
+  .pg-list .grp .ct {
+    font-family: var(--font-mono); font-size: 10px; color: var(--ink-2);
+    background: #e6e9ed; padding: 1px 6px; border-radius: 10px; font-weight: 600;
+  }
+  .pg-list .grp.custom .ic { background: #eef0f3; }
+
+  /* Permission detail panel */
+  .pg-detail {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden;
+  }
+  .pgd-hero {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--line-2);
+    display: grid; grid-template-columns: 48px 1fr auto; gap: 14px; align-items: center;
+  }
+  .pgd-hero .ic {
+    width: 48px; height: 48px; border-radius: 10px;
+    background: #fbf5e3; display: grid; place-items: center; font-size: 22px;
+  }
+  .pgd-hero h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  .pgd-hero h2 .sys-badge {
+    display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    background: var(--ink); color: white; font-family: var(--font-en);
+    font-weight: 600; margin-left: 8px; letter-spacing: 0.04em; vertical-align: middle;
+  }
+  .pgd-hero .s { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+  .pgd-hero .acts { display: flex; gap: 6px; }
+
+  /* member chips */
+  .pgd-members {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--line-2);
+    background: #fafbfc;
+  }
+  .pgd-members h4 {
+    font-size: 11px; color: var(--ink-3); margin: 0 0 8px;
+    text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-en); font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pgd-members h4 .ct {
+    font-family: var(--font-mono); font-size: 10px; color: var(--ink-2);
+    background: #e6e9ed; padding: 1px 7px; border-radius: 10px; font-weight: 600;
+  }
+  .mems { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mem-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px 4px 4px; border: 1px solid var(--line); border-radius: 14px;
+    background: var(--paper); font-size: 12px;
+  }
+  .mem-chip .av {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--hatch);
+    border: 1px solid var(--line); flex-shrink: 0;
+  }
+  .mem-chip .x { color: var(--ink-4); margin-left: 2px; cursor: pointer; }
+  .mem-chip.add {
+    border-style: dashed; color: var(--ink-3); padding: 4px 10px;
+  }
+
+  /* Permission category tabs */
+  .pcat {
+    display: flex; gap: 0;
+    padding: 0 22px;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+  }
+  .pcat .t {
+    padding: 11px 14px 13px;
+    font-size: 12.5px; color: var(--ink-3);
+    border-bottom: 2px solid transparent;
+    cursor: pointer; font-weight: 500;
+    margin-bottom: -1px;
+    white-space: nowrap;
+  }
+  .pcat .t.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+  .pcat .t .ct {
+    font-family: var(--font-mono); font-size: 10px;
+    background: #e6e9ed; color: var(--ink-2);
+    padding: 1px 6px; border-radius: 10px;
+    margin-left: 6px; font-weight: 600;
+  }
+
+  /* Permission matrix table */
+  .pmatrix { padding: 0; }
+  .pm-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 100px 100px 130px;
+    align-items: center;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .pm-row.head {
+    background: #fafbfc;
+    padding-top: 10px; padding-bottom: 10px;
+    font-family: var(--font-en); font-size: 10px;
+    color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+  }
+  .pm-row.head .a { text-align: center; }
+  .pm-row:last-child { border-bottom: none; }
+  .pm-row .pm-name { font-size: 13px; font-weight: 600; }
+  .pm-row .pm-desc { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 3px; }
+  .pm-row .pm-cell { text-align: center; }
+  .pm-row .pm-scope {
+    text-align: right; font-family: var(--font-mono); font-size: 11px; color: var(--ink-2);
+  }
+
+  /* Permission cell — visual: read=line, write=fill, approve=star */
+  .ck {
+    display: inline-grid; place-items: center;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .ck.on {
+    background: var(--ink); border-color: var(--ink); color: white;
+    font-size: 11px; font-weight: 700; font-family: var(--font-mono);
+  }
+  .ck.off {
+    color: var(--ink-5); background: #f6f7f8;
+  }
+  .ck.partial {
+    background: var(--paper); border-color: var(--ink); color: var(--ink);
+    font-size: 11px; font-weight: 700; font-family: var(--font-mono);
+  }
+  .ck.partial::after {
+    content: ""; position: absolute;
+    width: 10px; height: 2px; background: var(--ink); border-radius: 2px;
+  }
+
+  /* DOCS PAGE — folder + types */
+  .docs-grid { display: grid; grid-template-columns: 280px 1fr; gap: 18px; margin-top: 18px; }
+  .folders {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px;
+    height: fit-content;
+  }
+  .folders h5 {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: var(--ink-3); font-family: var(--font-en);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+    margin: 6px 6px 8px;
+  }
+  .folder {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 6px;
+    font-size: 13px; cursor: pointer; color: var(--ink-2);
+  }
+  .folder:hover { background: #fafbfc; }
+  .folder.active { background: #eef0f3; color: var(--ink); font-weight: 600; }
+  .folder .ic-f {
+    color: var(--ink-3); width: 14px; height: 14px;
+    border: 1.4px solid currentColor; border-radius: 2px;
+  }
+  .folder .ct {
+    margin-left: auto; font-family: var(--font-mono); font-size: 10px;
+    color: var(--ink-3);
+  }
+  .folder.active .ic-f { color: var(--ink); }
+  .folder.sub { padding-left: 24px; font-size: 12px; }
+
+  /* Doc types list */
+  .types-panel {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden;
+  }
+  .types-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line-2);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .types-head h3 { font-size: 16px; margin: 0 0 2px; font-weight: 700; letter-spacing: -0.01em; }
+  .types-head .s { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); }
+
+  .filters-row {
+    display: flex; gap: 8px; padding: 12px 20px;
+    border-bottom: 1px solid var(--line-2); background: #fafbfc;
+    font-size: 12px;
+  }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; background: var(--paper); color: var(--ink-2); }
+  .chip .lbl { color: var(--ink-3); }
+  .chip .val { color: var(--ink); font-weight: 600; }
+  .chip.add { color: var(--ink-3); border-style: dashed; }
+
+  .type-list { padding: 6px 0; }
+  .type-row {
+    display: grid; grid-template-columns: 32px minmax(140px, 1fr) 128px 120px 90px 14px;
+    gap: 12px; align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .type-row.head {
+    background: #fafbfc;
+    padding-top: 8px; padding-bottom: 8px;
+    font-size: 10px; color: var(--ink-3); font-family: var(--font-en);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-row .ic-d {
+    width: 32px; height: 38px;
+    background: #eef0f3; border-radius: 4px;
+    display: grid; place-items: center;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--ink-3);
+  }
+  .type-row .ic-d.pdf { background: #fbecec; color: #8a3030; }
+  .type-row .ic-d.xls { background: #e8f3ec; color: #1b6b3b; }
+  .type-row .ic-d.dat { background: #fbf5e3; color: #7a5b00; }
+  .type-row .nm { font-size: 13px; font-weight: 600; word-break: keep-all; }
+  .type-row .sub-t { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 2px; }
+  .type-row .access {
+    font-size: 11px; font-family: var(--font-mono); color: var(--ink-2);
+  }
+  .type-row .access .lbl { color: var(--ink-3); }
+  .type-row .auto-pill {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    background: #e8f3ec; color: #1b6b3b; font-weight: 600; font-family: var(--font-en);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    display: inline-block;
+  }
+  .type-row .auto-pill.man { background: #eef0f3; color: var(--ink-2); }
+  .type-row .ret {
+    font-size: 11px; font-family: var(--font-mono); color: var(--ink-2);
+  }
+  .type-row .car { color: var(--ink-4); font-family: var(--font-mono); }
+
+  /* AUTOMATION rules section */
+  .auto-section { margin-top: 22px; }
+  .auto-section h3 {
+    font-size: 14px; margin: 0 0 4px; letter-spacing: -0.01em; font-weight: 700;
+  }
+  .auto-section .h3-sub { font-size: 12px; color: var(--ink-3); font-family: var(--font-mono); margin-bottom: 12px; }
+  .auto-card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 8px;
+    display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; align-items: center;
+  }
+  .auto-card .tog {
+    width: 28px; height: 16px; border-radius: 10px;
+    background: var(--ink); position: relative;
+  }
+  .auto-card .tog::after {
+    content: ""; position: absolute; right: 2px; top: 2px;
+    width: 12px; height: 12px; border-radius: 50%; background: white;
+  }
+  .auto-card.off .tog { background: var(--line); }
+  .auto-card.off .tog::after { right: auto; left: 2px; }
+  .auto-card .desc { font-size: 12.5px; }
+  .auto-card .desc b { font-weight: 700; }
+  .auto-card .desc .if {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #fbf5e3; padding: 1px 7px; border-radius: 4px;
+    font-family: var(--font-mono); font-size: 11px; color: #7a5b00;
+    margin-right: 4px;
+  }
+  .auto-card .desc .then {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #e8f3ec; padding: 1px 7px; border-radius: 4px;
+    font-family: var(--font-mono); font-size: 11px; color: #1b6b3b;
+    margin: 0 4px;
+  }
+  .auto-card .meta {
+    font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 4px;
+  }
+
+  /* annotation */
+  .annot { position: absolute; display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border: 1px solid var(--note); background: var(--note-bg); border-radius: 6px; font-size: 11px; line-height: 1.5; color: #173f9c; max-width: 240px; font-family: var(--font-en); font-weight: 500; pointer-events: none; }
+  .annot::before { content: attr(data-n); flex-shrink: 0; width: 16px; height: 16px; border-radius: 50%; background: var(--note); color: white; display: grid; place-items: center; font-size: 10px; font-weight: 700; font-family: var(--font-mono); }
+  .annot b { color: #0a2a73; font-weight: 700; }
+  .annot code { font-family: var(--font-mono); font-size: 10px; background: white; padding: 1px 4px; border-radius: 3px; }
+  .pin-n { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--note); color: white; font-family: var(--font-mono); font-size: 9px; font-weight: 700; vertical-align: middle; margin-left: 6px; }
+
+  /* rationale */
+  .rationale { margin-top: 32px; padding: 24px 28px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; }
+  .rationale h2 { margin: 0 0 4px; font-size: 14px; font-family: var(--font-en); letter-spacing: -0.01em; }
+  .rationale .ratio-sub { color: var(--ink-3); font-size: 11px; font-family: var(--font-mono); margin-bottom: 18px; }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; padding: 16px; background: #fafbfc; border: 1px dashed var(--line); border-radius: 8px; }
+  .compare h3 { font-size: 11px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-en); color: var(--ink-3); font-weight: 600; }
+  .compare .flex h3 { color: #9a3b3b; }
+  .compare .tlt h3 { color: #1b6b3b; }
+  .compare ul { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.6; color: var(--ink-2); }
+  .compare ul li + li { margin-top: 4px; }
+  .compare ul b { color: var(--ink); }
+  .compare ul code { font-family: var(--font-mono); font-size: 11px; background: white; padding: 1px 4px; border-radius: 3px; }
+  .rationale-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .rationale-col h3 { font-size: 12px; margin: 0 0 8px; color: var(--ink); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-en); }
+  .rationale-col ul { margin: 0; padding-left: 18px; font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+  .rationale-col ul li + li { margin-top: 6px; }
+  .rationale-col ul li b { color: var(--ink); }
+  .rationale-col ul li code { font-family: var(--font-mono); font-size: 11px; background: #eef0f3; padding: 1px 4px; border-radius: 3px; color: var(--ink-2); }
+
+  .spec { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 14px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); }
+  .spec div { padding: 7px 9px; border: 1px dashed var(--line); border-radius: 6px; background: var(--paper); }
+  .spec b { color: var(--ink); display: block; font-weight: 600; margin-bottom: 2px; letter-spacing: 0.04em; text-transform: uppercase; font-size: 9px; }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <div class="doc-head">
+    <div>
+      <h1>Teamlet — Admin Wireframe <span style="color:var(--ink-4);font-weight:400">/ v1</span></h1>
+      <div class="sub">Settings · Permissions matrix + Documents + Automation · 권한별 노출 ADMIN</div>
+      <div class="pagenav">
+        <a href="Teamlet Home Wireframe.html">← 홈</a>
+        <a href="Teamlet Leave Management Wireframe.html">휴가 관리</a>
+        <a href="Teamlet Members Wireframe.html">구성원</a>
+        <a href="Teamlet Workflow Wireframe.html">워크플로우</a>
+        <a class="cur">권한·문서</a>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <b>Status</b> Working draft<br/>
+      <b>Scope</b> Settings 운영 (admin gated)<br/>
+      <b>Ref</b> brief /settings · flex 권한 그룹
+    </div>
+  </div>
+
+  <!-- ============ FRAME 1: 권한 관리 ============ -->
+  <div class="frame">
+    <div class="frame-bar">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="url">app.teamlet.io<b>/settings/permissions</b></div>
+      <div class="frame-label">PERMISSIONS</div>
+    </div>
+
+    <div class="app" style="position: relative;">
+
+      <!-- main sidebar -->
+      <aside class="side">
+        <div class="org"><div class="org-logo">T</div><div class="org-name">팀렛 주식회사<small>Pro · 142명</small></div><div class="org-caret">⌄</div></div>
+        <div class="nav-group" style="margin-top:8px;">
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>홈</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15 14c2.8 0 5.5 1.6 5.5 5"/></svg>구성원</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M4 12a8 8 0 0 1 16 0"/><path d="M9 20l3-3 3 3"/></svg>휴가<span class="badge">3</span></a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h6M10 16h4"/></svg>워크플로우<span class="badge">7</span></a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">Admin</div>
+          <a class="nav-item active"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2L10 21h4l.6-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5a7 7 0 0 0 .1-1.2z"/></svg>설정</a>
+        </div>
+        <div class="me"><div class="av"></div><div><div class="name">김유민</div><div class="role">PRODUCT · ADMIN</div></div></div>
+      </aside>
+
+      <!-- settings sub-nav -->
+      <nav class="snav">
+        <div class="snav-group">
+          <h4>개인</h4>
+          <a>프로필 <small>이름 · 연락처</small></a>
+          <a>보안 <small>2FA · 세션</small></a>
+          <a>알림 <small>이메일 · 슬랙</small></a>
+        </div>
+        <div class="snav-group">
+          <h4>회사</h4>
+          <a>회사 정보 <small>대표·주소·로고</small></a>
+          <a>공휴일 <small>한국 · 회사 자율</small></a>
+          <a>조직 · 직책 <small>본부 · 팀 · 직급</small></a>
+        </div>
+        <div class="snav-group">
+          <h4 class="gated">운영 <span class="pin-n" data-n="1">1</span></h4>
+          <a class="active">권한 그룹 <small>역할 · 범위</small></a>
+          <a>휴가 정책 <small>종류 · 부여 규칙</small></a>
+          <a>근무 정책 <small>근무 유형</small></a>
+          <a>워크플로우 <small>결재선 · 템플릿</small></a>
+          <a>문서함 <small>유형 · 보관</small></a>
+          <a>자동 발송 <small>이벤트 트리거</small></a>
+          <a>감사 로그 <small>관리자 활동</small></a>
+        </div>
+      </nav>
+
+      <!-- main body -->
+      <div class="main">
+        <div class="topbar">
+          <div class="search"><span class="glyph"></span>권한, 그룹, 구성원 검색…</div>
+          <div class="top-actions">
+            <button class="icon-btn">?</button>
+            <button class="btn ghost">감사 로그</button>
+            <button class="btn">+ 권한 그룹</button>
+          </div>
+        </div>
+
+        <main class="body-col">
+          <div class="page-h">
+            <div>
+              <h1 class="h-title">권한 그룹</h1>
+              <div class="h-sub">설정 / 운영 / 권한 그룹 · 시스템 3 + 커스텀 2 · 매핑 142 / 142 명</div>
+            </div>
+            <div style="display: flex; gap: 6px; font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
+              <button class="btn ghost sm">충돌 검사</button>
+              <button class="btn ghost sm">⬇ 권한 표 내보내기</button>
+            </div>
+          </div>
+
+          <div class="perm-split">
+            <!-- group list -->
+            <aside class="pg-list">
+              <h5>그룹 <span class="add">+ 추가</span></h5>
+              <div class="grp">
+                <div class="ic">👑</div>
+                <div><div class="nm">최고 관리자</div><div class="s">SYSTEM · 변경 불가</div></div>
+                <div class="ct">6</div>
+              </div>
+              <div class="grp">
+                <div class="ic" style="background:#e5edf7;">★</div>
+                <div><div class="nm">조직장</div><div class="s">SYSTEM · 조직 범위 자동</div></div>
+                <div class="ct">11</div>
+              </div>
+              <div class="grp active">
+                <div class="ic" style="background:#eef0f3;">○</div>
+                <div><div class="nm">일반 구성원</div><div class="s">SYSTEM · 모든 구성원 자동</div></div>
+                <div class="ct">142</div>
+              </div>
+              <div style="height: 8px;"></div>
+              <h5 style="margin-top: 4px;">커스텀</h5>
+              <div class="grp custom">
+                <div class="ic" style="background:#fbecec;">🎨</div>
+                <div><div class="nm">디자인 팀 리뷰어</div><div class="s">전사 디자인 평가 작성</div></div>
+                <div class="ct">3</div>
+              </div>
+              <div class="grp custom">
+                <div class="ic" style="background:#e8f3ec;">$</div>
+                <div><div class="nm">재무 결재</div><div class="s">전사 비용 결재</div></div>
+                <div class="ct">2</div>
+              </div>
+            </aside>
+
+            <!-- detail panel -->
+            <section class="pg-detail">
+              <div class="pgd-hero">
+                <div class="ic" style="background:#eef0f3;">○</div>
+                <div>
+                  <h2>일반 구성원 <span class="sys-badge">시스템</span></h2>
+                  <div class="s">모든 재직 구성원에게 자동 부여 · 본인 정보 · 본인 휴가 · 팀 공개 자료</div>
+                </div>
+                <div class="acts">
+                  <button class="btn ghost sm">권한 표 보기</button>
+                </div>
+              </div>
+
+              <div class="pgd-members">
+                <h4>적용 구성원 <span class="ct">142명 (전체 자동)</span></h4>
+                <div class="mems">
+                  <span class="mem-chip"><span class="av"></span>김유민</span>
+                  <span class="mem-chip"><span class="av"></span>강수빈</span>
+                  <span class="mem-chip"><span class="av"></span>고성현</span>
+                  <span class="mem-chip"><span class="av"></span>김락윤</span>
+                  <span class="mem-chip"><span class="av"></span>김세진</span>
+                  <span class="mem-chip"><span class="av"></span>박서연</span>
+                  <span class="mem-chip"><span class="av"></span>박민영</span>
+                  <span class="mem-chip"><span class="av"></span>박혜진</span>
+                  <span class="mem-chip"><span class="av"></span>오정협</span>
+                  <span class="mem-chip add">+ 135명 더</span>
+                </div>
+              </div>
+
+              <div class="pcat">
+                <div class="t active">회사 정보 <span class="ct">3</span></div>
+                <div class="t">구성원 정보 <span class="ct">6 <span class="pin-n" data-n="2">2</span></span></div>
+                <div class="t">근무 <span class="ct">4</span></div>
+                <div class="t">휴가 <span class="ct">5</span></div>
+                <div class="t">워크플로우 <span class="ct">3</span></div>
+                <div class="t">문서함 <span class="ct">4</span></div>
+                <div class="t">자동 발송 <span class="ct">2</span></div>
+              </div>
+
+              <div class="pmatrix">
+                <div class="pm-row head">
+                  <div>권한</div>
+                  <div class="a">읽기</div>
+                  <div class="a">쓰기</div>
+                  <div class="a">승인</div>
+                  <div style="text-align:right;">적용 범위 <span class="pin-n" data-n="3">3</span></div>
+                </div>
+
+                <div class="pm-row">
+                  <div>
+                    <div class="pm-name">회사 기본 정보 조회</div>
+                    <div class="pm-desc">대표·주소·사업자번호 등</div>
+                  </div>
+                  <div class="pm-cell"><span class="ck on">✓</span></div>
+                  <div class="pm-cell"><span class="ck off">─</span></div>
+                  <div class="pm-cell"><span class="ck off">─</span></div>
+                  <div class="pm-scope">전사</div>
+                </div>
+
+                <div class="pm-row">
+                  <div>
+                    <div class="pm-name">회사 공지사항</div>
+                    <div class="pm-desc">홈 피드 공지 게시·반응</div>
+                  </div>
+                  <div class="pm-cell"><span class="ck on">✓</span></div>
+                  <div class="pm-cell"><span class="ck off">─</span></div>
+                  <div class="pm-cell"><span class="ck off">─</span></div>
+                  <div class="pm-scope">전사</div>
+                </div>
+
+                <div class="pm-row">
+                  <div>
+                    <div class="pm-name">조직도 · 구성원 명부</div>
+                    <div class="pm-desc">전사 구성원 목록 열람</div>
+                  </div>
+                  <div class="pm-cell"><span class="ck on">✓</span></div>
+                  <div class="pm-cell"><span class="ck off">─</span></div>
+                  <div class="pm-cell"><span class="ck off">─</span></div>
+                  <div class="pm-scope">전사 (공개 필드만)</div>
+                </div>
+
+                <div style="background: #fafbfc; padding: 14px 22px; font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); border-top: 1px dashed var(--line);">
+                  <span style="text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">아래는 권한 없음 ─ 다른 그룹에서 부여됨</span>
+                </div>
+
+                <div class="pm-row" style="opacity: 0.6;">
+                  <div>
+                    <div class="pm-name">회사 정보 변경</div>
+                    <div class="pm-desc">대표·주소 등 변경 (최고 관리자)</div>
+                  </div>
+                  <div class="pm-cell"><span class="ck off">─</span></div>
+                  <div class="pm-cell"><span class="ck off">─</span></div>
+                  <div class="pm-cell"><span class="ck off">─</span></div>
+                  <div class="pm-scope">─</div>
+                </div>
+
+              </div>
+
+            </section>
+          </div>
+
+        </main>
+
+        <!-- annotations -->
+        <div class="annot" data-n="1" style="top: 200px; left: 285px; max-width: 200px;">
+          <div><b>"운영" 그룹은 ADMIN 뱃지</b> 권한별 노출 (brief). 일반 구성원에게는 이 그룹 자체가 안 보임.</div>
+        </div>
+        <div class="annot" data-n="2" style="top: 522px; left: 1140px; max-width: 220px;">
+          <div><b>카테고리 카운터</b> 해당 카테고리에서 부여된 권한 수 — 그룹별 권한 밀도 가시화.</div>
+        </div>
+        <div class="annot" data-n="3" style="top: 620px; left: 25px; max-width: 220px;">
+          <div><b>읽기/쓰기/승인 + 범위</b> flex는 단순 ON/OFF, Teamlet은 <code>action × scope</code> matrix · 범위(본인/팀/전사) 명시.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FRAME 2: 문서함 + 자동 발송 ============ -->
+  <div class="frame">
+    <div class="frame-bar">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="url">app.teamlet.io<b>/settings/documents</b></div>
+      <div class="frame-label">DOCUMENTS &amp; AUTOMATION</div>
+    </div>
+
+    <div class="app" style="position: relative; grid-template-rows: 1fr;">
+
+      <aside class="side">
+        <div class="org"><div class="org-logo">T</div><div class="org-name">팀렛 주식회사<small>Pro · 142명</small></div></div>
+        <div class="nav-group" style="margin-top:8px;">
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>홈</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15 14c2.8 0 5.5 1.6 5.5 5"/></svg>구성원</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M4 12a8 8 0 0 1 16 0"/><path d="M9 20l3-3 3 3"/></svg>휴가</a>
+          <a class="nav-item"><svg class="ico" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h6M10 16h4"/></svg>워크플로우</a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">Admin</div>
+          <a class="nav-item active"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2L10 21h4l.6-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5a7 7 0 0 0 .1-1.2z"/></svg>설정</a>
+        </div>
+      </aside>
+
+      <nav class="snav">
+        <div class="snav-group">
+          <h4>개인</h4>
+          <a>프로필</a>
+          <a>보안</a>
+        </div>
+        <div class="snav-group">
+          <h4>회사</h4>
+          <a>회사 정보</a>
+          <a>공휴일</a>
+        </div>
+        <div class="snav-group">
+          <h4 class="gated">운영</h4>
+          <a>권한 그룹</a>
+          <a>휴가 정책</a>
+          <a>워크플로우</a>
+          <a class="active">문서함</a>
+          <a>자동 발송</a>
+          <a>감사 로그</a>
+        </div>
+      </nav>
+
+      <div class="main">
+        <div class="topbar">
+          <div class="search"><span class="glyph"></span>문서 유형, 폴더 검색…</div>
+          <div class="top-actions">
+            <button class="btn ghost">⬇ 일괄 백업</button>
+            <button class="btn">+ 문서 유형</button>
+          </div>
+        </div>
+
+        <main class="body-col">
+          <div class="page-h">
+            <div>
+              <h1 class="h-title">문서함</h1>
+              <div class="h-sub">유형 18 · 자동 수집 12 · 평균 보관 7년 · 만료 임박 3건</div>
+            </div>
+          </div>
+
+          <div class="docs-grid">
+            <!-- folder tree -->
+            <aside class="folders">
+              <h5>분류</h5>
+              <div class="folder active"><span class="ic-f"></span>전체 <span class="ct">18</span></div>
+              <div class="folder"><span class="ic-f"></span>계약 · 소득 <span class="ct">5</span></div>
+              <div class="folder sub"><span class="ic-f"></span>연봉계약서</div>
+              <div class="folder sub"><span class="ic-f"></span>근로계약서</div>
+              <div class="folder sub"><span class="ic-f"></span>원천징수영수증</div>
+              <div class="folder"><span class="ic-f"></span>경력 · 학력 <span class="ct">4</span></div>
+              <div class="folder"><span class="ic-f"></span>증명서 <span class="ct">6</span></div>
+              <div class="folder"><span class="ic-f"></span>회사 공유 <span class="ct">3</span></div>
+              <div style="border-top: 1px dashed var(--line); margin: 10px 4px 6px;"></div>
+              <div class="folder"><span class="ic-f"></span>+ 새 폴더</div>
+            </aside>
+
+            <!-- doc types -->
+            <section class="types-panel">
+              <div class="types-head">
+                <div>
+                  <h3>문서 유형 <span class="pin-n" data-n="4">4</span></h3>
+                  <div class="s">계약 · 소득 정보 · 5 종 · 자동 수집 3</div>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn ghost sm">정렬 ⬇</button>
+                  <button class="btn sm">+ 유형 추가</button>
+                </div>
+              </div>
+
+              <div class="filters-row">
+                <span class="chip"><span class="lbl">분류</span><span class="val">계약 · 소득</span></span>
+                <span class="chip"><span class="lbl">자동 수집</span><span class="val">전체</span></span>
+                <span class="chip"><span class="lbl">상태</span><span class="val">활성</span></span>
+                <span class="chip add">+ 필터</span>
+              </div>
+
+              <div class="type-list">
+                <div class="type-row head">
+                  <div></div>
+                  <div>· 유형 / 설명</div>
+                  <div>열람 권한</div>
+                  <div>수집 방식</div>
+                  <div>상태 · 보관</div>
+                  <div></div>
+                </div>
+
+                <div class="type-row">
+                  <div class="ic-d pdf">PDF</div>
+                  <div>
+                    <div class="nm">연봉계약서</div>
+                    <div class="sub-t">매년 갱신 · 142건</div>
+                  </div>
+                  <div class="access"><span class="lbl">읽기</span> 본인 + 인사<br/><span class="lbl">관리</span> HR</div>
+                  <div><span class="auto-pill">자동 발송</span><div style="font-size:10px;color:var(--ink-3);font-family:var(--font-mono);margin-top:3px;">매년 1월 · 입사</div></div>
+                  <div><span class="auto-pill">활성</span><div style="font-size:10px;color:var(--ink-3);font-family:var(--font-mono);margin-top:3px;">보관 7년</div></div>
+                  <div class="car">›</div>
+                </div>
+
+                <div class="type-row">
+                  <div class="ic-d pdf">PDF</div>
+                  <div>
+                    <div class="nm">근로계약서</div>
+                    <div class="sub-t">입사 시 자동 생성 · 142건</div>
+                  </div>
+                  <div class="access"><span class="lbl">읽기</span> 본인 + 인사<br/><span class="lbl">관리</span> HR</div>
+                  <div><span class="auto-pill">자동 발송</span><div style="font-size:10px;color:var(--ink-3);font-family:var(--font-mono);margin-top:3px;">입사 D-7</div></div>
+                  <div><span class="auto-pill">활성</span><div style="font-size:10px;color:var(--ink-3);font-family:var(--font-mono);margin-top:3px;">보관 3년</div></div>
+                  <div class="car">›</div>
+                </div>
+
+                <div class="type-row">
+                  <div class="ic-d xls">XLS</div>
+                  <div>
+                    <div class="nm">원천징수영수증</div>
+                    <div class="sub-t">연말정산 후 자동 발급</div>
+                  </div>
+                  <div class="access"><span class="lbl">읽기</span> 본인 + 재무<br/><span class="lbl">관리</span> 재무</div>
+                  <div><span class="auto-pill">자동 발송</span><div style="font-size:10px;color:var(--ink-3);font-family:var(--font-mono);margin-top:3px;">매년 2월</div></div>
+                  <div><span class="auto-pill">활성</span><div style="font-size:10px;color:var(--ink-3);font-family:var(--font-mono);margin-top:3px;">보관 5년</div></div>
+                  <div class="car">›</div>
+                </div>
+
+                <div class="type-row">
+                  <div class="ic-d dat">DOC</div>
+                  <div>
+                    <div class="nm">정보처리 동의서</div>
+                    <div class="sub-t">개인정보 동의 · 입사 시 1회</div>
+                  </div>
+                  <div class="access"><span class="lbl">읽기</span> 본인 + HR<br/><span class="lbl">관리</span> HR</div>
+                  <div><span class="auto-pill man">수동 업로드</span><div style="font-size:10px;color:var(--ink-3);font-family:var(--font-mono);margin-top:3px;">입사 시 1회</div></div>
+                  <div><span class="auto-pill">활성</span><div style="font-size:10px;color:var(--ink-3);font-family:var(--font-mono);margin-top:3px;">보관 5년</div></div>
+                  <div class="car">›</div>
+                </div>
+
+                <div class="type-row">
+                  <div class="ic-d">DOC</div>
+                  <div>
+                    <div class="nm">경력증명서</div>
+                    <div class="sub-t">퇴직자 요청 시 발급</div>
+                  </div>
+                  <div class="access"><span class="lbl">읽기</span> 본인만<br/><span class="lbl">발급</span> HR</div>
+                  <div><span class="auto-pill man">요청 발급</span><div style="font-size:10px;color:var(--ink-3);font-family:var(--font-mono);margin-top:3px;">평균 24시간</div></div>
+                  <div><span class="auto-pill">활성</span><div style="font-size:10px;color:var(--ink-3);font-family:var(--font-mono);margin-top:3px;">보관 10년</div></div>
+                  <div class="car">›</div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- AUTOMATION RULES -->
+          <div class="auto-section">
+            <h3>자동 발송 규칙 <span class="pin-n" data-n="5">5</span></h3>
+            <div class="h3-sub">이벤트 → 액션 · 활성 4 / 비활성 1</div>
+
+            <div class="auto-card">
+              <div class="tog"></div>
+              <div>
+                <div class="desc">
+                  <span class="if">입사일 D-7</span>
+                  <b>근로계약서</b>를
+                  <span class="then">신규 입사자 + HR</span>
+                  에게 발송
+                </div>
+                <div class="meta">매번 자동 · 마지막 실행: 5. 19 (한도윤) · 다음 실행: 5. 26 (한도윤)</div>
+              </div>
+              <div>
+                <button class="btn ghost sm">로그</button>
+                <button class="btn ghost sm">편집</button>
+              </div>
+            </div>
+
+            <div class="auto-card">
+              <div class="tog"></div>
+              <div>
+                <div class="desc">
+                  <span class="if">매년 1. 2 09:00</span>
+                  <b>연봉계약서</b>를
+                  <span class="then">재직 전원</span>
+                  에게 발송 · 서명 요청
+                </div>
+                <div class="meta">마지막 실행: 2026. 1. 2 · 142명 서명 완료 · 다음 실행: 2027. 1. 2</div>
+              </div>
+              <div>
+                <button class="btn ghost sm">로그</button>
+                <button class="btn ghost sm">편집</button>
+              </div>
+            </div>
+
+            <div class="auto-card">
+              <div class="tog"></div>
+              <div>
+                <div class="desc">
+                  <span class="if">매년 2. 14</span>
+                  <b>원천징수영수증</b>을
+                  <span class="then">재직 전원</span>
+                  발급
+                </div>
+                <div class="meta">국세청 연동 · 자동 발급 · 다음 실행: 2027. 2. 14</div>
+              </div>
+              <div>
+                <button class="btn ghost sm">로그</button>
+                <button class="btn ghost sm">편집</button>
+              </div>
+            </div>
+
+            <div class="auto-card">
+              <div class="tog"></div>
+              <div>
+                <div class="desc">
+                  <span class="if">퇴직 처리 시</span>
+                  <b>경력증명서</b> 발급 가능 알림을
+                  <span class="then">퇴직자</span>
+                  에게 발송
+                </div>
+                <div class="meta">마지막 실행: 5. 12 (이종민) · 다음 실행: 트리거 대기</div>
+              </div>
+              <div>
+                <button class="btn ghost sm">로그</button>
+                <button class="btn ghost sm">편집</button>
+              </div>
+            </div>
+
+            <div class="auto-card off">
+              <div class="tog"></div>
+              <div>
+                <div class="desc">
+                  <span class="if">생일</span>
+                  <b>축하 메일</b>을
+                  <span class="then">생일자 + 매니저</span>
+                  에게 발송
+                </div>
+                <div class="meta" style="color: var(--ink-4);">비활성 · 슬랙 봇으로 대체</div>
+              </div>
+              <div>
+                <button class="btn ghost sm">로그</button>
+                <button class="btn ghost sm">편집</button>
+              </div>
+            </div>
+
+            <div style="margin-top: 10px;">
+              <button class="btn ghost sm">+ 자동 발송 규칙 추가</button>
+            </div>
+          </div>
+
+        </main>
+
+        <!-- annotations -->
+        <div class="annot" data-n="4" style="top: 168px; left: 1100px; max-width: 220px;">
+          <div><b>"기본 문서 추가" 모달 제거</b> flex는 체크리스트 모달. Teamlet은 메인 표에서 직접 인라인 편집.</div>
+        </div>
+        <div class="annot" data-n="5" style="top: 760px; left: 1100px; max-width: 220px;">
+          <div><b>자동 발송 = IF → THEN</b> 자연어 패턴으로 가독성 ↑. 색상도 트리거(노랑) · 결과(녹색)로 2중 인코딩.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec">
+    <div><b>Settings nav</b>3 그룹 (개인/회사/운영)</div>
+    <div><b>운영</b>ADMIN gated</div>
+    <div><b>Perm matrix</b>R / W / A × scope</div>
+    <div><b>Doc cols</b>유형/권한/수집/보관/상태</div>
+    <div><b>Auto rule</b>IF · THEN 자연어</div>
+    <div><b>Member chip</b>av + name + x</div>
+  </div>
+
+  <!-- RATIONALE -->
+  <div class="rationale">
+    <h2>관리자 영역 — 설계 원칙</h2>
+    <div class="ratio-sub">권한별 노출 · 충돌 가능성 가시화 · 자동화의 자연어 표현</div>
+
+    <div class="compare">
+      <div class="flex">
+        <h3>flex (현재)</h3>
+        <ul>
+          <li><b>권한 그룹</b>은 단순 ON/OFF 체크박스 — 범위/스코프 정보 없음</li>
+          <li><b>권한 카테고리</b>는 7개 가로 탭으로 분리 — 한 그룹 전체 권한을 한눈에 볼 수 없음</li>
+          <li><b>문서함 설정</b>은 체크리스트 모달로 추가 — 메타 정보(권한·보관·자동) 없음</li>
+          <li><b>자동 발송</b>은 별도 메뉴 깊숙이 — 어떤 이벤트에 무엇이 발송되는지 추적 어려움</li>
+          <li><b>설정 메뉴 권한별 노출</b> 처리는 있으나 운영 메뉴와 일반 설정 구분 모호</li>
+        </ul>
+      </div>
+      <div class="tlt">
+        <h3>Teamlet</h3>
+        <ul>
+          <li><b>R / W / A × scope</b> 매트릭스 — 권한의 실제 효과 가시화</li>
+          <li><b>같은 7개 카테고리</b>지만 카운터 + "권한 없음" 그룹화로 그룹별 권한 밀도 즉시 인지</li>
+          <li><b>문서 유형 = 한 행</b> 권한·수집 방식·보관·상태 인라인 편집</li>
+          <li><b>자동 발송 = 자연어 IF→THEN</b> 카드 · 트리거(노랑) · 액션(녹색) 색 분리</li>
+          <li><b>"운영" 그룹에 ADMIN 뱃지</b> 권한별 노출 명시 (brief 준수)</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>세부 결정</h2>
+    <div class="ratio-sub">권한 매트릭스 · 충돌 검사 · 보관 정책</div>
+
+    <div class="rationale-grid">
+      <div class="rationale-col">
+        <h3>1. 권한 매트릭스</h3>
+        <ul>
+          <li>한 행 = <code>권한 × R / W / A × 범위</code></li>
+          <li>"부여 안 됨" 권한은 <b>회색 + opacity</b>로 시각적 격하 — 그룹 한계 명시</li>
+          <li>상단 카테고리 탭에 <b>부여된 권한 수 카운터</b> — 그룹별 권한 밀도 비교</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>2. 충돌 검사</h3>
+        <ul>
+          <li>한 구성원이 여러 그룹에 속할 때 권한이 <b>OR 합산</b>됨</li>
+          <li>상단 "충돌 검사" 버튼 → 같은 권한을 R/W 모두 부여하는 그룹 조합 찾아냄</li>
+          <li>흔한 실수: <b>일반 구성원 + 커스텀 리뷰어 그룹의 권한 중복</b></li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>3. 시스템 vs 커스텀</h3>
+        <ul>
+          <li>시스템 그룹 3개(최고관리자 / 조직장 / 일반)는 <b>이름·자동 부여 변경 불가</b></li>
+          <li>커스텀 그룹은 자유롭게 생성 · 사용자가 수동 매핑</li>
+          <li>두 영역 시각적 분리 (subhead "커스텀") — 시스템 망가뜨림 방지</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>4. 문서 유형 표</h3>
+        <ul>
+          <li>한 행 = <code>아이콘 · 이름·설명 · 권한 · 수집방식 · 보관 · 상태</code></li>
+          <li>수집 방식 3가지: <b>자동 발송 / 수동 업로드 / 요청 발급</b></li>
+          <li>flex의 "기본 문서 추가" 모달 → 표에서 직접 + 인라인 추가</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>5. 자동 발송</h3>
+        <ul>
+          <li>한 카드 = <b>토글 + 자연어 IF · THEN 문장 + 메타</b></li>
+          <li>색 인코딩: 트리거(노랑 bg) · 결과(녹색 bg) — 한눈에 흐름 파악</li>
+          <li>각 카드에 마지막/다음 실행 · 로그 링크 — 운영 안전성 ↑</li>
+        </ul>
+      </div>
+
+      <div class="rationale-col">
+        <h3>6. 보관 · 만료</h3>
+        <ul>
+          <li>모든 문서 유형에 <b>보관 기간</b> 명시 (법정/사내 기준)</li>
+          <li>만료 임박 문서는 페이지 상단 <code>만료 임박 3건</code> 카운터 노출</li>
+          <li>만료 시 자동 알림 → 재발급/폐기 워크플로우 자동 생성</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.nav-item').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const sb = a.closest('.side'); if (!sb) return;
+      sb.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+      a.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.snav a').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const sn = a.closest('.snav'); if (!sn) return;
+      sn.querySelectorAll('a').forEach(x => x.classList.remove('active'));
+      a.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.pg-list .grp').forEach(g => {
+    g.addEventListener('click', () => {
+      g.closest('.pg-list').querySelectorAll('.grp').forEach(x => x.classList.remove('active'));
+      g.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.pcat .t').forEach(t => {
+    t.addEventListener('click', () => {
+      t.closest('.pcat').querySelectorAll('.t').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.folder').forEach(f => {
+    f.addEventListener('click', () => {
+      f.closest('.folders').querySelectorAll('.folder').forEach(x => x.classList.remove('active'));
+      f.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.auto-card').forEach(c => {
+    c.querySelector('.tog').addEventListener('click', () => c.classList.toggle('off'));
+  });
+</script>
+
+</body>
+</html>

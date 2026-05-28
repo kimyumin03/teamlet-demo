@@ -15,7 +15,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
       <form action={formAction} className="flex flex-col gap-4">
         {callbackUrl && <input type="hidden" name="callbackUrl" value={callbackUrl} />}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-sm text-foreground-muted">
+          <label htmlFor="email" className="text-xs font-medium text-foreground-muted">
             이메일
           </label>
           <Input
@@ -26,19 +26,22 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
             required
             placeholder="you@company.com"
           />
+          <p className="text-[11.5px] text-foreground-muted">
+            비밀번호는 사용하지 않아요. 메일로 받은 임시 비밀번호로 1회 로그인합니다.
+          </p>
         </div>
 
         {state.error && (
           <p
             role="alert"
-            className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700"
+            className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
           >
             {state.error}
           </p>
         )}
 
         <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? "로그인 중…" : "로그인"}
+          {isPending ? "로그인 중…" : "로그인 링크 받기 →"}
         </Button>
       </form>
 

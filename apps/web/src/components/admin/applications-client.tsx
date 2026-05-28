@@ -30,7 +30,7 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_CLASS: Record<string, string> = {
   PENDING: "bg-amber-50 text-amber-700",
   APPROVED: "bg-green-50 text-green-700",
-  REJECTED: "bg-destructive-50 text-destructive-700",
+  REJECTED: "bg-destructive-50 text-destructive",
 };
 
 function formatDate(d: Date): string {
@@ -75,7 +75,7 @@ export function ApplicationsClient({
       {error && (
         <p
           role="alert"
-          className="rounded-md bg-destructive-50 px-4 py-3 text-sm text-destructive-700"
+          className="rounded-md bg-destructive-50 px-4 py-3 text-sm text-destructive"
         >
           {error}
         </p>
@@ -96,7 +96,7 @@ export function ApplicationsClient({
             {pending.map((app) => (
               <li
                 key={app.id}
-                className="rounded-lg border border-border bg-background-primary p-5"
+                className="rounded-[14px] border border-border bg-background-primary p-5"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex flex-col gap-0.5">
@@ -286,7 +286,7 @@ function RejectDialog({
           {fieldError && (
             <p
               role="alert"
-              className="rounded-md bg-destructive-50 px-3 py-2 text-sm text-destructive-700"
+              className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
             >
               {fieldError}
             </p>

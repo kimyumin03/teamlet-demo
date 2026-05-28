@@ -12,7 +12,7 @@ const RESULT_LABEL: Record<CandidateResult, string> = {
 const RESULT_CLASS: Record<CandidateResult, string> = {
   IN_PROGRESS: "bg-amber-50 text-amber-700",
   PASSED: "bg-green-50 text-green-700",
-  FAILED: "bg-destructive-50 text-destructive-700",
+  FAILED: "bg-destructive/5 text-destructive",
   WITHDRAWN: "bg-background-secondary text-foreground-subtle",
 };
 

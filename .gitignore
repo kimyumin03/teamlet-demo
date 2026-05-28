@@ -41,3 +41,7 @@ test-results/
 # Misc
 .cache/
 tmp/
+.axhub/bootstrap.state.json
+.local/
+*.tmp.*
+teamlet_deisign.zip

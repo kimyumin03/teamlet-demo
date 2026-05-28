@@ -25,7 +25,7 @@ const SCOPE_LABEL: Record<ScopeChoice, string> = {
 
 const SENSITIVITY_BADGE: Record<string, { label: string; cls: string }> = {
   SENSITIVE: { label: "민감", cls: "bg-amber-50 text-amber-700" },
-  CRITICAL: { label: "중요", cls: "bg-destructive-50 text-destructive-700" },
+  CRITICAL: { label: "중요", cls: "bg-destructive/5 text-destructive" },
 };
 
 /**
@@ -145,7 +145,7 @@ export function RolePermissionEditor({
   return (
     <div className="flex flex-col gap-5">
       {readOnly && (
-        <p className="rounded-md bg-background-secondary px-4 py-3 text-sm text-foreground-muted">
+        <p className="rounded-[8px] bg-background-secondary px-4 py-3 text-[13px] text-foreground-muted">
           시스템 역할의 권한은 수정할 수 없어요. 구성 내용만 확인할 수 있어요.
         </p>
       )}
@@ -153,7 +153,7 @@ export function RolePermissionEditor({
       {error && (
         <p
           role="alert"
-          className="rounded-md bg-destructive-50 px-4 py-3 text-sm text-destructive-700"
+          className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-4 py-3 text-[13px] text-destructive"
         >
           {error}
         </p>
@@ -162,7 +162,7 @@ export function RolePermissionEditor({
       {catalog.map((cat) => (
         <section
           key={cat.slug}
-          className="rounded-lg border border-border bg-background-primary"
+          className="rounded-[14px] border border-border bg-background-primary"
         >
           <h2 className="border-b border-border px-5 py-3 text-sm font-semibold text-foreground">
             {cat.label}
