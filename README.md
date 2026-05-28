@@ -43,14 +43,14 @@ pnpm dev              # http://localhost:3000
 
 > **앱 서버**: `http://localhost:3001` (포트 3001 고정)
 
-**데모 계정** — 이메일만으로 로그인 (비밀번호 없음)
+**데모 계정** — 이메일 + 비밀번호 로그인 (2-step)
 
 | 계정 | 역할 | 비고 |
 |---|---|---|
-| `admin@teamlet.test` | 최고 관리자 | 구성원 관리, 휴가 결재, 회사코드 가입 승인 |
-| `hr@teamlet.test` | 팀원 (DEFAULT) | 휴가 14일 잔여 |
-| `emp@teamlet.test` | 팀원 (DEFAULT) | 연차 1건 결재 대기 |
-| `platform@teamlet.test` | 플랫폼 관리자 | `/admin-key` 에서 비밀키(`teamlet-admin-2024`) 입력 후 접속 |
+| `admin@teamlet.test` | 최고 관리자 | 비밀번호: `Test1234!` |
+| `hr@teamlet.test` | HR 담당 | 비밀번호: `Test1234!` |
+| `emp@teamlet.test` | 일반 사원 | 비밀번호: `Test1234!` |
+| `platform@teamlet.test` | 플랫폼 관리자 | 비밀번호: `Test1234!` + 비밀키: `teamlet-admin-2024` |
 
 > **데모 회사코드**: `DEMO-0001`  
 > **환경 변수**: `apps/web/.env.local` 필요. `.env.example` 참고.
@@ -114,19 +114,24 @@ pnpm dev              # http://localhost:3000
 
 ## 데일리 스크럼
 
-### 2026-05-26
+### 2026-05-28 목요일
 
-**오늘 한 일**
-- 인증 간소화: 이메일 전용 로그인 (비밀번호·2FA 제거)
-- 회원가입 비밀번호 제거 — 이름·이메일·연락처만 입력, 자동 로그인
-- 플랫폼 관리자 2단계 인증 — `/admin-key` 비밀키 페이지 구현
-- 회사 등록 신청에 사업자 증빙 서류 파일 업로드 추가 (PDF/JPG/PNG, 10MB)
-- 회사 가입 화면 뒤로가기 버튼 추가
-- DB 초기화 + 재시드 (데모 회사코드 `DEMO-0001`)
+**[Teamlet]**
+☑ Claude 디자인 파일 기반 전체 UI 전면 교체 (design.css 브리지 + Tailwind CSS 변수 직접 적용)
+☑ 인증 6개 페이지 AuthCard 컴포넌트 기반 통일 (login 2-step 흐름, signup, 2fa, join-company, register-company, pending-approval)
+☑ 앱 레이아웃 · 사이드바 디자인 구조 교체 (.app/.main 그리드, .side/.nav-item)
+☑ 메인 5개 페이지 디자인 교체 (home, members, workflow, hr/leave, leave)
+☑ 설정 레이아웃 2-col 구조 + 알림 설정 페이지 신규 구현
+☑ HomeRail 오늘 자리비움 실데이터 연결 (listTeamLeaveCalendar)
+☑ teamlet 컴포넌트 라이브러리 추가 (AuthCard, KpiCard, DataTable, Tag 등)
 
-**내일 할 일**
-- 로그인·가입·회사코드 가입 전체 흐름 런타임 검증
-- 비밀번호 설정 관련 페이지 정리 (settings/security 비밀번호 변경 UI 재검토)
-- 회사코드 가입 → 최고 관리자 승인 흐름 end-to-end 검증 (`/members` 앰버 배너)
-- 플랫폼 관리자 콘솔 문서 업로드 링크 동작 확인
-- 개인 설정(`/settings/profile`) 에서 이메일·연락처 수정 UI 점검
+---
+
+### 2026-05-29 금요일 (예정)
+
+**[Teamlet]**
+☐ 디자인 대비 미구현 기능 목록 분석 및 우선순위 설계
+☐ AxHub 연동 설계 — 구성원·회사 데이터 sync 정합성 정의 (`sync_locked_fields` 범위 확정)
+☐ HomeRail 축하 보낼 동료 위젯 (생일·입사기념일 실데이터 연결)
+☐ 반려된 휴가 신청 재신청 기능 구현
+☐ 활성 세션 목록 + 강제 로그아웃 (settings/security)
