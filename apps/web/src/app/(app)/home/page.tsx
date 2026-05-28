@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getMembershipSummary } from "@teamlet/modules/tenancy";
-import { getLeaveBalances } from "@teamlet/modules/leave";
+import { getLeaveBalances, listTeamLeaveCalendar } from "@teamlet/modules/leave";
 import { listPendingApprovals, listMyDocuments } from "@teamlet/modules/workflow";
 import { listAnnouncements } from "@teamlet/modules/announcement";
 import { HomeTabs } from "./_components/home-tabs";
@@ -43,19 +43,32 @@ export default async function HomePage({
   const employeeId = session.user.employeeId;
   const year = new Date().getFullYear();
 
-  const [pendingResult, balancesResult, myDocsResult, announcementsResult] = employeeId
+  const now = new Date();
+  const month = now.getMonth() + 1;
+
+  const [pendingResult, balancesResult, myDocsResult, announcementsResult, calendarResult] = employeeId
     ? await Promise.all([
         listPendingApprovals(employeeId),
         getLeaveBalances(employeeId, year),
         listMyDocuments(employeeId),
         listAnnouncements(employeeId),
+        listTeamLeaveCalendar(employeeId, year, month),
       ])
-    : [null, null, null, null];
+    : [null, null, null, null, null];
 
   const pending = pendingResult?.ok ? pendingResult.data : [];
   const balances = balancesResult?.ok ? balancesResult.data : [];
   const myDocs = myDocsResult?.ok ? myDocsResult.data : [];
   const announcements = announcementsResult?.ok ? announcementsResult.data : [];
+
+  // 오늘 부재 중인 동료
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  const todayAbsent = (calendarResult?.ok ? calendarResult.data : []).filter((r) => {
+    const s = new Date(r.startDate); s.setHours(0, 0, 0, 0);
+    const e = new Date(r.endDate); e.setHours(23, 59, 59, 999);
+    return s <= todayEnd && e >= todayStart && r.employeeId !== employeeId;
+  });
 
   const annualBalance = balances.find((b) => b.leaveTypeKey === "annual");
   const firstName = session.user.name?.split(" ")[0] ?? session.user.name ?? "";
@@ -68,28 +81,21 @@ export default async function HomePage({
   });
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_340px] h-full">
-      {/* 메인 피드 */}
-      <main className="min-w-0 border-r border-border px-8 py-7">
+    <div className="work">
+      <main className="feed">
         {/* 인사말 헤더 */}
-        <div className="mb-6 flex items-end justify-between">
+        <div className="feed-head">
           <div>
-            <h1 className="text-[26px] font-bold leading-tight tracking-tight">
-              {greeting}, {firstName}님{" "}
-              <span
-                className="inline-block"
-                style={{ animation: "wave 1.6s ease-in-out 1", transformOrigin: "70% 70%" }}
-              >
-                👋
-              </span>
+            <h1 className="h-title-h">
+              {greeting}, {firstName}님 <span className="wave">👋</span>
             </h1>
-            <p className="mt-1.5 text-[13px] text-foreground-muted">
+            <div className="h-sub-h">
               {today}
-                <span className="ml-3 inline-flex items-center gap-1.5">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 ring-[3px] ring-emerald-100" />
+              <span className="ping">
+                <i />
                 {pending.length > 0 ? `결재 대기 ${pending.length}건` : "오늘도 좋은 하루"}
               </span>
-            </p>
+            </div>
           </div>
         </div>
 
@@ -122,8 +128,7 @@ export default async function HomePage({
         )}
       </main>
 
-      {/* 오른쪽 레일 */}
-      <HomeRail balances={balances} annualBalance={annualBalance} />
+      <HomeRail balances={balances} annualBalance={annualBalance} todayAbsent={todayAbsent} />
     </div>
   );
 }

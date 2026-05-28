@@ -20,8 +20,8 @@ export default async function LeaveTypesPage() {
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[20px] font-bold tracking-tight text-foreground">휴가 종류</h1>
-          <p className="mt-0.5 text-[13px] text-foreground-muted">
+          <h1 className="h-title">휴가 종류</h1>
+          <p className="h-sub">
             회사에서 사용하는 휴가 종류를 관리해요
           </p>
         </div>

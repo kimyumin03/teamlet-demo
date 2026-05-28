@@ -12,16 +12,16 @@ function formatPhone(raw: string) {
   return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
 }
 
-type FieldErrors = Partial<Record<"name" | "email" | "phone", string>>;
+type FieldErrors = Partial<Record<"name" | "email" | "phone" | "password" | "passwordConfirm", string>>;
 
 const BASE = "h-10 w-full rounded-md border bg-background-primary px-3 text-sm text-foreground outline-none transition-colors focus:border-foreground-subtle disabled:opacity-60";
 const BORDER_OK = "border-border";
-const BORDER_ERR = "border-destructive-500";
+const BORDER_ERR = "border-destructive";
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm text-foreground-muted">{label}</label>
+      <label className="text-xs font-medium text-foreground-muted">{label}</label>
       {children}
       {error && <p className="text-[12px] text-destructive">{error}</p>}
     </div>
@@ -32,6 +32,8 @@ export function SignupForm({ callbackUrl }: { callbackUrl?: string }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -46,6 +48,11 @@ export function SignupForm({ callbackUrl }: { callbackUrl?: string }) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = "올바른 이메일 형식이 아니에요";
     const digits = phone.replace(/\D/g, "");
     if (!/^01[016789]\d{7,8}$/.test(digits)) errs.phone = "올바른 연락처를 입력해 주세요";
+    if (password.length < 8) errs.password = "비밀번호는 8자 이상이어야 해요";
+    else if (!/[a-zA-Z]/.test(password)) errs.password = "영문자를 포함해야 해요";
+    else if (!/[0-9]/.test(password)) errs.password = "숫자를 포함해야 해요";
+    else if (!/[^a-zA-Z0-9]/.test(password)) errs.password = "특수문자를 포함해야 해요";
+    if (!errs.password && password !== passwordConfirm) errs.passwordConfirm = "비밀번호가 일치하지 않아요";
     return errs;
   }
 
@@ -61,6 +68,7 @@ export function SignupForm({ callbackUrl }: { callbackUrl?: string }) {
     data.set("name", name.trim());
     data.set("email", email.trim());
     data.set("phone", phone);
+    data.set("password", password);
 
     startTransition(async () => {
       const res = await signupAction({ error: null }, data);
@@ -100,6 +108,30 @@ export function SignupForm({ callbackUrl }: { callbackUrl?: string }) {
           placeholder="010-0000-0000"
           inputMode="tel"
           maxLength={13}
+        />
+      </Field>
+
+      <Field label="비밀번호" error={fieldErrors.password}>
+        <input
+          className={`${BASE} ${fieldErrors.password ? BORDER_ERR : BORDER_OK}`}
+          type="password"
+          value={password}
+          onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
+          disabled={isPending}
+          placeholder="8자 이상, 영문+숫자+특수문자"
+          autoComplete="new-password"
+        />
+      </Field>
+
+      <Field label="비밀번호 확인" error={fieldErrors.passwordConfirm}>
+        <input
+          className={`${BASE} ${fieldErrors.passwordConfirm ? BORDER_ERR : BORDER_OK}`}
+          type="password"
+          value={passwordConfirm}
+          onChange={(e) => { setPasswordConfirm(e.target.value); clearError("passwordConfirm"); }}
+          disabled={isPending}
+          placeholder="비밀번호를 다시 입력해 주세요"
+          autoComplete="new-password"
         />
       </Field>
 

@@ -38,8 +38,8 @@ export default async function ApprovalPoliciesPage() {
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[20px] font-bold tracking-tight text-foreground">결재 정책</h1>
-          <p className="mt-0.5 text-[13px] text-foreground-muted">
+          <h1 className="h-title">결재 정책</h1>
+          <p className="h-sub">
             문서 종류별 자동 결재선을 설정해요
           </p>
         </div>

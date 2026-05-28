@@ -11,6 +11,7 @@ const GROUPS: { label: string; admin?: boolean; items: NavItem[] }[] = [
     items: [
       { href: "/settings/profile", label: "프로필", sub: "이름 · 연락처" },
       { href: "/settings/security", label: "보안", sub: "2FA · 세션" },
+      { href: "/settings/notifications", label: "알림", sub: "이메일 · 슬랙" },
     ],
   },
   {

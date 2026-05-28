@@ -66,139 +66,120 @@ export default async function LeavePage({
   const totalUsed = balances.reduce((s, b) => s + b.usedDays, 0);
   const totalRemaining = balances.reduce((s, b) => s + b.remainingDays, 0);
 
+  const annualTotal = annualBalance ? annualBalance.grantedDays + annualBalance.adjustedDays : 0;
+  const usedPct = annualTotal > 0 ? Math.min(100, ((annualBalance?.usedDays ?? 0) / annualTotal) * 100) : 0;
+  const scheduledPct = annualTotal > 0 ? Math.min(100 - usedPct, (pendingCount / annualTotal) * 100) : 0;
+
   return (
-    <div className="flex h-full flex-col">
-      {/* 헤더 */}
-      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-4">
-        <h1 className="text-[22px] font-bold leading-tight tracking-tight">내 휴가</h1>
-        <p className="mt-0.5 text-[13px] text-foreground-muted">
-          {year}년 · 총 {totalGranted}일 부여 · {totalUsed}일 사용 · {totalRemaining}일 잔여
-        </p>
+    <div className="page-body">
+      {/* 페이지 헤더 */}
+      <div className="page-h">
+        <div>
+          <h1 className="h-title">내 휴가</h1>
+          <div className="h-sub">{year}년 · 총 {totalGranted}일 부여 · 사용 {totalUsed}일 · 잔여 {totalRemaining}일</div>
+        </div>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <LeaveRequestButton leaveTypes={leaveTypes} approverCandidates={approverCandidates} />
+        </div>
       </div>
 
       {/* 히어로 카드 */}
-      {annualBalance && (() => {
-        const annualTotal = annualBalance.grantedDays + annualBalance.adjustedDays;
-        const usedPct = annualTotal > 0 ? Math.min(100, (annualBalance.usedDays / annualTotal) * 100) : 0;
-        const isLow = annualBalance.remainingDays <= 3 && annualBalance.remainingDays > 0;
-        const isExhausted = annualBalance.remainingDays <= 0 && annualTotal > 0;
-        return (
-          <div
-            className="shrink-0 border-b border-border px-6 py-5"
-            style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-hover))" }}
-          >
-            <div className="grid grid-cols-[1fr_auto] items-center gap-6">
-              <div>
-                <p className="text-[12px] font-semibold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.72)" }}>
-                  연차 잔여 — {year}년
-                </p>
-                <div className="mt-1 flex items-end gap-2">
-                  <span
-                    className={`text-[52px] font-extrabold leading-none tabular-nums tracking-tight ${
-                      isExhausted ? "text-white/60" : "text-white"
-                    }`}
-                  >
-                    {annualBalance.remainingDays}
-                  </span>
-                  <span className="mb-1.5 text-[18px] font-medium" style={{ color: "rgba(255,255,255,0.8)" }}>
-                    / {annualTotal}일
-                  </span>
-                </div>
-                <p className="mt-1.5 text-[13px]" style={{ color: "rgba(255,255,255,0.85)" }}>
-                  사용 <b className="text-white font-semibold">{annualBalance.usedDays}일</b>
-                  {pendingCount > 0 && (
-                    <> · 대기 중 <b className="text-white font-semibold">{pendingCount}건</b></>
-                  )}
-                  {isExhausted
-                    ? " · 소진 완료"
-                    : isLow
-                    ? " · ⚠ 소진 임박"
-                    : " · 소멸 임박 없음 ✓"}
-                </p>
-                {/* 분석 바 */}
-                <div className="mt-3 h-[6px] w-full overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.2)" }}>
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${usedPct}%`, background: "rgba(255,255,255,0.85)" }}
-                  />
-                </div>
-                <div className="mt-1.5 flex gap-4 text-[11.5px]" style={{ color: "rgba(255,255,255,0.65)" }}>
-                  <span>
-                    <span className="inline-block h-2 w-2 rounded-sm mr-1" style={{ background: "rgba(255,255,255,0.85)" }} />
-                    사용 <b className="font-semibold" style={{ color: "rgba(255,255,255,0.9)" }}>{annualBalance.usedDays}일</b>
-                  </span>
-                  <span>
-                    <span className="inline-block h-2 w-2 rounded-sm mr-1" style={{ background: "rgba(255,255,255,0.2)" }} />
-                    잔여 <b className="font-semibold" style={{ color: "rgba(255,255,255,0.9)" }}>{annualBalance.remainingDays}일</b>
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <LeaveRequestButton leaveTypes={leaveTypes} approverCandidates={approverCandidates} />
-              </div>
+      {annualBalance && (
+        <div className="lv-hero">
+          <div>
+            <div className="l">연차 잔여 — {year}년</div>
+            <div className="v num">
+              {annualBalance.remainingDays}
+              <small>/ {annualTotal}일</small>
+            </div>
+            <div className="d">
+              사용 <b>{annualBalance.usedDays}일</b>
+              {pendingCount > 0 && <> · 대기 중 <b>{pendingCount}건</b></>}
+              {annualBalance.remainingDays <= 0 ? " · 소진 완료" : annualBalance.remainingDays <= 3 ? " · ⚠ 소진 임박" : " · 소멸 임박 없음 ✓"}
             </div>
           </div>
-        );
-      })()}
-
-      {/* 탭 */}
-      <div className="shrink-0 border-b border-border px-6">
-        <LeaveTabs activeTab={activeTab} pendingCount={pendingCount} />
-      </div>
-
-      {/* 개요 탭 */}
-      {activeTab === "overview" && (
-        <div className="flex-1 overflow-auto px-6 py-6">
-          <BalanceSection balances={balances} year={year} />
-
-          {requests.length > 0 && (
-            <section className="mt-6">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-[12px] font-semibold uppercase tracking-wider text-foreground-muted">
-                  최근 신청
-                </p>
-                <Link
-                  href="/leave?tab=history"
-                  className="text-[12px] text-foreground-muted transition-colors hover:text-foreground"
-                >
-                  전체 보기 →
-                </Link>
-              </div>
-              <div className="flex flex-col gap-2">
-                {requests.slice(0, 3).map((r) => (
-                  <div
-                    key={r.id}
-                    className="flex items-center justify-between gap-4 rounded-[14px] border border-border bg-background-primary px-5 py-3.5"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13.5px] font-semibold text-foreground">{r.leaveTypeName}</span>
-                        <span className="font-mono text-[12px] tabular-nums text-foreground-muted">{r.days}일</span>
-                      </div>
-                      <p className="mt-0.5 text-[12px] text-foreground-muted">
-                        {fmtDate(r.startDate)}
-                        {r.startDate.toString() !== r.endDate.toString() && ` – ${fmtDate(r.endDate)}`}
-                        {r.reason && <span className="ml-2 text-foreground-subtle">· {r.reason}</span>}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-[5px] border px-2 py-0.5 font-mono text-[11px] font-semibold ${STATUS_CLS[r.status]}`}
-                    >
-                      {STATUS_LABEL[r.status]}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          <div className="actions">
+            <LeaveRequestButton leaveTypes={leaveTypes} approverCandidates={approverCandidates} />
+          </div>
         </div>
       )}
 
-      {/* 신청 내역 탭 */}
+      {/* 탭 */}
+      <LeaveTabs activeTab={activeTab} pendingCount={pendingCount} />
+
+      {/* 개요 탭 */}
+      {activeTab === "overview" && (
+        <>
+          {/* 연간 사용 현황 */}
+          <div className="breakdown">
+            <h3>연간 사용 현황 <span className="sub">{year}. 1. 1 — {year}. 12. 31</span></h3>
+            <div className="bd-bar">
+              <div className="seg used" style={{ width: `${usedPct}%` }} />
+              <div className="seg scheduled" style={{ width: `${scheduledPct}%` }} />
+            </div>
+            <div className="bd-legend">
+              <span className="used"><i />{annualBalance ? `사용 ` : ""}<b>{annualBalance?.usedDays ?? 0}일</b></span>
+              {pendingCount > 0 && <span className="scheduled"><i />대기 중 <b>{pendingCount}건</b></span>}
+              <span className="remaining"><i />잔여 <b>{annualBalance?.remainingDays ?? totalRemaining}일</b></span>
+            </div>
+
+            {/* 휴가 종류 그리드 */}
+            <div className="types-grid">
+              {balances.map((b) => {
+                const total = b.grantedDays + b.adjustedDays;
+                return (
+                  <div key={b.leaveTypeId} className={`type${b.remainingDays <= 0 && total > 0 ? " na" : ""}`}>
+                    <div className="t">{b.leaveTypeName}</div>
+                    <div className="vt num">
+                      {b.remainingDays}
+                      <small>/ {total}일</small>
+                    </div>
+                    <div className="s">사용 {b.usedDays}일</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 최근 신청 */}
+          {requests.length > 0 && (
+            <div className="breakdown">
+              <h3>
+                예정된 / 최근 신청
+                <span className="sub">{requests.length}건</span>
+              </h3>
+              {requests.slice(0, 5).map((r) => (
+                <div key={r.id} className="hist-row">
+                  <div className="date">
+                    <b>{fmtDate(r.startDate)}</b>
+                    {r.startDate.toString() !== r.endDate.toString() && ` ~ ${fmtDate(r.endDate)}`}
+                  </div>
+                  <div className="desc">
+                    <div className="t">{r.leaveTypeName}</div>
+                    {r.reason && <div className="s">{r.reason}</div>}
+                  </div>
+                  <div><span className="kind">{r.leaveTypeName}</span></div>
+                  <div className="dur">{r.days}일</div>
+                  <div>
+                    <span className={`st ${r.status === "APPROVED" ? "ok" : r.status === "PENDING" ? "wait" : r.status === "REJECTED" ? "rej" : "end"}`}>
+                      {STATUS_LABEL[r.status]}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {requests.length > 5 && (
+                <div style={{ textAlign: "right", marginTop: "10px" }}>
+                  <Link href="/leave?tab=history" className="btn btn-ghost sm">전체 보기 →</Link>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* 신청 이력 탭 */}
       {activeTab === "history" && (
-        <div className="flex-1 overflow-auto px-6 py-6">
-          <HistoryTab requests={requests} />
-        </div>
+        <HistoryTab requests={requests} />
       )}
     </div>
   );

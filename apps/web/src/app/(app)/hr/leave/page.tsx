@@ -81,128 +81,100 @@ export default async function HrLeavePage({
       }).length
     : 0;
 
-  return (
-    <div className="flex h-full flex-col">
-      {/* 헤더 */}
-      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-4">
-        <div className="flex items-center justify-between">
+  if (noAccess) {
+    return (
+      <div className="page-body">
+        <div className="page-h">
           <div>
-            <h1 className="text-[22px] font-bold leading-tight tracking-tight">휴가 관리</h1>
-            <p className="mt-0.5 text-[13px] text-foreground-muted">
-              전 구성원 {rows.length}명 · 평균 잔여 {avgRemaining}일
-              {nearExpiryCount > 0 && ` · 소진 임박 ${nearExpiryCount}명`}
-            </p>
+            <h1 className="h-title">휴가 관리</h1>
+            <div className="h-sub">권한이 없어요</div>
           </div>
-          {!noAccess && (
-            <div className="flex items-center gap-2">
-              <ExpiryButton year={year} />
-              <GrantLeaveButton employees={employees} leaveTypes={leaveTypes} />
-            </div>
-          )}
+        </div>
+        <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--fg-muted)" }}>
+          <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "8px" }}>휴가 관리 권한이 없어요</div>
+          <code style={{ fontSize: "11.5px", background: "var(--bg-secondary)", padding: "2px 6px", borderRadius: "5px" }}>
+            leave.balance.manage
+          </code> 권한이 필요해요
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-body">
+      {/* 헤더 */}
+      <div className="page-h">
+        <div>
+          <h1 className="h-title">휴가 관리</h1>
+          <div className="h-sub">
+            전 구성원 {rows.length}명 · 평균 잔여 {avgRemaining}일
+            {nearExpiryCount > 0 && ` · 소진 임박 ${nearExpiryCount}명`}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <ExpiryButton year={year} />
+          <GrantLeaveButton employees={employees} leaveTypes={leaveTypes} />
         </div>
       </div>
 
-      {noAccess ? (
-        <div className="flex flex-col items-center gap-3 py-24 text-center">
-          <p className="text-[14px] font-medium text-foreground">휴가 관리 권한이 없어요</p>
-          <p className="text-[12.5px] text-foreground-muted">
-            <code className="rounded bg-background-secondary px-1 py-0.5 text-[11.5px]">leave.balance.manage</code> 권한이 필요해요
-          </p>
+      {/* KPI 카드 */}
+      <div className="kpis">
+        <div className="kpi">
+          <span className="lbl">전사 평균 잔여</span>
+          <span className="val num">{avgRemaining}<small>일</small></span>
+          <span className="delta">{exhaustedCount > 0 ? `소진 ${exhaustedCount}명 포함` : "연차 기준"}</span>
         </div>
-      ) : (
-        <>
-          {/* KPI 카드 */}
-          <div className="shrink-0 grid grid-cols-4 gap-3 border-b border-border px-6 py-4">
-            <div className="rounded-[14px] border border-border bg-background-primary px-4 py-3">
-              <p className="text-[12px] text-foreground-muted">전사 평균 잔여</p>
-              <p className="mt-1 text-[22px] font-bold tabular-nums leading-tight">
-                {avgRemaining}<small className="ml-1 text-[12px] font-normal text-foreground-muted">일</small>
-              </p>
-              <p className="mt-0.5 text-[11.5px] text-foreground-subtle">
-                {exhaustedCount > 0 ? `소진 ${exhaustedCount}명 포함` : "연차 기준"}
-              </p>
-            </div>
-            <div className={`rounded-[14px] border px-4 py-3 ${nearExpiryCount > 0 ? "border-amber-200 bg-amber-50/40" : "border-border bg-background-primary"}`}>
-              <p className="text-[12px] text-foreground-muted">소진 임박 (≤3일)</p>
-              <p className={`mt-1 text-[22px] font-bold tabular-nums leading-tight ${nearExpiryCount > 0 ? "text-amber-700" : "text-foreground"}`}>
-                {nearExpiryCount}<small className="ml-1 text-[12px] font-normal text-foreground-muted">명</small>
-              </p>
-              <p className="mt-0.5 text-[11.5px] text-foreground-subtle">
-                {exhaustedCount > 0 ? `소진 ${exhaustedCount}명` : "연차 잔여 기준"}
-              </p>
-            </div>
-            <div className="rounded-[14px] border border-border bg-background-primary px-4 py-3">
-              <p className="text-[12px] text-foreground-muted">이번 달 사용</p>
-              <p className="mt-1 text-[22px] font-bold tabular-nums leading-tight">
-                {thisMonthDays}<small className="ml-1 text-[12px] font-normal text-foreground-muted">일</small>
-              </p>
-              <p className="mt-0.5 text-[11.5px] text-foreground-subtle">
-                {now.getMonth() + 1}월 승인 기준
-              </p>
-            </div>
-            <div className={`rounded-[14px] border px-4 py-3 ${onLeaveToday > 0 ? "border-primary/20 bg-primary/5" : "border-border bg-background-primary"}`}>
-              <p className="text-[12px] text-foreground-muted">오늘 휴가 중</p>
-              <p className="mt-1 text-[22px] font-bold tabular-nums leading-tight text-foreground">
-                {onLeaveToday}<small className="ml-1 text-[12px] font-normal text-foreground-muted">명</small>
-              </p>
-              <p className="mt-0.5 text-[11.5px] text-foreground-subtle">
-                {onLeaveToday > 0 ? "오늘 휴가 중인 구성원" : "오늘 휴가 없음"}
-              </p>
-            </div>
-          </div>
+        <div className={`kpi${nearExpiryCount > 0 ? " cta" : ""}`}>
+          <span className="lbl">소진 임박 (≤3일)</span>
+          <span className="val num">{nearExpiryCount}<small>명</small></span>
+          <span className="delta">{exhaustedCount > 0 ? `소진 ${exhaustedCount}명` : "촉진 필요"}</span>
+        </div>
+        <div className="kpi">
+          <span className="lbl">이번 달 사용</span>
+          <span className="val num">{thisMonthDays}<small>일</small></span>
+          <span className="delta">{now.getMonth() + 1}월 승인 기준</span>
+        </div>
+        <div className="kpi">
+          <span className="lbl">오늘 휴가 중</span>
+          <span className="val num">{onLeaveToday}<small>명</small></span>
+          <span className="delta">{onLeaveToday > 0 ? "오늘 휴가 중인 구성원" : "오늘 휴가 없음"}</span>
+        </div>
+      </div>
 
-          {/* 탭 */}
-          <div className="shrink-0 flex items-center justify-between border-b border-border px-6">
-            <div className="flex gap-0">
-              {TABS.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/hr/leave?tab=${t.id}${t.id === "balances" ? `&year=${year}` : ""}`}
-                  className={`border-b-2 -mb-px px-4 py-2.5 text-sm font-medium transition-colors ${
-                    activeTab === t.id
-                      ? "border-foreground text-foreground"
-                      : "border-transparent text-foreground-muted hover:text-foreground hover:border-border"
-                  }`}
-                >
-                  {t.label}
-                </Link>
-              ))}
-            </div>
-            {activeTab === "balances" && (
-              <div className="flex items-center gap-1 py-2">
-                <Link
-                  href={`/hr/leave?tab=balances&year=${year - 1}`}
-                  className="rounded px-2 py-1 text-xs text-foreground-muted hover:bg-background-secondary"
-                >
-                  ‹
-                </Link>
-                <span className="text-sm font-medium tabular-nums text-foreground">{year}년</span>
-                <Link
-                  href={`/hr/leave?tab=balances&year=${year + 1}`}
-                  className="rounded px-2 py-1 text-xs text-foreground-muted hover:bg-background-secondary"
-                >
-                  ›
-                </Link>
-              </div>
-            )}
+      {/* 탭 + 연도 내비 */}
+      <div style={{ display: "flex", alignItems: "center", marginBottom: "20px" }}>
+        <div className="tabs" style={{ margin: 0 }}>
+          {TABS.map((t) => (
+            <Link
+              key={t.id}
+              href={`/hr/leave?tab=${t.id}${t.id === "balances" ? `&year=${year}` : ""}`}
+              className={`tab${activeTab === t.id ? " active" : ""}`}
+            >
+              {t.label}
+            </Link>
+          ))}
+        </div>
+        {activeTab === "balances" && (
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px" }}>
+            <Link href={`/hr/leave?tab=balances&year=${year - 1}`} className="btn btn-ghost sm">‹</Link>
+            <span style={{ fontSize: "13px", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{year}년</span>
+            <Link href={`/hr/leave?tab=balances&year=${year + 1}`} className="btn btn-ghost sm">›</Link>
           </div>
+        )}
+      </div>
 
-          {/* 컨텐츠 */}
-          {activeTab === "balances" && rows.length > 0 && (
-            <LeaveStatusView rows={rows} leaveTypes={leaveTypes} />
-          )}
-          {activeTab === "balances" && rows.length === 0 && (
-            <div className="flex flex-col items-center gap-2 py-20 text-center">
-              <p className="text-[14px] font-medium text-foreground">구성원 데이터가 없어요</p>
-              <p className="text-[12.5px] text-foreground-muted">활성 구성원과 휴가 유형을 먼저 설정해 주세요</p>
-            </div>
-          )}
-          {activeTab === "requests" && requests && (
-            <div className="flex-1 overflow-auto px-6 py-6">
-              <RequestsTable requests={requests} />
-            </div>
-          )}
-        </>
+      {/* 콘텐츠 */}
+      {activeTab === "balances" && rows.length > 0 && (
+        <LeaveStatusView rows={rows} leaveTypes={leaveTypes} />
+      )}
+      {activeTab === "balances" && rows.length === 0 && (
+        <div style={{ padding: "60px 20px", textAlign: "center", border: "1px dashed var(--border)", borderRadius: "14px", color: "var(--fg-muted)" }}>
+          <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "6px" }}>구성원 데이터가 없어요</div>
+          <div style={{ fontSize: "12.5px" }}>활성 구성원과 휴가 유형을 먼저 설정해 주세요</div>
+        </div>
+      )}
+      {activeTab === "requests" && requests && (
+        <RequestsTable requests={requests} />
       )}
     </div>
   );

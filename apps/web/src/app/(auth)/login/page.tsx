@@ -23,7 +23,7 @@ export default async function LoginPage({
       <div>
         <h2 className="text-[22px] font-bold leading-tight tracking-tight">로그인</h2>
         <p className="mt-1.5 text-[13.5px] text-foreground-muted">
-          회사 이메일을 입력하면 로그인 링크를 보내드려요.
+          업무용 이메일과 비밀번호로 로그인하세요.
         </p>
       </div>
 

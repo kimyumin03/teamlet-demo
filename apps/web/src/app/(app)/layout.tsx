@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { isPlatformAdminEmail } from "@/lib/platform-admin";
-import { getMembershipSummary } from "@teamlet/modules/tenancy";
+import { getMembershipSummary, getCompanyInfo } from "@teamlet/modules/tenancy";
 import { listNotifications, countUnreadNotifications } from "@teamlet/modules/notification";
+import { listPendingApprovals } from "@teamlet/modules/workflow";
 import { NotificationBell } from "@/components/notification/notification-bell";
 import { CommandPalette } from "@/components/command-palette/command-palette";
 import { CommandPaletteTrigger } from "@/components/command-palette/command-palette-trigger";
@@ -16,57 +16,61 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const employeeId = session.user.employeeId;
 
-  // 회사 없는 사용자: pending/rejected 여부에 따라 분기
   if (!employeeId) {
     const summary = await getMembershipSummary(session.user.id);
     if (summary.pending > 0 || summary.rejected) redirect("/pending-approval");
   }
 
-  const [notifResult, unreadCount] = employeeId
+  const [notifResult, unreadCount, companyResult, pendingResult] = employeeId
     ? await Promise.all([
         listNotifications(employeeId),
         countUnreadNotifications(employeeId),
+        getCompanyInfo(employeeId),
+        listPendingApprovals(employeeId),
       ])
-    : [{ ok: true as const, data: [] }, 0];
+    : [
+        { ok: true as const, data: [] },
+        0,
+        { ok: false as const, error: "no employee" as never },
+        { ok: true as const, data: [] },
+      ];
 
   const notifications = notifResult.ok ? notifResult.data : [];
+  const companyName = companyResult.ok ? companyResult.data.name : undefined;
+  const pendingCount = pendingResult.ok ? pendingResult.data.length : 0;
+
+  const logoutAction = async () => {
+    "use server";
+    await signOut({ redirectTo: "/login" });
+  };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="app">
       {/* 사이드바 */}
       <AppSidebar
         userName={session.user.name ?? ""}
         userEmail={session.user.email ?? ""}
         hasCompany={!!employeeId}
-        logoutAction={async () => {
-          "use server";
-          await signOut({ redirectTo: "/login" });
-        }}
+        companyName={companyName}
+        pendingCount={pendingCount}
+        logoutAction={logoutAction}
       />
 
       {/* 메인 영역 */}
-      <div className="flex flex-1 flex-col min-w-0 overflow-y-auto">
-        {/* 상단 헤더 */}
-        <header className="sticky top-0 z-40 flex h-12 items-center justify-between border-b border-border bg-background-primary px-4">
+      <div className="main">
+        {/* 탑바 */}
+        <header className="topbar">
           {employeeId && <CommandPaletteTrigger />}
-          <div className="flex-1" />
           {employeeId && <CommandPalette />}
-          <div className="flex items-center gap-2">
+          <div className="top-actions">
             {employeeId && (
               <NotificationBell items={notifications} unreadCount={unreadCount} />
             )}
-            <Link
-              href="/settings/profile"
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-background-secondary text-xs font-medium text-foreground-muted hover:bg-background-tertiary transition-colors"
-              title="개인 설정"
-            >
-              {session.user.name?.charAt(0).toUpperCase() ?? "?"}
-            </Link>
           </div>
         </header>
 
         {/* 페이지 콘텐츠 */}
-        <main className="flex-1">{children}</main>
+        <main style={{ minHeight: 0, overflowY: "auto" }}>{children}</main>
       </div>
     </div>
   );

@@ -1,88 +1,87 @@
 import Link from "next/link";
-import type { LeaveBalanceSummary } from "@teamlet/modules/leave";
+import type { LeaveBalanceSummary, CalendarLeaveItem } from "@teamlet/modules/leave";
 import { MiniCalendar } from "./mini-calendar";
 
 export function HomeRail({
   balances,
   annualBalance,
+  todayAbsent = [],
 }: {
   balances: LeaveBalanceSummary[];
   annualBalance: LeaveBalanceSummary | undefined;
+  todayAbsent?: CalendarLeaveItem[];
 }) {
+  const otherBalances = balances.filter((b) => b.leaveTypeKey !== "annual" && b.remainingDays > 0);
+
   return (
-    <aside className="flex flex-col gap-3.5 border-l border-border bg-background px-6 py-7">
+    <aside className="rail-h">
       {/* 연차 잔여 */}
       {annualBalance && (
-        <div className="rounded-[14px] border border-border bg-background-primary p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h5 className="text-[12px] font-semibold uppercase tracking-wide text-foreground-muted">
-              연차 잔여
-            </h5>
-            <Link
-              href="/leave"
-              className="font-mono text-[11px] text-foreground-subtle hover:text-primary transition-colors"
-            >
-              신청 →
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-[10px] border border-border bg-background-secondary px-3 py-2.5">
-              <div className="text-[18px] font-bold tabular-nums leading-tight">
-                {annualBalance.remainingDays}
-              </div>
-              <div className="mt-1 text-[11.5px] font-medium text-foreground-muted">잔여</div>
+        <div className="widget">
+          <h5>
+            연차 잔여
+            <Link href="/leave" className="all">신청 →</Link>
+          </h5>
+          <div className="today-grid">
+            <div className="cell">
+              <div className="n num">{annualBalance.remainingDays}</div>
+              <div className="l">잔여</div>
             </div>
-            <div className="rounded-[10px] border border-border bg-background-secondary px-3 py-2.5">
-              <div className="text-[18px] font-bold tabular-nums leading-tight">
-                {annualBalance.usedDays}
-              </div>
-              <div className="mt-1 text-[11.5px] font-medium text-foreground-muted">사용</div>
+            <div className="cell">
+              <div className="n num">{annualBalance.usedDays}</div>
+              <div className="l">사용</div>
             </div>
           </div>
-          <div className="mt-2 h-1.5 rounded-full bg-background-tertiary overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{
-                width: `${Math.min(100, (annualBalance.usedDays / (annualBalance.grantedDays || 1)) * 100)}%`,
-              }}
-            />
+          <div style={{
+            marginTop: "10px", height: "5px", background: "var(--bg-tertiary)",
+            borderRadius: "3px", overflow: "hidden",
+          }}>
+            <div style={{
+              height: "100%", background: "var(--primary)", borderRadius: "3px",
+              width: `${Math.min(100, (annualBalance.usedDays / (annualBalance.grantedDays || 1)) * 100)}%`,
+            }} />
           </div>
-          <p className="mt-1.5 font-mono text-[11px] text-foreground-subtle">
+          <div style={{ marginTop: "6px", fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--fg-subtle)" }}>
             총 {annualBalance.grantedDays}일 부여
-          </p>
+          </div>
         </div>
       )}
 
       {/* 미니 캘린더 */}
-      <div className="rounded-[14px] border border-border bg-background-primary p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h5 className="text-[12px] font-semibold uppercase tracking-wide text-foreground-muted">
-            이번 달 일정
-          </h5>
-          <span className="font-mono text-[11px] text-foreground-subtle">월 보기 →</span>
-        </div>
+      <div className="widget">
+        <h5>이번 달 일정 <span className="all">월 보기 →</span></h5>
         <MiniCalendar />
       </div>
 
+      {/* 오늘 자리비움 */}
+      {todayAbsent.length > 0 && (
+        <div className="widget">
+          <h5>오늘 자리 비움 <span className="all">{todayAbsent.length}명</span></h5>
+          <div className="ooo">
+            {todayAbsent.slice(0, 6).map((r) => (
+              <div key={r.id} className="row">
+                <div className="av sm">{r.employeeName.slice(-2)}</div>
+                <span style={{ flex: 1, fontWeight: 600, fontSize: "13px" }}>{r.employeeName}</span>
+                <span className="tag lv">{r.leaveTypeName}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 기타 휴가 잔여 */}
-      {balances.filter((b) => b.leaveTypeKey !== "annual" && b.remainingDays > 0).length > 0 && (
-        <div className="rounded-[14px] border border-border bg-background-primary p-4">
-          <h5 className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-foreground-muted">
-            기타 휴가
-          </h5>
-          <div className="flex flex-col divide-y divide-border">
-            {balances
-              .filter((b) => b.leaveTypeKey !== "annual" && b.remainingDays > 0)
-              .slice(0, 4)
-              .map((b) => (
-                <div key={b.leaveTypeId} className="flex items-center justify-between py-2">
-                  <span className="text-[13px] text-foreground">{b.leaveTypeName}</span>
-                  <span className="font-mono text-[13px] font-bold tabular-nums">
-                    {b.remainingDays}
-                    <span className="ml-0.5 text-[11px] font-normal text-foreground-muted">일</span>
-                  </span>
+      {otherBalances.length > 0 && (
+        <div className="widget">
+          <h5>기타 휴가</h5>
+          <div className="b-list">
+            {otherBalances.slice(0, 5).map((b) => (
+              <div key={b.leaveTypeId} className="b">
+                <div className="info">
+                  <div className="nm">{b.leaveTypeName}</div>
                 </div>
-              ))}
+                <span className="when">{b.remainingDays}일</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -22,8 +22,8 @@ export default async function LeavePoliciesPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-[20px] font-bold tracking-tight text-foreground">휴가 정책</h1>
-        <p className="mt-0.5 text-[13px] text-foreground-muted">연차 부여 정책을 만들고 구성원에게 배정해요</p>
+        <h1 className="h-title">휴가 정책</h1>
+        <p className="h-sub">연차 부여 정책을 만들고 구성원에게 배정해요</p>
       </div>
 
       {/* 연차 자동부여 카드 */}

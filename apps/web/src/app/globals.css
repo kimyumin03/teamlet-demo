@@ -4,6 +4,7 @@
 @import "tailwindcss" source(none);
 @import "@teamlet/ui/theme/tokens.css";
 @import "@teamlet/ui/theme/globals.css";
+@import "./design.css";
 
 @source "../../";
 @source "../../../../packages/ui/src";

@@ -20,12 +20,14 @@ export default async function HolidaysPage({
   const holidays = result.ok ? result.data : [];
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-[20px] font-bold tracking-tight text-foreground">공휴일 관리</h1>
-        <p className="mt-0.5 text-[13px] text-foreground-muted">법정·자체 공휴일을 등록해 휴가 계산에 반영해요</p>
+    <>
+      <div className="page-h">
+        <div>
+          <h1 className="h-title">공휴일</h1>
+          <div className="h-sub">법정·자체 공휴일을 등록해 휴가 계산에 반영합니다</div>
+        </div>
       </div>
       <HolidaysClient initialHolidays={holidays} year={year} />
-    </div>
+    </>
   );
 }

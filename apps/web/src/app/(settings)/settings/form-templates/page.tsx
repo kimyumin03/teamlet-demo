@@ -15,8 +15,8 @@ export default async function FormTemplatesPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-[20px] font-bold tracking-tight text-foreground">양식 관리</h1>
-        <p className="mt-0.5 text-[13px] text-foreground-muted">결재·신청 양식을 만들고 필드를 정의해요</p>
+        <h1 className="h-title">양식 관리</h1>
+        <p className="h-sub">결재·신청 양식을 만들고 필드를 정의해요</p>
       </div>
       <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
         <h3 className="mb-1.5 text-[15px] font-bold text-foreground">양식 목록</h3>

@@ -32,8 +32,8 @@ export default async function PermissionsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-[20px] font-bold tracking-tight text-foreground">권한 설정</h1>
-        <p className="mt-0.5 text-[13px] text-foreground-muted">
+        <h1 className="h-title">권한 설정</h1>
+        <p className="h-sub">
           역할(권한 그룹)을 만들고 구성원에게 부여해요. 역할을 클릭하면 권한을 편집할 수 있어요.
         </p>
       </div>

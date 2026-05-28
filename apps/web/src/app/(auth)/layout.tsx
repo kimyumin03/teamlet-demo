@@ -28,10 +28,8 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         </div>
       )}
 
-      <div className="w-full max-w-[400px]">
-        <div className="rounded-2xl border border-border bg-background-primary p-8 shadow-md">
-          {children}
-        </div>
+      <div className="w-full flex justify-center px-4">
+        {children}
       </div>
     </main>
   );

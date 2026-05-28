@@ -21,8 +21,8 @@ export default async function JoinRequestsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-[20px] font-bold tracking-tight text-foreground">가입 신청 관리</h1>
-        <p className="mt-0.5 text-[13px] text-foreground-muted">회사코드로 가입을 신청한 구성원을 승인하거나 반려해요</p>
+        <h1 className="h-title">가입 신청 관리</h1>
+        <p className="h-sub">회사코드로 가입을 신청한 구성원을 승인하거나 반려해요</p>
       </div>
       <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
         <h3 className="mb-1.5 text-[15px] font-bold text-foreground">대기 중인 신청</h3>

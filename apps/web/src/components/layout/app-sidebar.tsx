@@ -1,219 +1,201 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const NAV_ITEMS = [
+const NAV_MAIN = [
   {
-    label: "홈",
     href: "/home",
+    label: "홈",
     icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 shrink-0">
-        <path d="M10.707 2.293a1 1 0 0 0-1.414 0l-7 7a1 1 0 0 0 1.414 1.414L4 10.414V17a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-3h2v3a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-6.586l.293.293a1 1 0 0 0 1.414-1.414l-7-7Z" />
-      </svg>
+      <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
     ),
   },
   {
-    label: "구성원",
     href: "/members",
+    label: "구성원",
     icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 shrink-0">
-        <path d="M9 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM17 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 0 0-1.5-4.33A5 5 0 0 1 19 16v1h-6.07ZM6 11a5 5 0 0 1 5 5v1H1v-1a5 5 0 0 1 5-5Z" />
-      </svg>
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15 14c2.8 0 5.5 1.6 5.5 5"/></svg>
     ),
   },
   {
-    label: "휴가",
     href: "/leave",
+    label: "휴가",
     icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 shrink-0">
-        <path fillRule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z" clipRule="evenodd" />
-      </svg>
+      <svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M4 12a8 8 0 0 1 16 0"/><path d="M9 20l3-3 3 3"/></svg>
     ),
   },
   {
-    label: "워크플로우",
     href: "/workflow",
+    label: "워크플로우",
     icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 shrink-0">
-        <path fillRule="evenodd" d="M4 4a2 2 0 0 1 2-2h4.586A2 2 0 0 1 12 2.586L15.414 6A2 2 0 0 1 16 7.414V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Zm2 6a1 1 0 0 1 1-1h6a1 1 0 1 1 0 2H7a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h4a1 1 0 1 0 0-2H7Z" clipRule="evenodd" />
-      </svg>
-    ),
-  },
-  {
-    label: "휴가 관리",
-    href: "/hr/leave",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 shrink-0">
-        <path d="M9 2a1 1 0 0 0-1 1v1H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3V3a1 1 0 0 0-1-1H9Zm-1 8a1 1 0 0 1 2 0v3a1 1 0 0 1-2 0v-3Zm5-1a1 1 0 0 1 1 1v3a1 1 0 0 1-2 0v-3a1 1 0 0 1 1-1Zm-7 1a1 1 0 0 1 2 0v3a1 1 0 0 1-2 0v-3Z" />
-      </svg>
-    ),
-  },
-  {
-    label: "채용",
-    href: "/recruit",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 shrink-0">
-        <path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM1.49 15.326a.78.78 0 0 1-.358-.442 3 3 0 0 1 4.308-3.516 6.484 6.484 0 0 0-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 0 1-2.07-.655ZM16.44 15.98a4.97 4.97 0 0 0 2.07-.654.78.78 0 0 0 .357-.442 3 3 0 0 0-4.308-3.517 6.484 6.484 0 0 1 1.907 3.96 2.32 2.32 0 0 1-.026.654ZM18 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM5.304 16.19a.844.844 0 0 1-.277-.71 5 5 0 0 1 9.947 0 .843.843 0 0 1-.277.71A6.975 6.975 0 0 1 10 18a6.974 6.974 0 0 1-4.696-1.81Z" />
-      </svg>
-    ),
-  },
-  {
-    label: "문서",
-    href: "/documents",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 shrink-0">
-        <path d="M3 3.5A1.5 1.5 0 0 1 4.5 2h6.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 1 .439 1.061V14.5A1.5 1.5 0 0 1 13.5 16h-9A1.5 1.5 0 0 1 3 14.5v-11Z" />
-      </svg>
+      <svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h6M10 16h4"/></svg>
     ),
   },
 ];
 
-const SETTINGS_ICON = (
-  <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 shrink-0">
-    <path fillRule="evenodd" d="M7.84 1.804A1 1 0 0 1 8.82 1h2.36a1 1 0 0 1 .98.804l.331 1.652a6.993 6.993 0 0 1 1.929 1.115l1.598-.54a1 1 0 0 1 1.186.447l1.18 2.044a1 1 0 0 1-.205 1.251l-1.267 1.113a7.047 7.047 0 0 1 0 2.228l1.267 1.113a1 1 0 0 1 .205 1.251l-1.18 2.044a1 1 0 0 1-1.186.447l-1.598-.54a6.993 6.993 0 0 1-1.929 1.115l-.33 1.652a1 1 0 0 1-.98.804H8.82a1 1 0 0 1-.98-.804l-.331-1.652a6.993 6.993 0 0 1-1.929-1.115l-1.598.54a1 1 0 0 1-1.186-.447l-1.18-2.044a1 1 0 0 1 .205-1.251l1.267-1.113a7.047 7.047 0 0 1 0-2.228L1.821 7.773a1 1 0 0 1-.205-1.251l1.18-2.044a1 1 0 0 1 1.186-.447l1.598.54A6.993 6.993 0 0 1 7.51 3.456l.33-1.652ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" />
-  </svg>
-);
+const NAV_WORKSPACE = [
+  {
+    href: "/recruit",
+    label: "채용",
+    icon: (
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>
+    ),
+  },
+  {
+    href: "/documents",
+    label: "문서·증명서",
+    icon: (
+      <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 13h7M9 17h5"/></svg>
+    ),
+  },
+];
+
+const NAV_ADMIN = [
+  {
+    href: "/hr/leave",
+    label: "휴가 관리",
+    icon: (
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h2m2 0h2M8 18h2"/></svg>
+    ),
+  },
+  {
+    href: "/settings/profile",
+    label: "설정",
+    icon: (
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2L10 21h4l.6-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5a7 7 0 0 0 .1-1.2z"/></svg>
+    ),
+  },
+];
 
 export function AppSidebar({
   userName,
   userEmail,
   hasCompany,
+  companyName,
   logoutAction,
+  pendingCount,
 }: {
   userName: string;
   userEmail: string;
   hasCompany: boolean;
+  companyName?: string;
   logoutAction: () => Promise<void>;
+  pendingCount?: number;
 }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
-
-  // 창 너비 768px 미만이면 자동 접힘, 이상이면 자동 펼침
-  useEffect(() => {
-    function handleResize() {
-      setCollapsed(window.innerWidth < 768);
-    }
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  function toggleCollapsed() {
-    setCollapsed((c) => !c);
-  }
 
   const isActive = (href: string) =>
     href === "/home" ? pathname === "/home" : pathname.startsWith(href);
 
-  return (
-    <aside
-      className={`flex flex-col border-r border-border bg-background-primary transition-all duration-200 ${
-        collapsed ? "w-14" : "w-56"
-      }`}
-    >
-      {/* 워드마크 + 토글 */}
-      <div className="flex h-12 items-center justify-between border-b border-border px-3">
-        {!collapsed && (
-          <span className="text-sm font-semibold tracking-tight text-foreground">Teamlet</span>
-        )}
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          title={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
-          className={`rounded-md p-1 text-foreground-subtle hover:bg-background-secondary hover:text-foreground transition-colors ${collapsed ? "mx-auto" : ""}`}
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="size-4">
-            {collapsed ? (
-              <path fillRule="evenodd" d="M3 5a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1ZM3 10a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1ZM3 15a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Z" clipRule="evenodd" />
-            ) : (
-              <path fillRule="evenodd" d="M3 5a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1ZM3 10a1 1 0 0 1 1-1h6a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1ZM3 15a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Z" clipRule="evenodd" />
-            )}
-          </svg>
-        </button>
-      </div>
-
-      {/* 메인 네비게이션 */}
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
-        {hasCompany ? (
-          NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={collapsed ? item.label : undefined}
-              className={`flex items-center gap-2.5 rounded-lg py-2 text-sm transition-colors ${
-                collapsed ? "justify-center px-2" : "px-3"
-              } ${
-                isActive(item.href)
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-foreground-muted hover:bg-background-secondary hover:text-foreground"
-              }`}
-            >
-              {item.icon}
-              {!collapsed && item.label}
-            </Link>
-          ))
-        ) : (
-          <Link
-            href="/join-company"
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-foreground-muted hover:bg-background-secondary hover:text-foreground"
-          >
+  if (!hasCompany) {
+    return (
+      <aside className="side" style={{ width: 248 }}>
+        <div className="org">
+          <div className="org-logo">T</div>
+          <div className="org-name">Teamlet</div>
+        </div>
+        <nav className="nav-group">
+          <Link href="/join-company" className="nav-item">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             회사 가입
           </Link>
-        )}
+        </nav>
+      </aside>
+    );
+  }
+
+  return (
+    <aside className="side" style={{ width: 248 }}>
+      {/* 회사 로고 + 이름 */}
+      <div className="org">
+        <div className="org-logo">
+          {(companyName ?? "T").charAt(0).toUpperCase()}
+        </div>
+        <div className="org-name">
+          {companyName ?? "Teamlet"}
+          <small>구성원 서비스</small>
+        </div>
+      </div>
+
+      {/* 메인 메뉴 */}
+      <nav className="nav-group">
+        {NAV_MAIN.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`nav-item${isActive(item.href) ? " active" : ""}`}
+          >
+            {item.icon}
+            {item.label}
+            {item.href === "/workflow" && pendingCount != null && pendingCount > 0 && (
+              <span className="badge attn">{pendingCount}</span>
+            )}
+          </Link>
+        ))}
       </nav>
 
-      {/* 설정 */}
-      {hasCompany && (
-        <div className="border-t border-border p-2">
+      {/* Workspace */}
+      <nav className="nav-group">
+        <div className="nav-label">워크스페이스</div>
+        {NAV_WORKSPACE.map((item) => (
           <Link
-            href="/settings/profile"
-            title={collapsed ? "설정" : undefined}
-            className={`flex items-center gap-2.5 rounded-lg py-2 text-sm transition-colors ${
-              collapsed ? "justify-center px-2" : "px-3"
-            } ${
-              pathname.startsWith("/settings")
-                ? "bg-primary/10 text-primary font-medium"
-                : "text-foreground-muted hover:bg-background-secondary hover:text-foreground"
-            }`}
+            key={item.href}
+            href={item.href}
+            className={`nav-item${isActive(item.href) ? " active" : ""}`}
           >
-            {SETTINGS_ICON}
-            {!collapsed && "설정"}
+            {item.icon}
+            {item.label}
           </Link>
-        </div>
-      )}
+        ))}
+      </nav>
 
-      {/* 하단 사용자 정보 + 로그아웃 */}
-      <div className="border-t border-border p-3">
-        <div className={`flex items-center gap-2.5 ${collapsed ? "justify-center" : ""}`}>
-          <div
-            title={collapsed ? `${userName} (${userEmail})` : undefined}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background-secondary text-xs font-medium text-foreground-muted"
+      {/* 운영 */}
+      <nav className="nav-group">
+        <div className="nav-label">운영</div>
+        {NAV_ADMIN.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`nav-item${isActive(item.href) ? " active" : ""}`}
           >
-            {userName.charAt(0) || "?"}
-          </div>
-          {!collapsed && (
-            <>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-medium text-foreground">{userName}</p>
-                <p className="truncate text-[11px] text-foreground-subtle">{userEmail}</p>
-              </div>
-              <form action={logoutAction}>
-                <button
-                  type="submit"
-                  title="로그아웃"
-                  className="rounded p-1 text-foreground-subtle hover:bg-background-secondary hover:text-foreground transition-colors"
-                >
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="size-4">
-                    <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 0 1 5.25 2h5.5A2.25 2.25 0 0 1 13 4.25v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 0-.75-.75h-5.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 0 0 .75-.75v-2a.75.75 0 0 1 1.5 0v2A2.25 2.25 0 0 1 10.75 18h-5.5A2.25 2.25 0 0 1 3 15.75V4.25Z" clipRule="evenodd" />
-                    <path fillRule="evenodd" d="M19 10a.75.75 0 0 0-.75-.75H8.704l1.048-1.08a.75.75 0 1 0-1.004-1.12l-2.5 2.5a.75.75 0 0 0 0 1.04l2.5 2.5a.75.75 0 1 0 1.004-1.12L8.704 10.75H18.25A.75.75 0 0 0 19 10Z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </form>
-            </>
-          )}
+            {item.icon}
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+
+      {/* 하단 사용자 */}
+      <div className="me" style={{ marginTop: "auto" }}>
+        <div className="av">{userName.charAt(0) || "?"}</div>
+        <div className="meta">
+          <div className="name">{userName}</div>
+          <div className="role">{userEmail}</div>
         </div>
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            title="로그아웃"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--fg-subtle)",
+              display: "grid",
+              placeItems: "center",
+              padding: "4px",
+              borderRadius: "6px",
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.color = "var(--fg)")}
+            onMouseOut={(e) => (e.currentTarget.style.color = "var(--fg-subtle)")}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </form>
       </div>
     </aside>
   );

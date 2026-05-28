@@ -26,35 +26,22 @@ const STATUS_LABEL: Record<EmployeeListItem["employmentStatus"], string> = {
   SCHEDULED: "입사예정",
 };
 
-const STATUS_BADGE: Record<EmployeeListItem["employmentStatus"], string> = {
-  ACTIVE: "bg-emerald-50 border border-emerald-200 text-emerald-700",
-  PROBATION: "bg-amber-50 border border-amber-200 text-amber-700",
-  ON_LEAVE: "bg-background-secondary border border-border text-foreground-muted",
-  SECONDED: "bg-blue-50 border border-blue-200 text-blue-700",
-  RESIGNED: "bg-background-secondary border border-border text-foreground-subtle",
-  SCHEDULED: "bg-blue-50 border border-blue-200 text-blue-700",
+const STATUS_CLS: Record<EmployeeListItem["employmentStatus"], string> = {
+  ACTIVE: "ok",
+  PROBATION: "wait",
+  ON_LEAVE: "end",
+  SECONDED: "run",
+  RESIGNED: "end",
+  SCHEDULED: "wait",
 };
 
 const EMP_TYPE_LABEL: Record<string, string> = {
-  FULL_TIME: "정규직",
-  PART_TIME: "파트타임",
-  CONTRACT: "계약직",
+  FULL_TIME: "정규",
+  PART_TIME: "파트",
+  CONTRACT: "계약",
   INTERN: "인턴",
   DISPATCH: "파견",
 };
-
-const AVATAR_COLORS = [
-  "bg-blue-100 text-blue-700",
-  "bg-violet-100 text-violet-700",
-  "bg-emerald-100 text-emerald-700",
-  "bg-amber-100 text-amber-700",
-  "bg-rose-100 text-rose-700",
-  "bg-cyan-100 text-cyan-700",
-];
-
-function getAvatarColor(name: string) {
-  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length] ?? AVATAR_COLORS[0]!;
-}
 
 function formatHireDate(d: Date | null): string {
   if (!d) return "—";
@@ -157,97 +144,63 @@ export default async function MembersPage({
   const orgHref = makeViewHref(params, "org");
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="page-body">
       {pendingMembers.length > 0 && <PendingJoinPanel items={pendingMembers} />}
 
-      {/* 페이지 헤더 */}
-      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[22px] font-bold leading-tight tracking-tight">구성원</h1>
-            <p className="mt-0.5 text-[13px] text-foreground-muted">
-              전체 {allEmployees.length}명
-              {employedCount > 0 && <span className="ml-2">재직 {employedCount}</span>}
-              {onLeaveCount > 0 && <span className="ml-2">휴직 {onLeaveCount}</span>}
-              {scheduledCount > 0 && <span className="ml-2">입사예정 {scheduledCount}</span>}
-            </p>
+      {/* 헤더 */}
+      <div className="page-h">
+        <div>
+          <h1 className="h-title">구성원</h1>
+          <div className="h-sub">
+            전체 {allEmployees.length}명
+            {employedCount > 0 && ` · 재직 ${employedCount}`}
+            {onLeaveCount > 0 && ` · 휴직 ${onLeaveCount}`}
+            {scheduledCount > 0 && ` · 입사예정 ${scheduledCount}`}
           </div>
-          <div className="flex items-center gap-3">
-            {/* 뷰 토글 */}
-            <div className="flex items-center rounded-lg bg-background-secondary p-0.5 gap-0.5">
-              <Link
-                href={listHref}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
-                  view === "list"
-                    ? "bg-background-primary text-foreground shadow-sm"
-                    : "text-foreground-muted hover:text-foreground"
-                }`}
-              >
-                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                  <path d="M3 6h18M3 12h18M3 18h18" />
-                </svg>
-                리스트
-              </Link>
-              <Link
-                href={orgHref}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
-                  view === "org"
-                    ? "bg-background-primary text-foreground shadow-sm"
-                    : "text-foreground-muted hover:text-foreground"
-                }`}
-              >
-                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                  <rect x="9" y="3" width="6" height="5" rx="1" /><rect x="3" y="16" width="6" height="5" rx="1" />
-                  <rect x="15" y="16" width="6" height="5" rx="1" /><path d="M12 8v4M6 16v-2h12v2" />
-                </svg>
-                조직도
-              </Link>
-            </div>
-
-            <AddPositionButton />
-            <AddDepartmentButton departments={departments} />
-            <AddMemberButton
-              departments={departments}
-              positions={positions}
-              defaultDepartmentId={selected && selected !== UNASSIGNED ? selected : null}
-            />
+        </div>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          {/* 뷰 토글 */}
+          <div className="vtog">
+            <Link href={listHref} className={`v${view === "list" ? " active" : ""}`}>
+              <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+              리스트
+            </Link>
+            <Link href={orgHref} className={`v${view === "org" ? " active" : ""}`}>
+              <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></svg>
+              조직도
+            </Link>
           </div>
+          <AddPositionButton />
+          <AddDepartmentButton departments={departments} />
+          <AddMemberButton
+            departments={departments}
+            positions={positions}
+            defaultDepartmentId={selected && selected !== UNASSIGNED ? selected : null}
+          />
         </div>
       </div>
 
       {/* KPI 카드 */}
-      <div className="shrink-0 grid grid-cols-3 gap-4 border-b border-border px-6 py-4">
-        <div className="rounded-[14px] border border-border bg-background-primary px-4 py-3">
-          <p className="text-[12px] text-foreground-muted">재직</p>
-          <p className="mt-1 text-[22px] font-bold tabular-nums leading-tight">
-            {employedCount}<small className="ml-1 text-[12px] font-normal text-foreground-muted">명</small>
-          </p>
-          <p className="mt-0.5 text-[11.5px] text-foreground-subtle">
-            정규 {fullTimeCount} · 계약 {contractCount}
-          </p>
+      <div className="kpis" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+        <div className="kpi">
+          <span className="lbl">재직</span>
+          <span className="val num">{employedCount}<small>명</small></span>
+          <span className="delta">정규 {fullTimeCount} · 계약 {contractCount}</span>
         </div>
-        <div className="rounded-[14px] border border-border bg-background-primary px-4 py-3">
-          <p className="text-[12px] text-foreground-muted">이번달 입사</p>
-          <p className="mt-1 text-[22px] font-bold tabular-nums leading-tight">
-            {newHiresCount}<small className="ml-1 text-[12px] font-normal text-foreground-muted">명</small>
-          </p>
-          <p className="mt-0.5 text-[11.5px] text-foreground-subtle">
-            {newHiresCount === 0 ? "이번달 신규 입사자 없음" : `${now.getMonth() + 1}월 입사`}
-          </p>
+        <div className="kpi">
+          <span className="lbl">이번달 입사</span>
+          <span className="val num">{newHiresCount}<small>명</small></span>
+          <span className="delta">{newHiresCount === 0 ? "신규 입사자 없음" : `${now.getMonth() + 1}월 입사`}</span>
         </div>
-        <div className="rounded-[14px] border border-border bg-background-primary px-4 py-3">
-          <p className="text-[12px] text-foreground-muted">휴직</p>
-          <p className="mt-1 text-[22px] font-bold tabular-nums leading-tight">
-            {onLeaveCount}<small className="ml-1 text-[12px] font-normal text-foreground-muted">명</small>
-          </p>
-          <p className="mt-0.5 text-[11.5px] text-foreground-subtle">
-            {scheduledCount > 0 ? `입사예정 ${scheduledCount}명 포함` : "입사예정 없음"}
-          </p>
+        <div className="kpi">
+          <span className="lbl">휴직</span>
+          <span className="val num">{onLeaveCount}<small>명</small></span>
+          <span className="delta">{scheduledCount > 0 ? `입사예정 ${scheduledCount}명` : "입사예정 없음"}</span>
         </div>
       </div>
 
       {/* 필터 바 */}
-      <div className="shrink-0 border-b border-border px-6 py-3">
+      <div className="filters" style={{ marginBottom: "14px" }}>
         <Suspense>
           <MembersFilterBar
             departments={departments.map((d) => ({ id: d.id, name: d.name }))}
@@ -256,126 +209,75 @@ export default async function MembersPage({
         </Suspense>
       </div>
 
-      {/* 컨텐츠 영역 */}
-      <div className="flex-1 overflow-auto">
-        {view === "org" ? (
-          <div className="px-6 py-6">
-            {departments.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-20 text-center">
-                <p className="text-[14px] font-medium text-foreground">등록된 부서가 없어요</p>
-                <p className="text-[12.5px] text-foreground-muted">부서를 먼저 추가해 주세요.</p>
-              </div>
-            ) : (
-              <OrgTree departments={departments} employees={orgEmployees} />
-            )}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background-secondary">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-6 text-foreground-subtle">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-              </svg>
+      {/* 콘텐츠 */}
+      {view === "org" ? (
+        <div style={{ padding: "8px 0" }}>
+          {departments.length === 0 ? (
+            <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--fg-muted)" }}>
+              <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "6px" }}>등록된 부서가 없어요</div>
+              <div style={{ fontSize: "12.5px" }}>부서를 먼저 추가해 주세요.</div>
             </div>
-            <div>
-              <p className="text-[14px] font-medium text-foreground">
-                {query ? "검색 결과가 없어요" : "구성원이 없어요"}
-              </p>
-              <p className="mt-1 text-[12.5px] text-foreground-muted">
-                {query ? "다른 키워드로 검색해 보세요." : "우측 상단 '구성원 추가'로 등록할 수 있어요."}
-              </p>
-            </div>
+          ) : (
+            <OrgTree departments={departments} employees={orgEmployees} />
+          )}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--fg-muted)" }}>
+          <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "6px" }}>
+            {query ? "검색 결과가 없어요" : "구성원이 없어요"}
           </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10">
-              <tr className="border-b border-border bg-background-primary text-left">
-                <th className="w-10 px-4 py-2.5">
-                  <span className="inline-block h-4 w-4 rounded-[4px] border-[1.5px] border-border" />
-                </th>
-                <th className="px-4 py-2.5 text-[12px] font-medium text-foreground-subtle">이름</th>
-                <th className="px-4 py-2.5 text-[12px] font-medium text-foreground-subtle">사번</th>
-                <th className="px-4 py-2.5 text-[12px] font-medium text-foreground-subtle">이메일</th>
-                <th className="px-4 py-2.5 text-[12px] font-medium text-foreground-subtle">조직 · 직책</th>
-                <th className="px-4 py-2.5 text-[12px] font-medium text-foreground-subtle">입사일</th>
-                <th className="px-4 py-2.5 text-[12px] font-medium text-foreground-subtle">근로유형</th>
-                <th className="px-4 py-2.5 text-[12px] font-medium text-foreground-subtle">상태</th>
+          <div style={{ fontSize: "12.5px" }}>
+            {query ? "다른 키워드로 검색해 보세요." : "우측 상단 '구성원 추가'로 등록할 수 있어요."}
+          </div>
+        </div>
+      ) : (
+        <>
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th style={{ width: "32px" }}><span className="cb-box" /></th>
+                <th style={{ width: "24%" }}>이름</th>
+                <th>사번</th>
+                <th>이메일</th>
+                <th>조직 · 직책</th>
+                <th>입사일</th>
+                <th>유형</th>
+                <th>상태</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody>
               {filtered.map((emp) => (
-                <tr
-                  key={emp.id}
-                  className={`group transition-colors hover:bg-background-secondary ${emp.employmentStatus === "RESIGNED" ? "opacity-50" : ""}`}
-                >
-                  <td className="w-10 px-4 py-3">
-                    <span className="inline-block h-4 w-4 rounded-[4px] border-[1.5px] border-border" />
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link href={`/members/${emp.id}`} className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${getAvatarColor(emp.name)}`}>
-                        {emp.name.slice(-2)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[13.5px] font-semibold text-foreground group-hover:text-primary truncate">{emp.name}</p>
-                        <p className="text-[11.5px] text-foreground-muted truncate">{emp.departmentName ?? "—"}</p>
+                <tr key={emp.id} style={emp.employmentStatus === "RESIGNED" ? { opacity: 0.5 } : undefined}>
+                  <td><span className="cb-box" /></td>
+                  <td>
+                    <Link href={`/members/${emp.id}`} className="ppl" style={{ textDecoration: "none" }}>
+                      <div className="av">{emp.name.slice(-2)}</div>
+                      <div>
+                        <div className="n">{emp.name}</div>
+                        <div className="m">{emp.departmentName ?? "—"}</div>
                       </div>
                     </Link>
                   </td>
-                  <td className="px-4 py-3">
-                    <Link href={`/members/${emp.id}`} className="block font-mono text-[12px] text-foreground-muted">
-                      {emp.employeeNumber ?? "—"}
+                  <td><Link href={`/members/${emp.id}`} className="sn" style={{ textDecoration: "none" }}>{emp.employeeNumber ?? "—"}</Link></td>
+                  <td><Link href={`/members/${emp.id}`} className="em" style={{ textDecoration: "none", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{emp.companyEmail ?? "—"}</Link></td>
+                  <td>
+                    <Link href={`/members/${emp.id}`} className="role-cell" style={{ textDecoration: "none" }}>
+                      <div className="r">{emp.departmentName ?? "—"}</div>
+                      {emp.positionName && <div className="o">{emp.positionName}</div>}
                     </Link>
                   </td>
-                  <td className="px-4 py-3">
-                    <Link href={`/members/${emp.id}`} className="block font-mono text-[12px] text-foreground-muted truncate max-w-[180px]">
-                      {emp.companyEmail ?? "—"}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link href={`/members/${emp.id}`} className="block">
-                      <p className="text-[13px] font-semibold text-foreground">{emp.departmentName ?? <span className="text-foreground-subtle font-normal">—</span>}</p>
-                      {emp.positionName && (
-                        <p className="text-[11.5px] text-foreground-muted">{emp.positionName}</p>
-                      )}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-[12px] text-foreground-muted">
-                    <Link href={`/members/${emp.id}`} className="block">
-                      {formatHireDate(emp.hireDate)}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link href={`/members/${emp.id}`} className="block">
-                      <span className="inline-flex items-center rounded-[5px] border border-border bg-background-secondary px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground-muted">
-                        {EMP_TYPE_LABEL[emp.employmentType] ?? "—"}
-                      </span>
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link href={`/members/${emp.id}`} className="block">
-                      <span className={`inline-flex items-center rounded-[5px] px-1.5 py-0.5 font-mono text-[11px] font-semibold ${STATUS_BADGE[emp.employmentStatus]}`}>
-                        {STATUS_LABEL[emp.employmentStatus]}
-                      </span>
-                    </Link>
-                  </td>
+                  <td><Link href={`/members/${emp.id}`} className="sn" style={{ textDecoration: "none" }}>{formatHireDate(emp.hireDate)}</Link></td>
+                  <td><span className="tag">{EMP_TYPE_LABEL[emp.employmentType] ?? "—"}</span></td>
+                  <td><span className={`st ${STATUS_CLS[emp.employmentStatus]}`}>{STATUS_LABEL[emp.employmentStatus]}</span></td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-      </div>
-
-      {/* 하단 바 */}
-      {view === "list" && filtered.length > 0 && (
-        <div className="shrink-0 flex items-center justify-between border-t border-border bg-background-primary px-6 py-3">
-          <span className="font-mono text-[11.5px] text-foreground-muted">
-            {filtered.length}명 표시
-            {filtered.length !== allEmployees.length && ` (전체 ${allEmployees.length}명)`}
-          </span>
-          <span className="font-mono text-[11.5px] text-foreground-subtle">
-            1 – {filtered.length}
-          </span>
-        </div>
+          <div style={{ marginTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
+            <span>{filtered.length}명 표시{filtered.length !== allEmployees.length && ` (전체 ${allEmployees.length}명)`}</span>
+            <span>1 – {filtered.length}</span>
+          </div>
+        </>
       )}
     </div>
   );

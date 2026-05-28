@@ -13,12 +13,14 @@ export default async function SecuritySettingsPage() {
   const policy = result.ok ? result.data : null;
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-[20px] font-bold tracking-tight text-foreground">보안 설정</h1>
-        <p className="mt-0.5 text-[13px] text-foreground-muted">2단계 인증 및 IP 접근 제한 정책을 관리해요</p>
+    <>
+      <div className="page-h">
+        <div>
+          <h1 className="h-title">보안</h1>
+          <div className="h-sub">2단계 인증 및 IP 접근 제한 정책을 관리합니다</div>
+        </div>
       </div>
       {policy && <SecurityPolicyForm initialPolicy={policy} />}
-    </div>
+    </>
   );
 }
