@@ -40,6 +40,7 @@ enum EmploymentType {
 enum MembershipStatus {
   PENDING
   ACTIVE
+  REJECTED
   SUSPENDED
   LEFT
 }
@@ -755,6 +756,8 @@ model LeaveBalance {
   grantedDays   Decimal  @default(0)
   usedDays      Decimal  @default(0)
   adjustedDays  Decimal  @default(0)
+  // 연차 소멸·이월 처리 멱등 마커 — set 되면 해당 연도 잔액은 이미 처리됨 (재실행 시 skip)
+  expiryProcessedAt DateTime?
   updatedAt     DateTime @updatedAt
 
   employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)

@@ -35,10 +35,12 @@ export type { CompanyApplicationItem, CompanyAdminItem, PlatformUserItem } from 
 
 /** 로그인 후 라우팅 판단용 — 사용자의 회사 멤버십 요약.
  *  pending: UserCompanyMembership(PENDING) + CompanyApplication(PENDING) 합산
+ *  pendingType: "membership"=가입코드 신청(회사 관리자 검토), "application"=회사등록신청(플랫폼 관리자 검토)
  *  rejected: 가장 최근 반려된 CompanyApplication (사유 포함) */
 export async function getMembershipSummary(userId: string): Promise<{
   active: { companyId: string; employeeId: string | null }[];
   pending: number;
+  pendingType: "membership" | "application" | null;
   rejected: { companyName: string; reviewMemo: string | null } | null;
 }> {
   const [memberships, pendingAppCount, rejectedApp] = await Promise.all([
@@ -57,12 +59,20 @@ export async function getMembershipSummary(userId: string): Promise<{
   ]);
 
   const rejectedMembership = memberships.find((m) => m.status === "REJECTED");
+  const pendingMembershipCount = memberships.filter((m) => m.status === "PENDING").length;
+  const totalPending = pendingMembershipCount + pendingAppCount;
+
+  let pendingType: "membership" | "application" | null = null;
+  if (totalPending > 0) {
+    pendingType = pendingMembershipCount > 0 ? "membership" : "application";
+  }
 
   return {
     active: memberships
       .filter((m) => m.status === "ACTIVE")
       .map((m) => ({ companyId: m.companyId, employeeId: m.employeeId })),
-    pending: memberships.filter((m) => m.status === "PENDING").length + pendingAppCount,
+    pending: totalPending,
+    pendingType,
     rejected: rejectedApp
       ?? (rejectedMembership ? { companyName: rejectedMembership.company.name, reviewMemo: null } : null),
   };
@@ -222,25 +232,37 @@ export async function submitJoinByCode(
     userAgent: ctx.userAgent,
   });
 
-  // 회사 관리자에게 알림 전송 (실패해도 가입 신청 자체는 성공)
+  // 가입 신청 승인 권한(member.directory.manage) 보유 구성원에게 알림 전송.
+  // (역할 이름이 아닌 권한 기준 — 부트스트랩 역할 type 과 무관하게 정확히 대상화)
+  // 실패해도 가입 신청 자체는 성공.
   try {
     const adminRoles = await prisma.userRole.findMany({
       where: {
-        employee: { companyId: company.id, status: "ACTIVE" },
-        role: { name: "ADMIN" },
+        employee: { companyId: company.id, isActive: true },
+        role: {
+          isActive: true,
+          rolePermissions: {
+            some: {
+              enabled: true,
+              permission: { key: "member.directory.manage" },
+            },
+          },
+        },
       },
       select: { employeeId: true },
     });
+    // 한 구성원이 여러 역할로 권한을 가질 수 있으므로 중복 제거
+    const recipientIds = [...new Set(adminRoles.map((ar) => ar.employeeId))];
     await Promise.all(
-      adminRoles.map((ar) =>
+      recipientIds.map((employeeId) =>
         createNotification({
           companyId: company.id,
-          recipientEmployeeId: ar.employeeId,
+          recipientEmployeeId: employeeId,
           category: "SYSTEM_SECURITY",
           eventKey: "system.member.join",
           title: "새 구성원 가입 신청",
           body: "새 구성원이 회사 가입을 신청했어요.",
-          deepLink: "/members",
+          deepLink: "/settings/join-requests",
         }),
       ),
     );

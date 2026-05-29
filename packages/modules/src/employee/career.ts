@@ -1,11 +1,56 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
 import type { EducationDegree, Gender } from "@teamlet/db";
-import { catchDomainErr, loadActor } from "../permission/_actor";
+import { catchDomainErr } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
 
 const DIRECTORY_READ = "member.directory.read";
 const DIRECTORY_MANAGE = "member.directory.manage";
+
+// ── 테넌트 격리 헬퍼 (C1: cross-tenant IDOR 방지) ──────────────────
+//
+// assertPermission 은 actor 회사 기준 권한만 본다. target 이 같은 회사인지,
+// scope(SELF/DEPARTMENT) 가 맞는지는 호출부가 ctx 로 넘겨야 한다.
+// 아래 헬퍼로 ① target 이 actor 와 동일 회사인지 검증하고
+// ② scope 평가용 targetEmployeeId/targetDepartmentId 를 확보한다.
+// cross-tenant 접근은 존재를 흘리지 않도록 NOT_FOUND 로 은닉한다.
+
+type ScopeTarget = { targetEmployeeId: string; targetDepartmentId?: string };
+
+async function resolveActorCompany(actorEmployeeId: string): Promise<string> {
+  const actor = await prisma.employee.findUnique({
+    where: { id: actorEmployeeId },
+    select: { companyId: true },
+  });
+  if (!actor) throw errors.notFound("구성원을 찾을 수 없어요");
+  return actor.companyId;
+}
+
+/** targetEmployeeId 가 actor 와 같은 회사인지 검증. scope ctx 반환. */
+async function assertTargetInCompany(
+  actorEmployeeId: string,
+  targetEmployeeId: string,
+): Promise<ScopeTarget> {
+  const companyId = await resolveActorCompany(actorEmployeeId);
+  const target = await prisma.employee.findFirst({
+    where: { id: targetEmployeeId, companyId },
+    select: { id: true, departmentId: true },
+  });
+  if (!target) throw errors.notFound("구성원을 찾을 수 없어요");
+  return { targetEmployeeId: target.id, targetDepartmentId: target.departmentId ?? undefined };
+}
+
+/** 하위 레코드(경력/학력/가족) 소유 구성원이 actor 와 같은 회사인지 검증. scope ctx 반환. */
+async function assertRowOwnerInCompany(
+  actorEmployeeId: string,
+  owner: { id: string; companyId: string; departmentId: string | null } | null,
+): Promise<ScopeTarget> {
+  const companyId = await resolveActorCompany(actorEmployeeId);
+  if (!owner || owner.companyId !== companyId) {
+    throw errors.notFound("기록을 찾을 수 없어요");
+  }
+  return { targetEmployeeId: owner.id, targetDepartmentId: owner.departmentId ?? undefined };
+}
 
 // ── 경력 ────────────────────────────────────────────────────────
 
@@ -34,7 +79,8 @@ export async function listCareerHistories(
   targetEmployeeId: string,
 ): Promise<Result<CareerHistoryItem[]>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_READ);
+    const ctx = await assertTargetInCompany(actorEmployeeId, targetEmployeeId);
+    await assertPermission(actorEmployeeId, DIRECTORY_READ, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }
@@ -64,7 +110,8 @@ export async function createCareerHistory(
   input: CareerHistoryInput,
 ): Promise<Result<{ id: string }>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+    const ctx = await assertTargetInCompany(actorEmployeeId, targetEmployeeId);
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }
@@ -101,7 +148,12 @@ export async function updateCareerHistory(
   input: Partial<CareerHistoryInput>,
 ): Promise<Result<void>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+    const row = await prisma.careerHistory.findUnique({
+      where: { id: careerHistoryId },
+      select: { employee: { select: { id: true, companyId: true, departmentId: true } } },
+    });
+    const ctx = await assertRowOwnerInCompany(actorEmployeeId, row?.employee ?? null);
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }
@@ -126,7 +178,12 @@ export async function deleteCareerHistory(
   careerHistoryId: string,
 ): Promise<Result<void>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+    const row = await prisma.careerHistory.findUnique({
+      where: { id: careerHistoryId },
+      select: { employee: { select: { id: true, companyId: true, departmentId: true } } },
+    });
+    const ctx = await assertRowOwnerInCompany(actorEmployeeId, row?.employee ?? null);
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }
@@ -162,7 +219,8 @@ export async function listEducationHistories(
   targetEmployeeId: string,
 ): Promise<Result<EducationHistoryItem[]>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_READ);
+    const ctx = await assertTargetInCompany(actorEmployeeId, targetEmployeeId);
+    await assertPermission(actorEmployeeId, DIRECTORY_READ, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }
@@ -192,7 +250,8 @@ export async function createEducationHistory(
   input: EducationHistoryInput,
 ): Promise<Result<{ id: string }>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+    const ctx = await assertTargetInCompany(actorEmployeeId, targetEmployeeId);
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }
@@ -228,7 +287,12 @@ export async function updateEducationHistory(
   input: Partial<EducationHistoryInput>,
 ): Promise<Result<void>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+    const row = await prisma.educationHistory.findUnique({
+      where: { id: educationHistoryId },
+      select: { employee: { select: { id: true, companyId: true, departmentId: true } } },
+    });
+    const ctx = await assertRowOwnerInCompany(actorEmployeeId, row?.employee ?? null);
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }
@@ -253,7 +317,12 @@ export async function deleteEducationHistory(
   educationHistoryId: string,
 ): Promise<Result<void>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+    const row = await prisma.educationHistory.findUnique({
+      where: { id: educationHistoryId },
+      select: { employee: { select: { id: true, companyId: true, departmentId: true } } },
+    });
+    const ctx = await assertRowOwnerInCompany(actorEmployeeId, row?.employee ?? null);
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }
@@ -287,7 +356,8 @@ export async function listFamilyMembers(
   targetEmployeeId: string,
 ): Promise<Result<FamilyMemberItem[]>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_READ);
+    const ctx = await assertTargetInCompany(actorEmployeeId, targetEmployeeId);
+    await assertPermission(actorEmployeeId, DIRECTORY_READ, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }
@@ -316,7 +386,8 @@ export async function createFamilyMember(
   input: FamilyMemberInput,
 ): Promise<Result<{ id: string }>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+    const ctx = await assertTargetInCompany(actorEmployeeId, targetEmployeeId);
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }
@@ -351,7 +422,12 @@ export async function updateFamilyMember(
   input: Partial<FamilyMemberInput>,
 ): Promise<Result<void>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+    const row = await prisma.familyMember.findUnique({
+      where: { id: familyMemberId },
+      select: { employee: { select: { id: true, companyId: true, departmentId: true } } },
+    });
+    const ctx = await assertRowOwnerInCompany(actorEmployeeId, row?.employee ?? null);
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }
@@ -375,7 +451,12 @@ export async function deleteFamilyMember(
   familyMemberId: string,
 ): Promise<Result<void>> {
   try {
-    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+    const row = await prisma.familyMember.findUnique({
+      where: { id: familyMemberId },
+      select: { employee: { select: { id: true, companyId: true, departmentId: true } } },
+    });
+    const ctx = await assertRowOwnerInCompany(actorEmployeeId, row?.employee ?? null);
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE, ctx);
   } catch (e) {
     return catchDomainErr(e);
   }

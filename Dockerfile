@@ -7,6 +7,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/db/package.json ./packages/db/
 COPY packages/modules/package.json ./packages/modules/
+COPY packages/ui/package.json ./packages/ui/
+COPY packages/config/package.json ./packages/config/
 COPY apps/web/package.json ./apps/web/
 RUN pnpm install --frozen-lockfile
 
@@ -16,13 +18,17 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
 COPY --from=deps /app/packages/modules/node_modules ./packages/modules/node_modules
+COPY --from=deps /app/packages/ui/node_modules ./packages/ui/node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN pnpm --filter web build
+# Prisma Client 생성 → packages/db/generated/client (gitignore 되어 빌드 컨텍스트에 없을 수 있음)
+RUN pnpm --filter @teamlet/db generate
+# standalone 출력은 webpack 빌드에서만 생성됨 (turbopack 프로덕션 빌드는 미지원)
+RUN pnpm --filter web build:standalone
 
 FROM base AS runner
 WORKDIR /app

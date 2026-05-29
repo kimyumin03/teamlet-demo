@@ -58,8 +58,20 @@ export default async function PendingApprovalPage() {
 
         <div className="bg-[var(--bg-secondary)] rounded-[10px] px-4 py-3 text-left mb-4">
           {[
-            { icon: "✓", cls: "bg-[var(--success)] text-white", label: "회사 등록 신청 완료", when: "완료", pulse: false },
-            { icon: "…", cls: "bg-[var(--warn)] text-white animate-pulse", label: "플랫폼 관리자 검토 중", when: "진행", pulse: true },
+            {
+              icon: "✓",
+              cls: "bg-[var(--success)] text-white",
+              label: summary.pendingType === "membership" ? "가입 신청 완료" : "회사 등록 신청 완료",
+              when: "완료",
+              pulse: false,
+            },
+            {
+              icon: "…",
+              cls: "bg-[var(--warn)] text-white animate-pulse",
+              label: summary.pendingType === "membership" ? "회사 관리자 검토 중" : "플랫폼 관리자 검토 중",
+              when: "진행",
+              pulse: true,
+            },
             { icon: "3", cls: "border-2 border-[var(--border-strong)] text-[var(--fg-subtle)]", label: "승인 → 자동 이동", when: "대기", pulse: false },
           ].map((row, i) => (
             <div key={i} className="grid grid-cols-[20px_1fr_auto] gap-2.5 items-center py-1.5 text-[13px]">

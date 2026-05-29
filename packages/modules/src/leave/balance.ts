@@ -201,12 +201,10 @@ export async function processLeaveExpiry(
     const remaining = Number(bal.grantedDays) + Number(bal.adjustedDays) - Number(bal.usedDays);
     if (remaining <= 0) continue;
 
-    // 이미 EXPIRE 처리됐는지 확인
-    const alreadyExpired = await prisma.leaveTransaction.findFirst({
-      where: { employeeId: bal.employeeId, leaveTypeId: bal.leaveTypeId, txType: "EXPIRE" },
-      select: { id: true },
-    });
-    if (alreadyExpired) continue;
+    // 멱등: 해당 연도 잔액(employeeId·leaveTypeId·year 고유)이 이미 처리됐으면 skip.
+    // 마커는 잔액 행에 두므로 소멸/이월 어느 쪽이 발생했든 재실행 시 정확히 1회만 처리됨
+    // (이전 구현은 txType=EXPIRE 트랜잭션을 year 무관하게 조회 → 첫 해 이후 영구 skip 되는 버그).
+    if (bal.expiryProcessedAt) continue;
 
     // 해당 휴가 유형의 정책 찾기
     const assignment = bal.employee.leavePolicyAssignments.find(
@@ -235,6 +233,18 @@ export async function processLeaveExpiry(
 
     const ops = [];
 
+    // 잔액 행: 소멸분은 grantedDays 에서 차감(adjustedDays 는 관리자 수동조정 전용이라 오염 금지),
+    // 멱등 마커는 소멸·이월 여부와 무관하게 항상 set → 재실행 시 이중 처리 방지.
+    ops.push(
+      prisma.leaveBalance.update({
+        where: { id: bal.id },
+        data: {
+          ...(expireAmount > 0 && { grantedDays: { decrement: expireAmount } }),
+          expiryProcessedAt: now,
+        },
+      }),
+    );
+
     if (expireAmount > 0) {
       ops.push(
         prisma.leaveTransaction.create({
@@ -247,10 +257,6 @@ export async function processLeaveExpiry(
             reason: `${year}년 연차 소멸`,
             actorId: actorEmployeeId,
           },
-        }),
-        prisma.leaveBalance.update({
-          where: { id: bal.id },
-          data: { adjustedDays: { decrement: expireAmount } },
         }),
       );
       expired++;

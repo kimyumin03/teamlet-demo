@@ -92,15 +92,45 @@ pnpm dev              # http://localhost:3000
 
 ### 다음에 할 일
 
-| 항목 | 비고 |
+> 2026-05-29 전체 코드 감사 기준. 상세·증거는 **`docs/07_감사보고서_2026-05-29.md`** 참조.
+> 원칙: **토대(보안·배포·정합성) → flex-parity 기능 → 차별화**. 깨진 토대 위에 기능 쌓지 않기.
+
+**0순위 — 남은 CRITICAL (토대 마무리)**
+
+| 항목 | 내용 |
 |---|---|
-| 홈 대시보드 고도화 | 홈피드·할일·캘린더 패널 (Flex 레퍼런스) |
-| 휴가 도메인 UX | 내 휴가 카드 + 팀 캘린더 |
-| 전자결재 UX | 결재 단계 시각화 |
-| 연차 자동 부여·소멸 | Worker skeleton만 존재, 수동 부여만 동작 |
-| 파일 업로드 · 이메일 발송 | S3/Resend 미연동 |
-| 실시간 알림 | SSE/WebSocket 미적용 |
-| 모바일 반응형 | 데스크톱 기준 |
+| C5 Worker | `apps/worker` BullMQ 잡 프로세서 0개 — 연차 자동부여·소멸 스케줄 등록 |
+| C6 증명서 인쇄 | `certificates/[id]/page.tsx` 서버컴포넌트 `onClick` 렌더버그 → client 분리 |
+| C7 결재정책 자동배정 | `ApprovalPolicy` 저장만 됨 — `createDocument`에서 정책 조회·결재선 자동생성 연결 (or UI 문구 정직화) |
+
+**1순위 — HIGH (보안·정합성, §2 참조)**
+
+| 항목 | 내용 |
+|---|---|
+| IP 제한·강제 2FA | UI/DB만 존재, 런타임 강제 전무 → 미들웨어 적용 or "준비중" 표기 |
+| CC 참조자 cross-tenant | `createDocument` ccRecipientIds 회사 검증 누락 |
+| 휴가 잔여 계산 통일 | 표시(PENDING 미차감) ≠ 신청검증(PENDING 차감) |
+| CSV 입사자 HIRE 발령 | `bulk.ts` 발령 미생성 → Anti-Pattern #1 재발 |
+| 락아웃 가드 | 비활성화 경로에서 마지막 관리자 잠금 가능 |
+
+**2순위 — flex-parity 신규 기능 (명세 §7-A 구조적 결손)**
+
+| 항목 | 내용 |
+|---|---|
+| 근태(Attendance) 모듈 | 명세 곳곳의 근무시간(32:14/40h)·근무중 타이머 — 모듈 자체 없음 |
+| 연차 사용 촉진 | 4-칸반(대기/진행/완료/종료) — 근로기준법 필수, C3 소멸엔진과 연결 |
+| 워크플로우 인라인 결재 | 리스트에서 승인/반려 + 결재선 spine 시각화 |
+| 설정 3종 실구현 | 보안(세션관리)·알림(채널 영속화)·회사정보(로고 업로드) |
+| 파일 업로드 | MinIO 연동(이미 docker-compose 존재) — 로고·프로필·문서·증명서 |
+
+**3순위 — 차별화(120%) & 품질**
+
+| 항목 | 내용 |
+|---|---|
+| 테스트 인프라 | vitest — 휴가 잔여·소멸·결재 트랜잭션 회귀 (현재 0건) |
+| AxHub 구성원 sync | `axhubExternalId` upsert + `syncLockedFields` 우회 금지, Worker 스케줄 |
+| 다크모드·5 accent | 토큰만 존재 → 테마 스위처 |
+| 모바일 반응형 | 사이드바→햄버거, 레일→하단탭 |
 
 ## 설계 원칙
 
@@ -136,6 +166,16 @@ pnpm dev              # http://localhost:3000
 ☑ 디자인 갭 분석: 30개 화면 전수 조사, 미구현 12개 · 부분 구현 3개 우선순위 확정
 ☑ 홈 페이지 기능 보강: 오늘의 팀 현황 위젯, 생일·입사기념일·신규합류 이벤트 카드, 축하 보낼 동료 레일 위젯
 ☑ 휴가·구성원 다음 개발 우선순위 설계
+
+**[Teamlet · 오후 — 전체 감사 + CRITICAL 수정]**
+오후에는 6개 도메인 병렬 코드 감사로 "구현됨 vs 검증됨 vs 껍데기"를 실제 코드 수준에서 가려냈습니다. PROGRESS의 "완료" 표기와 실제 상태 사이 격차를 `docs/07_감사보고서`에 정리하고, 최우선 CRITICAL 4건을 바로 수정했습니다.
+☑ 전체 감사 보고서 작성: CRITICAL 9건 + HIGH + 명세 갭 + 100→120% 로드맵 (`docs/07_감사보고서_2026-05-29.md`)
+☑ C1 멀티테넌트 IDOR 차단: 경력·학력·가족 12함수에 회사 격리 + scope 컨텍스트 (`employee/career.ts`)
+☑ C2 Docker 배포 복구: turbopack→webpack(`build:standalone`), `.dockerignore` 신규, 누락 패키지 복사 → **이미지 빌드 + 컨테이너 기동(307) 실측 검증**
+☑ C3 연차 소멸·이월 멱등성: `LeaveBalance.expiryProcessedAt` 마커로 year별 1회 보장 + adjustedDays→grantedDays 차감
+☑ C4 가입 신청 알림 복구: 권한(member.directory.manage) 기준 대상화 + 잘못된 필터/deepLink 교정
+☑ 부수: `MembershipStatus.REJECTED` 추가(반려기능 복구) + bulk.ts import → 모듈 타입체크 전체 클린, dev DB db push 적용
+※ C2 외 런타임 미검증(타입체크 통과). 남은 CRITICAL: C5(Worker)·C6(증명서)·C7(결재정책)
 
 ---
 

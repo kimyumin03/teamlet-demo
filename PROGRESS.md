@@ -3,6 +3,20 @@
 > 세션 시작 시 이 파일을 먼저 읽고, 작업이 끝나면 **다음에 할 일** 섹션을 업데이트하세요.
 > 상세 스펙은 `CLAUDE.md` + `/docs` 참조.
 
+> ⚠️ **2026-05-29 전체 감사 완료 → `docs/07_감사보고서_2026-05-29.md` 필독.**
+> 6개 도메인 코드 검증 결과 아래 표의 "✅완료"와 실제 상태에 격차 있음.
+> + 디자인 명세 대비 갭(근태모듈/연차촉진/세션관리 등 전무) + 100%→120% 로드맵 정리됨.
+> 자동화 테스트 0건.
+>
+> ✅ **CRITICAL 4건 수정 완료 (2026-05-29 같은 세션):**
+> - **C1 IDOR** — career.ts 12함수 테넌트 격리 (타입클린)
+> - **C2 Docker** — turbopack→webpack(build:standalone)+`.dockerignore`+누락패키지 → **이미지 빌드+컨테이너 기동(307) 실측 검증 완료**
+> - **C3 소멸엔진** — 멱등 마커(`LeaveBalance.expiryProcessedAt`)로 year별 1회 처리 + adjustedDays→grantedDays (타입클린, 런타임 미검증)
+> - **C4 가입알림** — 권한(member.directory.manage)기준 대상화+필터버그+deepLink (타입클린)
+> - +부수: `MembershipStatus.REJECTED` 추가(반려기능 복구), bulk.ts import 수정 → **모듈 타입체크 전체 클린**, dev DB `db push` 적용
+>
+> **남은 CRITICAL: C5(Worker 빈껍데기)·C6(증명서 렌더버그)·C7(결재정책 미연결) + §2 HIGH 9건.**
+
 ## 전체 진행도 (2026-05-28 세션3 기준)
 
 | 영역 | 상태 | 비고 |

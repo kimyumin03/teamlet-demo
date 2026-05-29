@@ -1,4 +1,5 @@
 import { prisma } from "@teamlet/db";
+import type { EmploymentType } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
 import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission";
@@ -124,7 +125,7 @@ export async function bulkCreateEmployees(
           hireDate,
           departmentId,
           positionId,
-          employmentType: employmentType as import("@prisma/client").EmploymentType,
+          employmentType: employmentType as EmploymentType,
         },
       });
       results.push({ row: rowNum, name, ok: true });

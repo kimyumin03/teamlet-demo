@@ -1,0 +1,24 @@
+# 의존성·빌드 산출물 — 컨테이너 내부에서 재생성 (호스트의 stale/Windows 산출물 유입 방지)
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+packages/db/generated
+
+# 로컬 전용
+.git
+.env*
+**/.env*
+*.log
+npm-debug.log*
+
+# 에디터/OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# 문서·디자인 자산 (런타임 불필요)
+docs
+teamlet_design
+*.md
