@@ -6,6 +6,15 @@ export type AnnouncementItem = {
   authorName: string;
   isPinned: boolean;
   createdAt: Date;
+  commentCount: number;
+};
+
+export type CommentItem = {
+  id: string;
+  authorId: string;
+  authorName: string;
+  content: string;
+  createdAt: Date;
 };
 
 export type CreateAnnouncementInput = {

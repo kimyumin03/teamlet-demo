@@ -8,6 +8,10 @@ import {
   updateAnnouncement,
   deleteAnnouncement,
   togglePin,
+  listComments,
+  createComment,
+  deleteComment,
+  type CommentItem,
 } from "@teamlet/modules/announcement";
 import { toApiResponse, type ApiResponse } from "@teamlet/shared";
 import { auth } from "@/auth";
@@ -66,5 +70,30 @@ export async function togglePinAction(
   const { employeeId } = await requireEmployee();
   const result = await togglePin(employeeId, announcementId);
   if (result.ok) revalidatePath("/home");
+  return toApiResponse(result);
+}
+
+export async function listCommentsAction(
+  announcementId: string,
+): Promise<ApiResponse<CommentItem[]>> {
+  const { employeeId } = await requireEmployee();
+  const result = await listComments(employeeId, announcementId);
+  return toApiResponse(result);
+}
+
+export async function createCommentAction(
+  announcementId: string,
+  content: string,
+): Promise<ApiResponse<{ id: string }>> {
+  const { employeeId } = await requireEmployee();
+  const result = await createComment(employeeId, announcementId, content);
+  return toApiResponse(result);
+}
+
+export async function deleteCommentAction(
+  commentId: string,
+): Promise<ApiResponse<void>> {
+  const { employeeId } = await requireEmployee();
+  const result = await deleteComment(employeeId, commentId);
   return toApiResponse(result);
 }

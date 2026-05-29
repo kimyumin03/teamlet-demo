@@ -13,7 +13,10 @@ export async function listAnnouncements(
 
   const rows = await prisma.announcement.findMany({
     where: { companyId: emp.companyId },
-    include: { author: { select: { name: true } } },
+    include: {
+      author: { select: { name: true } },
+      _count: { select: { comments: true } },
+    },
     orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
   });
 
@@ -26,6 +29,7 @@ export async function listAnnouncements(
       authorName: r.author.name,
       isPinned: r.isPinned,
       createdAt: r.createdAt,
+      commentCount: r._count.comments,
     })),
   );
 }

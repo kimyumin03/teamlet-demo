@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { AnnouncementItem } from "@teamlet/modules/announcement";
 import { CreateAnnouncementButton } from "@/components/announcement/create-announcement-button";
 import { AnnouncementActions } from "@/components/announcement/announcement-actions";
+import { AnnouncementComments } from "@/components/announcement/announcement-comments";
 
 function formatRelative(d: Date) {
   const diff = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
@@ -85,6 +86,13 @@ export function NewsTab({
                   <h3>{item.title}</h3>
                   <div className="text">{item.content}</div>
                 </div>
+                {currentEmployeeId && (
+                  <AnnouncementComments
+                    announcementId={item.id}
+                    initialCount={item.commentCount}
+                    currentEmployeeId={currentEmployeeId}
+                  />
+                )}
               </article>
             ))
           )}

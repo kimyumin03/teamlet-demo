@@ -5,4 +5,10 @@ export {
   deleteAnnouncement,
   togglePin,
 } from "./announcement";
-export type { AnnouncementItem, CreateAnnouncementInput, UpdateAnnouncementInput } from "./types";
+export { listComments, createComment, deleteComment } from "./comment";
+export type {
+  AnnouncementItem,
+  CreateAnnouncementInput,
+  UpdateAnnouncementInput,
+  CommentItem,
+} from "./types";

@@ -485,7 +485,8 @@ model Employee {
   approvalLines     ApprovalLine[]     @relation("ApprovalLines")
   approvalActions   ApprovalAction[]   @relation("ApprovalActions")
   ccDocuments       DocumentCcRecipient[] @relation("CcDocuments")
-  announcements     Announcement[]        @relation("AuthoredAnnouncements")
+  announcements           Announcement[]             @relation("AuthoredAnnouncements")
+  announcementComments    AnnouncementComment[]      @relation("AuthoredAnnouncementComments")
   managedPostings      JobPosting[]       @relation("ManagedPostings")
   managedCandidates    Candidate[]        @relation("ManagedCandidates")
   uploadedDocuments    CompanyDocument[]  @relation("UploadedDocuments")
@@ -1167,11 +1168,27 @@ model Announcement {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  author  Employee @relation("AuthoredAnnouncements", fields: [authorId], references: [id])
+  company  Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  author   Employee              @relation("AuthoredAnnouncements", fields: [authorId], references: [id])
+  comments AnnouncementComment[]
 
   @@index([companyId, isPinned, createdAt(sort: Desc)])
   @@map("announcements")
+}
+
+/// 공지사항 댓글.
+model AnnouncementComment {
+  id             String   @id @default(cuid())
+  announcementId String
+  authorId       String
+  content        String
+  createdAt      DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  author       Employee     @relation("AuthoredAnnouncementComments", fields: [authorId], references: [id])
+
+  @@index([announcementId, createdAt])
+  @@map("announcement_comments")
 }
 
 // ─────────────────────────────────────────────────────────────
