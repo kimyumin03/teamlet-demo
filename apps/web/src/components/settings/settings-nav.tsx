@@ -20,7 +20,7 @@ const GROUPS: { label: string; admin?: boolean; items: NavItem[] }[] = [
     items: [
       { href: "/settings/company", label: "회사 정보", sub: "대표 · 주소 · 로고" },
       { href: "/settings/holidays", label: "공휴일", sub: "한국 · 회사 자율" },
-      { href: "/members", label: "조직 · 직책", sub: "본부 · 팀 · 직급" },
+      { href: "/settings/org", label: "조직 · 직책", sub: "부서 · 직급 편집/삭제" },
     ],
   },
   {

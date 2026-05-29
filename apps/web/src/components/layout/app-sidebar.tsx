@@ -75,6 +75,7 @@ export function AppSidebar({
   companyName,
   logoutAction,
   pendingCount,
+  employeeId,
 }: {
   userName: string;
   userEmail: string;
@@ -82,6 +83,7 @@ export function AppSidebar({
   companyName?: string;
   logoutAction: () => Promise<void>;
   pendingCount?: number;
+  employeeId?: string;
 }) {
   const pathname = usePathname();
 
@@ -167,11 +169,23 @@ export function AppSidebar({
 
       {/* 하단 사용자 */}
       <div className="me" style={{ marginTop: "auto" }}>
-        <div className="av">{userName.charAt(0) || "?"}</div>
-        <div className="meta">
-          <div className="name">{userName}</div>
-          <div className="role">{userEmail}</div>
-        </div>
+        {employeeId ? (
+          <Link href={`/members/${employeeId}`} style={{ display: "contents" }}>
+            <div className="av" style={{ cursor: "pointer" }}>{userName.charAt(0) || "?"}</div>
+            <div className="meta" style={{ cursor: "pointer" }}>
+              <div className="name">{userName}</div>
+              <div className="role">{userEmail}</div>
+            </div>
+          </Link>
+        ) : (
+          <>
+            <div className="av">{userName.charAt(0) || "?"}</div>
+            <div className="meta">
+              <div className="name">{userName}</div>
+              <div className="role">{userEmail}</div>
+            </div>
+          </>
+        )}
         <form action={logoutAction}>
           <button
             type="submit"

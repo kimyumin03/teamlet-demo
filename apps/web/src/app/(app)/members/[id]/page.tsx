@@ -1,121 +1,19 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { listDepartments } from "@teamlet/modules/department";
-import { getEmployee, type EmployeeDetail } from "@teamlet/modules/employee";
-import { listAppointments, type AppointmentItem } from "@teamlet/modules/appointment";
+import { getEmployee } from "@teamlet/modules/employee";
+import { listAppointments } from "@teamlet/modules/appointment";
 import { listPositions } from "@teamlet/modules/position";
 import { listEmployeeLeaveHistory } from "@teamlet/modules/leave";
 import { listEmployeeDocuments } from "@teamlet/modules/workflow";
-import { listRoles, type RoleListItem } from "@teamlet/modules/permission";
-import type { LeaveRequestItem } from "@teamlet/modules/leave";
-import type { DocumentListItem } from "@teamlet/modules/workflow";
+import { listRoles } from "@teamlet/modules/permission";
+import { listCareerHistories, listEducationHistories, listFamilyMembers } from "@teamlet/modules/employee";
 import { auth } from "@/auth";
-import {
-  listCareerHistories, listEducationHistories, listFamilyMembers,
-  type CareerHistoryItem, type EducationHistoryItem, type FamilyMemberItem,
-} from "@teamlet/modules/employee";
-import { CareerTab } from "./_components/career-tab";
-import { EducationTab } from "./_components/education-tab";
-import { FamilyTab } from "./_components/family-tab";
-import { DeactivateEmployeeButton } from "@/components/members/deactivate-button";
-import { EditMemberButton } from "@/components/members/edit-member-button";
-import { InviteLinkButton } from "@/components/members/invite-link-button";
-import { MemberRolesManager } from "@/components/members/member-roles-manager";
-import { RegisterAppointmentButton } from "@/components/members/register-appointment-button";
+import { ProfileShell } from "./_components/profile-shell";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_LABEL: Record<EmployeeDetail["employmentStatus"], string> = {
-  ACTIVE: "재직", PROBATION: "수습", ON_LEAVE: "휴직",
-  SECONDED: "파견", RESIGNED: "퇴직", SCHEDULED: "입사예정",
-};
-const STATUS_CLS: Record<EmployeeDetail["employmentStatus"], string> = {
-  ACTIVE: "border-emerald-300 bg-emerald-50 text-emerald-700",
-  PROBATION: "border-amber-300 bg-amber-50 text-amber-700",
-  ON_LEAVE: "border-border bg-background-secondary text-foreground-muted",
-  SECONDED: "border-primary/30 bg-primary/5 text-foreground",
-  RESIGNED: "border-border bg-background-secondary text-foreground-subtle",
-  SCHEDULED: "border-primary/30 bg-primary/5 text-foreground",
-};
-const EMP_TYPE_LABEL: Record<EmployeeDetail["employmentType"], string> = {
-  FULL_TIME: "정규직", PART_TIME: "파트타임", CONTRACT: "계약직",
-  INTERN: "인턴", DISPATCH: "파견",
-};
-const GENDER_LABEL: Record<string, string> = { MALE: "남성", FEMALE: "여성", OTHER: "기타" };
-
-const LEAVE_STATUS_LABEL: Record<string, string> = {
-  DRAFT: "임시저장", PENDING: "검토중", APPROVED: "승인", REJECTED: "반려", CANCELLED: "취소",
-};
-const LEAVE_STATUS_CLS: Record<string, string> = {
-  DRAFT: "border-border bg-background-secondary text-foreground-subtle",
-  PENDING: "border-amber-300 bg-amber-50 text-amber-700",
-  APPROVED: "border-emerald-300 bg-emerald-50 text-emerald-700",
-  REJECTED: "border-destructive bg-destructive-50 text-destructive",
-  CANCELLED: "border-border bg-background-secondary text-foreground-subtle",
-};
-const DOC_STATUS_LABEL: Record<string, string> = {
-  DRAFT: "임시저장", IN_PROGRESS: "진행중", APPROVED: "승인", REJECTED: "반려", CANCELLED: "취소",
-};
-const DOC_STATUS_CLS: Record<string, string> = {
-  DRAFT: "border-border bg-background-secondary text-foreground-subtle",
-  IN_PROGRESS: "border-amber-300 bg-amber-50 text-amber-700",
-  APPROVED: "border-emerald-300 bg-emerald-50 text-emerald-700",
-  REJECTED: "border-destructive bg-destructive-50 text-destructive",
-  CANCELLED: "border-border bg-background-secondary text-foreground-subtle",
-};
-const APPT_KIND_LABEL: Record<string, string> = {
-  HIRE: "입사", TRANSFER: "부서 이동", PROMOTION: "직책 변경", LEAVE: "휴직", RETURN: "복직",
-  SECONDMENT: "파견", RESIGNATION: "퇴직",
-};
-
-const TABS = [
-  { key: "info", label: "기본 정보" },
-  { key: "appointment", label: "발령 이력" },
-  { key: "leave", label: "휴가" },
-  { key: "workflow", label: "결재 문서" },
-  { key: "career", label: "경력" },
-  { key: "education", label: "학력" },
-  { key: "family", label: "가족" },
-  { key: "roles", label: "권한" },
-] as const;
-type TabKey = (typeof TABS)[number]["key"];
-
-function fmt(d: Date | null | undefined) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
-}
-
-function Field({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <div>
-      <dt className="text-[11.5px] text-foreground-subtle">{label}</dt>
-      <dd className="mt-0.5 text-[13px] text-foreground">{value || "—"}</dd>
-    </div>
-  );
-}
-
-const AVATAR_COLORS = [
-  "bg-blue-100 text-blue-700",
-  "bg-violet-100 text-violet-700",
-  "bg-emerald-100 text-emerald-700",
-  "bg-amber-100 text-amber-700",
-  "bg-rose-100 text-rose-700",
-  "bg-cyan-100 text-cyan-700",
-];
-function avatarColor(name: string) {
-  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length] ?? AVATAR_COLORS[0]!;
-}
-
-function ProgressBar({ used, total }: { used: number; total: number }) {
-  const pct = total > 0 ? Math.max(0, Math.min(100, (used / total) * 100)) : 0;
-  const remaining = total - used;
-  const barColor = remaining <= 0 ? "bg-destructive" : remaining <= 3 ? "bg-amber-400" : "bg-primary";
-  return (
-    <div className="mt-2 h-[5px] w-full overflow-hidden rounded-full bg-background-tertiary">
-      <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
-    </div>
-  );
-}
+type TabKey = "info" | "appointment" | "roles";
+const VALID_TABS: TabKey[] = ["info", "appointment", "roles"];
 
 export default async function MemberDetailPage({
   params,
@@ -126,26 +24,27 @@ export default async function MemberDetailPage({
 }) {
   const { id } = await params;
   const { tab: tabParam } = await searchParams;
-  const activeTab: TabKey = (TABS.find((t) => t.key === tabParam)?.key ?? "info") as TabKey;
+  const initialTab: TabKey = (VALID_TABS.includes(tabParam as TabKey) ? tabParam : "info") as TabKey;
 
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const [empResult, deptResult, posResult, leaveResult, workflowResult, rolesResult, apptResult,
-         careerResult, educationResult, familyResult] =
-    await Promise.all([
-      getEmployee(session.user.employeeId, id),
-      listDepartments(session.user.employeeId),
-      listPositions(session.user.employeeId),
-      listEmployeeLeaveHistory(session.user.employeeId, id),
-      listEmployeeDocuments(session.user.employeeId, id),
-      listRoles(session.user.employeeId),
-      listAppointments(session.user.employeeId, id),
-      listCareerHistories(session.user.employeeId, id),
-      listEducationHistories(session.user.employeeId, id),
-      listFamilyMembers(session.user.employeeId, id),
-    ]);
+  const [
+    empResult, deptResult, posResult, leaveResult, workflowResult,
+    rolesResult, apptResult, careerResult, educationResult, familyResult,
+  ] = await Promise.all([
+    getEmployee(session.user.employeeId, id),
+    listDepartments(session.user.employeeId),
+    listPositions(session.user.employeeId),
+    listEmployeeLeaveHistory(session.user.employeeId, id),
+    listEmployeeDocuments(session.user.employeeId, id),
+    listRoles(session.user.employeeId),
+    listAppointments(session.user.employeeId, id),
+    listCareerHistories(session.user.employeeId, id),
+    listEducationHistories(session.user.employeeId, id),
+    listFamilyMembers(session.user.employeeId, id),
+  ]);
 
   if (!empResult.ok) {
     if (empResult.error.code === "NOT_FOUND") notFound();
@@ -158,350 +57,19 @@ export default async function MemberDetailPage({
     );
   }
 
-  const emp = empResult.data;
-  const departments = deptResult.ok ? deptResult.data : [];
-  const positions = posResult.ok ? posResult.data : [];
-  const leaveHistory: LeaveRequestItem[] = leaveResult.ok ? leaveResult.data : [];
-  const workflowDocs: DocumentListItem[] = workflowResult.ok ? workflowResult.data : [];
-  const assignableRoles: RoleListItem[] = rolesResult.ok ? rolesResult.data : [];
-  const appointments: AppointmentItem[] = apptResult.ok ? apptResult.data : [];
-  const careerItems: CareerHistoryItem[] = careerResult.ok ? careerResult.data : [];
-  const educationItems: EducationHistoryItem[] = educationResult.ok ? educationResult.data : [];
-  const familyItems: FamilyMemberItem[] = familyResult.ok ? familyResult.data : [];
-  const canEditProfile = emp.isActive;
-
   return (
-    <div className="flex h-full flex-col">
-      {/* 헤더 */}
-      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-5">
-        <Link
-          href="/members"
-          className="mb-4 inline-flex items-center gap-1 text-[12px] text-foreground-subtle hover:text-foreground transition-colors"
-        >
-          <svg viewBox="0 0 16 16" fill="currentColor" className="size-3.5">
-            <path fillRule="evenodd" d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 1.06L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z" clipRule="evenodd" />
-          </svg>
-          구성원 목록
-        </Link>
-
-        <div className="flex items-start justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-semibold ${avatarColor(emp.name)}`}>
-              {emp.name.slice(-2)}
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-[22px] font-bold leading-tight tracking-tight">{emp.name}</h1>
-                <span className={`rounded-[5px] border px-2 py-0.5 font-mono text-[11px] font-semibold ${STATUS_CLS[emp.employmentStatus]}`}>
-                  {STATUS_LABEL[emp.employmentStatus]}
-                </span>
-              </div>
-              <p className="mt-0.5 text-[13px] text-foreground-muted">
-                {[emp.departmentName, emp.positionName, EMP_TYPE_LABEL[emp.employmentType]].filter(Boolean).join(" · ")}
-              </p>
-              <p className="mt-1 text-[12px] text-foreground-subtle">
-                {emp.companyEmail ?? "이메일 미등록"}
-                {emp.hireDate && <> · 입사 {fmt(emp.hireDate)}</>}
-                {emp.employeeNumber && <> · {emp.employeeNumber}</>}
-              </p>
-            </div>
-          </div>
-
-          {emp.isActive && (
-            <div className="flex shrink-0 items-center gap-2">
-              {!emp.hasLinkedAccount && <InviteLinkButton employeeId={emp.id} />}
-              <EditMemberButton employee={emp} />
-              <DeactivateEmployeeButton employeeId={emp.id} employeeName={emp.name} redirectAfter="/members" />
-            </div>
-          )}
-        </div>
-
-        {/* 탭 바 */}
-        <div className="mt-5 flex gap-0 border-b border-transparent -mb-px">
-          {TABS.map((t) => (
-            <Link
-              key={t.key}
-              href={`/members/${id}?tab=${t.key}`}
-              className={`border-b-2 px-3 pb-2.5 text-sm font-medium transition-colors ${
-                activeTab === t.key
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-foreground-muted hover:text-foreground hover:border-border"
-              }`}
-            >
-              {t.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* 탭 콘텐츠 */}
-      <div className="flex-1 overflow-auto p-6">
-
-        {/* 기본 정보 탭 */}
-        {activeTab === "info" && (
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-[14px] border border-border bg-background-primary p-5">
-              <h2 className="mb-4 text-[11.5px] font-semibold uppercase tracking-wider text-foreground-subtle">기본 정보</h2>
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-                <Field label="사번" value={emp.employeeNumber} />
-                <Field label="입사일" value={fmt(emp.hireDate)} />
-                <Field label="성별" value={emp.gender ? GENDER_LABEL[emp.gender] : null} />
-                <Field label="생년월일" value={fmt(emp.birthDate)} />
-                <Field label="연락처" value={emp.phone} />
-                <Field label="등록일" value={fmt(emp.createdAt)} />
-                <Field label="회사 이메일" value={emp.companyEmail} />
-                <Field label="개인 이메일" value={emp.personalEmail} />
-              </dl>
-            </div>
-
-            <div className="rounded-[14px] border border-border bg-background-primary p-5">
-              <h2 className="mb-4 text-[11.5px] font-semibold uppercase tracking-wider text-foreground-subtle">인사 정보</h2>
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-                <Field label="부서" value={emp.departmentName ?? "미배정"} />
-                <Field label="직책" value={emp.positionName ?? "미지정"} />
-                <Field label="고용형태" value={EMP_TYPE_LABEL[emp.employmentType]} />
-                <Field label="재직상태" value={STATUS_LABEL[emp.employmentStatus]} />
-                {emp.probationEndDate && <Field label="수습 종료일" value={fmt(emp.probationEndDate)} />}
-                {emp.resignedAt && <Field label="퇴직일" value={fmt(emp.resignedAt)} />}
-              </dl>
-              <div className="mt-4 border-t border-border pt-4">
-                <dt className="text-[11.5px] text-foreground-subtle">계정 연결</dt>
-                <dd className="mt-0.5 text-[13px]">
-                  {emp.hasLinkedAccount
-                    ? <span className="text-emerald-700">연결됨</span>
-                    : <span className="text-foreground-muted">미연결 (초대 링크로 연결 가능)</span>
-                  }
-                </dd>
-              </div>
-            </div>
-
-            {emp.leaveBalances.length > 0 && (
-              <div className="rounded-[14px] border border-border bg-background-primary p-5 lg:col-span-2">
-                <h2 className="mb-4 text-[11.5px] font-semibold uppercase tracking-wider text-foreground-subtle">휴가 잔여</h2>
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {emp.leaveBalances.map((lb) => {
-                    const total = Number(lb.granted) + Number(lb.adjusted);
-                    const used = Number(lb.used);
-                    const remaining = Number(lb.remaining);
-                    return (
-                      <div key={lb.leaveTypeName} className="rounded-[14px] border border-border bg-background-primary px-4 py-3">
-                        <p className="text-[12px] text-foreground-muted">{lb.leaveTypeName}</p>
-                        <p className="mt-1 text-[22px] font-bold tabular-nums leading-tight text-foreground">
-                          {remaining}
-                          <small className="ml-1 text-[12px] font-normal text-foreground-muted">/ {total}일</small>
-                        </p>
-                        <ProgressBar used={used} total={total} />
-                        <p className="mt-1.5 text-[11.5px] text-foreground-subtle">사용 {used}일</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 발령 이력 탭 */}
-        {activeTab === "appointment" && (
-          <div className="rounded-[14px] border border-border bg-background-primary">
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <div>
-                <h2 className="text-[13.5px] font-semibold text-foreground">인사 발령 이력</h2>
-                <p className="mt-0.5 text-[12px] text-foreground-subtle">
-                  현재 · {emp.departmentName ?? "미배정"} {emp.positionName ? `/ ${emp.positionName}` : ""}
-                </p>
-              </div>
-              {emp.isActive && (
-                <RegisterAppointmentButton
-                  employeeId={emp.id}
-                  currentDepartmentId={emp.departmentId}
-                  currentPositionId={emp.positionId}
-                  departments={departments}
-                  positions={positions}
-                />
-              )}
-            </div>
-            {appointments.length === 0 ? (
-              <p className="px-5 py-8 text-[13px] text-foreground-muted">발령 이력이 없어요.</p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {appointments.map((a) => (
-                  <li key={a.id} className="px-5 py-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <span className="rounded-[5px] border border-border bg-background-secondary px-2 py-0.5 font-mono text-[11px] font-semibold text-foreground-muted">
-                          {APPT_KIND_LABEL[a.kind] ?? a.kind}
-                        </span>
-                        <div className="text-[13px]">
-                          {a.toDepartmentName && (
-                            <span className="text-foreground">{a.toDepartmentName}</span>
-                          )}
-                          {a.toPositionName && (
-                            <span className="text-foreground-muted"> / {a.toPositionName}</span>
-                          )}
-                        </div>
-                      </div>
-                      <span className="shrink-0 font-mono text-[12px] text-foreground-subtle">{fmt(a.effectiveDate)}</span>
-                    </div>
-                    {(a.fromDepartmentName !== a.toDepartmentName || a.fromPositionName !== a.toPositionName) && (
-                      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-foreground-subtle">
-                        {a.fromDepartmentName !== a.toDepartmentName && (
-                          <span>부서 {a.fromDepartmentName ?? "미배정"} → {a.toDepartmentName ?? "미배정"}</span>
-                        )}
-                        {a.fromPositionName !== a.toPositionName && (
-                          <span>직책 {a.fromPositionName ?? "미지정"} → {a.toPositionName ?? "미지정"}</span>
-                        )}
-                      </div>
-                    )}
-                    {a.memo && <p className="mt-1.5 text-[12px] text-foreground-subtle">{a.memo}</p>}
-                    <p className="mt-1.5 text-[12px] text-foreground-subtle">
-                      {a.appointedByName} · {fmt(a.createdAt)} 등록
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        {/* 휴가 탭 */}
-        {activeTab === "leave" && (
-          <div className="flex flex-col gap-4">
-            {emp.leaveBalances.length > 0 && (
-              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {emp.leaveBalances.map((lb) => {
-                  const total = Number(lb.granted) + Number(lb.adjusted);
-                  const remaining = Number(lb.remaining);
-                  const used = Number(lb.used);
-                  return (
-                    <div key={lb.leaveTypeName} className="rounded-[14px] border border-border bg-background-primary px-4 py-3">
-                      <p className="text-[12px] text-foreground-muted">{lb.leaveTypeName}</p>
-                      <p className="mt-1 text-[22px] font-bold tabular-nums leading-tight text-foreground">
-                        {remaining}
-                        <small className="ml-1 text-[12px] font-normal text-foreground-muted">/ {total}일</small>
-                      </p>
-                      <ProgressBar used={used} total={total} />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="rounded-[14px] border border-border bg-background-primary">
-              <div className="border-b border-border px-5 py-4">
-                <h2 className="text-[13.5px] font-semibold text-foreground">
-                  휴가 신청 이력
-                  <span className="ml-1.5 font-mono text-[12px] font-normal text-foreground-subtle">({leaveHistory.length})</span>
-                </h2>
-              </div>
-              {leaveHistory.length === 0 ? (
-                <p className="px-5 py-8 text-[13px] text-foreground-muted">신청 이력이 없어요.</p>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 z-10">
-                    <tr className="border-b border-border bg-background-primary text-left">
-                      <th className="px-5 py-2.5 text-[11.5px] font-medium text-foreground-subtle">유형</th>
-                      <th className="px-4 py-2.5 text-[11.5px] font-medium text-foreground-subtle">기간</th>
-                      <th className="px-4 py-2.5 text-[11.5px] font-medium text-foreground-subtle">사유</th>
-                      <th className="px-4 py-2.5 text-[11.5px] font-medium text-foreground-subtle">신청일</th>
-                      <th className="px-4 py-2.5 text-[11.5px] font-medium text-foreground-subtle">상태</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {leaveHistory.map((r) => (
-                      <tr key={r.id} className="hover:bg-background-secondary">
-                        <td className="px-5 py-3 text-[13px] font-semibold text-foreground">{r.leaveTypeName}</td>
-                        <td className="px-4 py-3 font-mono text-[12px] text-foreground-muted">
-                          {fmt(r.startDate)} ~ {fmt(r.endDate)}
-                          <span className="ml-1 text-foreground-subtle">({r.days}일)</span>
-                        </td>
-                        <td className="px-4 py-3 text-[12px] text-foreground-muted">{r.reason || "—"}</td>
-                        <td className="px-4 py-3 font-mono text-[12px] text-foreground-subtle">{fmt(r.createdAt)}</td>
-                        <td className="px-4 py-3">
-                          <span className={`rounded-[5px] border px-2 py-0.5 font-mono text-[11px] font-semibold ${LEAVE_STATUS_CLS[r.status] ?? ""}`}>
-                            {LEAVE_STATUS_LABEL[r.status] ?? r.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 결재 문서 탭 */}
-        {activeTab === "workflow" && (
-          <div className="rounded-[14px] border border-border bg-background-primary">
-            <div className="border-b border-border px-5 py-4">
-              <h2 className="text-[13.5px] font-semibold text-foreground">
-                기안 문서
-                <span className="ml-1.5 font-mono text-[12px] font-normal text-foreground-subtle">({workflowDocs.length})</span>
-              </h2>
-            </div>
-            {workflowDocs.length === 0 ? (
-              <p className="px-5 py-8 text-[13px] text-foreground-muted">기안한 문서가 없어요.</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10">
-                  <tr className="border-b border-border bg-background-primary text-left">
-                    <th className="px-5 py-2.5 text-[11.5px] font-medium text-foreground-subtle">제목</th>
-                    <th className="px-4 py-2.5 text-[11.5px] font-medium text-foreground-subtle">결재 단계</th>
-                    <th className="px-4 py-2.5 text-[11.5px] font-medium text-foreground-subtle">신청일</th>
-                    <th className="px-4 py-2.5 text-[11.5px] font-medium text-foreground-subtle">상태</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {workflowDocs.map((d) => (
-                    <tr key={d.id} className="hover:bg-background-secondary">
-                      <td className="px-5 py-3">
-                        <Link href={`/workflow/documents/${d.id}`} className="text-[13px] font-semibold text-foreground hover:text-primary transition-colors">
-                          {d.title}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-[12px] text-foreground-muted">
-                        {d.currentStep != null ? `${d.currentStep} / ${d.totalSteps}단계` : `${d.totalSteps}단계`}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-[12px] text-foreground-subtle">{fmt(d.createdAt)}</td>
-                      <td className="px-4 py-3">
-                        <span className={`rounded-[5px] border px-2 py-0.5 font-mono text-[11px] font-semibold ${DOC_STATUS_CLS[d.status] ?? ""}`}>
-                          {DOC_STATUS_LABEL[d.status] ?? d.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
-
-        {/* 경력 탭 */}
-        {activeTab === "career" && (
-          <CareerTab employeeId={emp.id} items={careerItems} canEdit={canEditProfile} />
-        )}
-
-        {/* 학력 탭 */}
-        {activeTab === "education" && (
-          <EducationTab employeeId={emp.id} items={educationItems} canEdit={canEditProfile} />
-        )}
-
-        {/* 가족 탭 */}
-        {activeTab === "family" && (
-          <FamilyTab employeeId={emp.id} items={familyItems} canEdit={canEditProfile} />
-        )}
-
-        {/* 권한 탭 */}
-        {activeTab === "roles" && (
-          <MemberRolesManager
-            employeeId={emp.id}
-            employeeName={emp.name}
-            assignedRoles={emp.roles}
-            assignableRoles={assignableRoles}
-          />
-        )}
-      </div>
-    </div>
+    <ProfileShell
+      emp={empResult.data}
+      departments={deptResult.ok ? deptResult.data : []}
+      positions={posResult.ok ? posResult.data : []}
+      leaveHistory={leaveResult.ok ? leaveResult.data : []}
+      workflowDocs={workflowResult.ok ? workflowResult.data : []}
+      assignableRoles={rolesResult.ok ? rolesResult.data : []}
+      appointments={apptResult.ok ? apptResult.data : []}
+      careerItems={careerResult.ok ? careerResult.data : []}
+      educationItems={educationResult.ok ? educationResult.data : []}
+      familyItems={familyResult.ok ? familyResult.data : []}
+      initialTab={initialTab}
+    />
   );
 }

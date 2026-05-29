@@ -1,37 +1,95 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 type DeptOption = { id: string; name: string };
 
-const CHIP =
-  "h-8 rounded-full border border-border bg-background-primary pl-3 pr-7 text-[12.5px] text-foreground-muted hover:border-border-strong hover:text-foreground transition-colors cursor-pointer focus-visible:outline-none";
-
-function FilterSelect({
+function FilterDropdown({
   value,
   onChange,
-  children,
+  options,
+  placeholder,
 }: {
   value: string;
   onChange: (v: string) => void;
-  children: ReactNode;
+  options: { value: string; label: string }[];
+  placeholder: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
+
+  const selected = value ? options.find((o) => o.value === value) : null;
+
   return (
-    <div className="relative inline-flex items-center">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={CHIP}
+    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        style={{
+          height: 32, display: "inline-flex", alignItems: "center", gap: 6,
+          padding: "0 10px 0 12px", borderRadius: 999,
+          border: `1px solid ${open ? "var(--border-strong)" : "var(--border)"}`,
+          background: "var(--bg-primary)", cursor: "pointer",
+          fontSize: 12.5, color: "var(--fg-muted)", fontFamily: "inherit",
+          whiteSpace: "nowrap", transition: "border-color 120ms",
+        }}
       >
-        {children}
-      </select>
-      <svg
-        className="pointer-events-none absolute right-2 h-3 w-3 text-foreground-subtle"
-        viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-      </svg>
+        {selected ? <span style={{ color: "var(--fg)", fontWeight: 500 }}>{selected.label}</span> : placeholder}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 150ms", color: "var(--fg-subtle)" }}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50,
+          background: "var(--bg-primary)", border: "1px solid var(--border)",
+          borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)",
+          minWidth: 160, padding: "4px 0", overflow: "hidden",
+        }}>
+          <button
+            type="button"
+            onClick={() => { onChange(""); setOpen(false); }}
+            style={{
+              display: "block", width: "100%", textAlign: "left",
+              padding: "8px 14px", fontSize: 13, cursor: "pointer",
+              background: value === "" ? "var(--primary-soft)" : "none",
+              color: value === "" ? "var(--primary)" : "var(--fg-muted)",
+              fontWeight: value === "" ? 600 : 400, border: "none", fontFamily: "inherit",
+            }}
+          >
+            {placeholder}
+          </button>
+          {options.filter(o => o.value !== "").map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              style={{
+                display: "block", width: "100%", textAlign: "left",
+                padding: "8px 14px", fontSize: 13, cursor: "pointer",
+                background: value === opt.value ? "var(--primary-soft)" : "none",
+                color: value === opt.value ? "var(--primary)" : "var(--fg)",
+                fontWeight: value === opt.value ? 600 : 400, border: "none", fontFamily: "inherit",
+              }}
+              onMouseEnter={(e) => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.background = "var(--bg-secondary)"; }}
+              onMouseLeave={(e) => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.background = "none"; }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -49,8 +107,7 @@ export function MembersFilterBar({
   function navigate(overrides: Record<string, string>) {
     const next = new URLSearchParams(params.toString());
     for (const [k, v] of Object.entries(overrides)) {
-      if (v) next.set(k, v);
-      else next.delete(k);
+      if (v) next.set(k, v); else next.delete(k);
     }
     router.push(`/members?${next.toString()}`);
   }
@@ -59,47 +116,55 @@ export function MembersFilterBar({
   const status = params.get("status") ?? "";
   const empType = params.get("empType") ?? "";
 
+  const deptOptions = [
+    { value: "", label: "조직 · 전체" },
+    ...departments.map((d) => ({ value: d.id, label: d.name })),
+  ];
+  const statusOptions = [
+    { value: "", label: "재직 상태 · 전체" },
+    { value: "ACTIVE", label: "재직" },
+    { value: "PROBATION", label: "수습" },
+    { value: "ON_LEAVE", label: "휴직" },
+    { value: "SECONDED", label: "파견" },
+    { value: "SCHEDULED", label: "입사예정" },
+    { value: "RESIGNED", label: "퇴직" },
+  ];
+  const empTypeOptions = [
+    { value: "", label: "근로유형 · 전체" },
+    { value: "FULL_TIME", label: "정규" },
+    { value: "PART_TIME", label: "파트" },
+    { value: "CONTRACT", label: "계약" },
+    { value: "INTERN", label: "인턴" },
+    { value: "DISPATCH", label: "파견" },
+  ];
+
   return (
-    <div className="flex items-center gap-2">
-      <FilterSelect
+    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      <FilterDropdown
         value={dept}
         onChange={(v) => navigate({ department: v, status, empType })}
-      >
-        <option value="">조직 · 전사</option>
-        {departments.map((d) => (
-          <option key={d.id} value={d.id}>{d.name}</option>
-        ))}
-      </FilterSelect>
-
-      <FilterSelect
+        options={deptOptions}
+        placeholder="조직"
+      />
+      <FilterDropdown
         value={status}
         onChange={(v) => navigate({ department: dept, status: v, empType })}
-      >
-        <option value="">재직 상태 · 전체</option>
-        <option value="active">재직 중</option>
-        <option value="resigned">퇴직</option>
-      </FilterSelect>
-
-      <FilterSelect
+        options={statusOptions}
+        placeholder="재직 상태"
+      />
+      <FilterDropdown
         value={empType}
         onChange={(v) => navigate({ department: dept, status, empType: v })}
-      >
-        <option value="">근로유형 · 전체</option>
-        <option value="FULL_TIME">정규직</option>
-        <option value="PART_TIME">파트타임</option>
-        <option value="CONTRACT">계약직</option>
-        <option value="INTERN">인턴</option>
-        <option value="DISPATCH">파견</option>
-      </FilterSelect>
+        options={empTypeOptions}
+        placeholder="근로유형"
+      />
 
-      <div className="flex-1" />
+      <div style={{ flex: 1 }} />
 
       {/* 검색 */}
-      <div className="relative w-52">
-        <svg
-          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground-subtle"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-        >
+      <div style={{ position: "relative", width: 200 }}>
+        <svg style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: "var(--fg-subtle)", pointerEvents: "none" }}
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
         </svg>
         <input
@@ -111,14 +176,27 @@ export function MembersFilterBar({
               navigate({ department: dept, status, empType, q: (e.target as HTMLInputElement).value });
             }
           }}
-          className="h-8 w-full rounded-full border border-border bg-background-primary pl-8 pr-3 text-[12.5px] placeholder:text-foreground-subtle focus-visible:outline-none focus-visible:border-border-strong"
+          style={{
+            height: 32, width: "100%", borderRadius: 999,
+            border: "1px solid var(--border)", background: "var(--bg-primary)",
+            paddingLeft: 30, paddingRight: 10, fontSize: 12.5,
+            color: "var(--fg)", fontFamily: "inherit", outline: "none",
+          }}
         />
       </div>
 
       <a
         href="/api/members/export"
         download
-        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-background-primary px-3 text-[12.5px] text-foreground-muted hover:border-border-strong hover:text-foreground transition-colors"
+        style={{
+          height: 32, display: "inline-flex", alignItems: "center", gap: 6,
+          padding: "0 12px", borderRadius: 999,
+          border: "1px solid var(--border)", background: "var(--bg-primary)",
+          fontSize: 12.5, color: "var(--fg-muted)", textDecoration: "none",
+          whiteSpace: "nowrap", transition: "border-color 120ms, color 120ms",
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border-strong)"; (e.currentTarget as HTMLElement).style.color = "var(--fg)"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLElement).style.color = "var(--fg-muted)"; }}
       >
         ↓ 내보내기
       </a>

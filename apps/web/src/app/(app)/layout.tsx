@@ -54,6 +54,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         companyName={companyName}
         pendingCount={pendingCount}
         logoutAction={logoutAction}
+        employeeId={employeeId ?? undefined}
       />
 
       {/* 메인 영역 */}

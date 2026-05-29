@@ -1,19 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
 }
-
 function getFirstDayOfWeek(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
 
-export function MiniCalendar() {
+export function MiniCalendar({
+  holidays = [],
+  leaveRanges = [],
+  eventDates = [],
+}: {
+  holidays?: { date: Date | string }[];
+  leaveRanges?: { startDate: Date | string; endDate: Date | string }[];
+  eventDates?: (Date | string)[];
+}) {
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
@@ -24,15 +30,26 @@ export function MiniCalendar() {
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfWeek(viewYear, viewMonth);
+  const daysInPrev = getDaysInMonth(viewYear, viewMonth === 0 ? 11 : viewMonth - 1);
 
-  const cells: (number | null)[] = [
-    ...Array(firstDay).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ];
+  // 빠른 조회용 Set
+  const holidaySet = new Set(
+    holidays.map((h) => { const d = new Date(h.date); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; })
+  );
+  const eventSet = new Set(
+    eventDates.map((d) => { const dt = new Date(d); return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`; })
+  );
 
-  const weeks: (number | null)[][] = [];
-  for (let i = 0; i < cells.length; i += 7) {
-    weeks.push(cells.slice(i, i + 7).concat(Array(7).fill(null)).slice(0, 7));
+  // 휴가 범위 Set
+  const rangeSet = new Set<string>();
+  for (const r of leaveRanges) {
+    const s = new Date(r.startDate); s.setHours(0, 0, 0, 0);
+    const e = new Date(r.endDate); e.setHours(23, 59, 59, 999);
+    let cur = new Date(s);
+    while (cur <= e) {
+      rangeSet.add(`${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`);
+      cur.setDate(cur.getDate() + 1);
+    }
   }
 
   const prevMonth = () => {
@@ -44,73 +61,71 @@ export function MiniCalendar() {
     else setViewMonth(m => m + 1);
   };
 
+  // 42칸 (6주) 채우기
+  const cells: { day: number; outOfMonth: boolean }[] = [];
+  for (let i = firstDay - 1; i >= 0; i--) {
+    cells.push({ day: daysInPrev - i, outOfMonth: true });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ day: d, outOfMonth: false });
+  }
+  const remain = 42 - cells.length;
+  for (let d = 1; d <= remain; d++) {
+    cells.push({ day: d, outOfMonth: true });
+  }
+
+  const weeks: typeof cells[] = [];
+  for (let i = 0; i < 42; i += 7) weeks.push(cells.slice(i, i + 7));
+
   return (
-    <div className="w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <button
-          onClick={prevMonth}
-          className="flex h-6 w-6 items-center justify-center rounded hover:bg-background-secondary text-foreground-muted hover:text-foreground transition-colors"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" />
-        </button>
-        <span className="text-sm font-medium text-foreground">
-          {viewYear}년 {viewMonth + 1}월
-        </span>
-        <button
-          onClick={nextMonth}
-          className="flex h-6 w-6 items-center justify-center rounded hover:bg-background-secondary text-foreground-muted hover:text-foreground transition-colors"
-        >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </button>
+    <div>
+      {/* 헤더 */}
+      <div className="cal-head">
+        <span className="month">{viewYear}년 {viewMonth + 1}월</span>
+        <div className="nav-btns">
+          <button onClick={prevMonth}>‹</button>
+          <button onClick={nextMonth}>›</button>
+        </div>
       </div>
 
-      {/* Day headers */}
-      <div className="grid grid-cols-7 mb-1">
+      {/* 요일 헤더 */}
+      <div className="cal">
         {DAY_NAMES.map((d, i) => (
-          <div
-            key={d}
-            className={`text-center text-[11px] font-medium py-0.5 ${
-              i === 0 ? "text-destructive-600" : i === 6 ? "text-blue-500" : "text-foreground-subtle"
-            }`}
-          >
-            {d}
-          </div>
+          <div key={d} className={`dow${i === 0 ? " sun" : ""}`}>{d}</div>
         ))}
+
+        {/* 날짜 셀 */}
+        {weeks.map((week, wi) =>
+          week.map((cell, di) => {
+            const isToday = !cell.outOfMonth && viewYear === todayY && viewMonth === todayM && cell.day === todayD;
+            const key = `${viewYear}-${cell.outOfMonth ? (di < firstDay ? (viewMonth === 0 ? 11 : viewMonth - 1) : (viewMonth === 11 ? 0 : viewMonth + 1)) : viewMonth}-${cell.day}`;
+            const curKey = `${viewYear}-${viewMonth}-${cell.day}`;
+            const isHoliday = !cell.outOfMonth && holidaySet.has(curKey);
+            const isRange = !cell.outOfMonth && rangeSet.has(curKey);
+            const hasEvent = !cell.outOfMonth && eventSet.has(curKey);
+            const isSun = di === 0;
+
+            let cls = "d";
+            if (cell.outOfMonth) cls += " out";
+            else if (isToday) cls += " today";
+            else if (isSun || isHoliday) cls += " sun";
+            if (isRange && !isToday) cls += " range";
+            if (hasEvent || isHoliday) cls += " dot";
+
+            return (
+              <div key={`${wi}-${di}`} className={cls}>
+                {cell.day}
+              </div>
+            );
+          })
+        )}
       </div>
 
-      {/* Weeks */}
-      <div className="flex flex-col gap-0.5">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7">
-            {week.map((day, di) => {
-              const isToday =
-                day !== null &&
-                viewYear === todayY &&
-                viewMonth === todayM &&
-                day === todayD;
-              const isSun = di === 0;
-
-              return (
-                <div key={di} className="flex items-center justify-center py-0.5">
-                  {day !== null ? (
-                    <span
-                      className={`flex h-6 w-6 items-center justify-center rounded-full text-xs transition-colors ${
-                        isToday
-                          ? "bg-foreground text-background-primary font-semibold"
-                          : isSun
-                          ? "text-destructive-600 hover:bg-background-secondary cursor-default"
-                          : "text-foreground-muted hover:bg-background-secondary cursor-default"
-                      }`}
-                    >
-                      {day}
-                    </span>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+      {/* 범례 */}
+      <div className="legend">
+        <span className="l"><i />오늘</span>
+        <span className="h"><i />공휴일</span>
+        <span className="r"><i />휴가</span>
       </div>
     </div>
   );

@@ -1,8 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import type { LeaveBalanceSummary } from "@teamlet/modules/leave";
 import type { PendingApprovalItem, DocumentListItem } from "@teamlet/modules/workflow";
 import type { AnnouncementItem } from "@teamlet/modules/announcement";
 import type { HomeEventItem } from "@teamlet/modules/employee";
+
+const MONTH_KO = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 
 function formatRelative(d: Date) {
   const diff = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
@@ -11,14 +16,29 @@ function formatRelative(d: Date) {
   return `${Math.floor(diff / 1440)}일 전`;
 }
 
+const REACTIONS = [
+  { key: "clap", emoji: "👏" },
+  { key: "heart", emoji: "❤️" },
+] as const;
+
 function PostCard({ item }: { item: AnnouncementItem }) {
+  const date = new Date(item.createdAt);
+  const [counts, setCounts] = useState<Record<string, number>>({ clap: 0, heart: 0 });
+  const [active, setActive] = useState<Record<string, boolean>>({});
+
+  function toggle(key: string) {
+    const on = !active[key];
+    setActive((p) => ({ ...p, [key]: on }));
+    setCounts((p) => ({ ...p, [key]: Math.max(0, (p[key] ?? 0) + (on ? 1 : -1)) }));
+  }
+
   return (
     <article className="post">
       <div className="post-h">
         <div className="av">{item.authorName?.slice(-2) ?? "??"}</div>
         <div className="who-block">
           <div className="who">{item.authorName} <span className="role">· 공지사항</span></div>
-          <div className="meta">{formatRelative(item.createdAt)}</div>
+          <div className="meta">{formatRelative(date)}</div>
         </div>
         {item.isPinned && <span className="pin">📌 필독</span>}
       </div>
@@ -26,47 +46,67 @@ function PostCard({ item }: { item: AnnouncementItem }) {
         <h3>{item.title}</h3>
         <div className="text">{item.content}</div>
       </div>
+      <div className="post-f">
+        {REACTIONS.map((r) => (
+          <button
+            key={r.key}
+            className="react"
+            onClick={() => toggle(r.key)}
+            style={active[r.key] ? { background: "var(--primary-soft)", outline: "1.5px solid var(--primary)" } : {}}
+          >
+            {r.emoji} {(counts[r.key] ?? 0) > 0 && <b>{counts[r.key]}</b>}
+          </button>
+        ))}
+        <span style={{ marginLeft: "auto", fontSize: "12px", color: "var(--fg-subtle)" }}>
+          {MONTH_KO[date.getMonth()]} {date.getDate()}
+        </span>
+      </div>
     </article>
   );
 }
 
-function EventCard({ events, type }: { events: HomeEventItem[]; type: "birthday" | "join_anniversary" | "new_join" }) {
+function EventRow({ events, type }: { events: HomeEventItem[]; type: "birthday" | "join_anniversary" | "new_join" }) {
   if (events.length === 0) return null;
+  const now = new Date();
+  const mon = MONTH_KO[now.getMonth()];
+  const day = now.getDate();
 
   if (type === "birthday") {
     const names = events.map((e) => e.name).join(", ");
     return (
-      <div className="event-card">
-        <span className="event-icon">🎂</span>
-        <div className="event-body">
-          <div className="event-title">
-            오늘 생일인 동료 {events.length}명 — <strong>{names}</strong>
-          </div>
-          <div className="event-desc">동료에게 축하 메시지를 전달해보세요</div>
+      <Link href="/members" className="event-row">
+        <div className="date"><div className="m">{mon}</div><div className="d">{day}</div></div>
+        <div className="icon-c">🎂</div>
+        <div className="copy">
+          <div className="t">오늘 생일인 동료 {events.length}명 — <strong>{names}</strong></div>
+          <div className="s">동료에게 축하 메시지를 전달해보세요</div>
         </div>
-        <Link href="/members" className="event-btn">전달하기 →</Link>
-      </div>
+        <span className="more">전달하기 →</span>
+      </Link>
     );
   }
 
   if (type === "new_join") {
     return (
       <>
-        {events.map((e) => (
-          <div key={e.employeeId} className="event-card">
-            <span className="event-icon">👋</span>
-            <div className="event-body">
-              <div className="event-title">
-                새로 합류한 동료 — <strong>{e.name}</strong>
-                {e.departmentName && <span className="event-dept"> ({e.departmentName})</span>}
+        {events.map((e) => {
+          const joinDate = new Date();
+          joinDate.setDate(joinDate.getDate() - (e.daysAgo ?? 0));
+          return (
+            <Link key={e.employeeId} href={`/members/${e.employeeId}`} className="event-row">
+              <div className="date">
+                <div className="m">{MONTH_KO[joinDate.getMonth()]}</div>
+                <div className="d">{joinDate.getDate()}</div>
               </div>
-              <div className="event-desc">
-                {e.daysAgo === 0 ? "오늘 입사" : `${e.daysAgo}일 전 입사`} · 프로필 보고 인사 보내기
+              <div className="icon-c">👋</div>
+              <div className="copy">
+                <div className="t">새로 합류한 동료 — <strong>{e.name}</strong>{e.departmentName && <span style={{ fontWeight: 400, color: "var(--fg-muted)" }}> ({e.departmentName})</span>}</div>
+                <div className="s">{e.daysAgo === 0 ? "오늘 입사" : `${e.daysAgo}일 전 입사`} · 프로필 보고 인사 보내기</div>
               </div>
-            </div>
-            <Link href="/members" className="event-btn">프로필 →</Link>
-          </div>
-        ))}
+              <span className="more">프로필 →</span>
+            </Link>
+          );
+        })}
       </>
     );
   }
@@ -75,16 +115,15 @@ function EventCard({ events, type }: { events: HomeEventItem[]; type: "birthday"
     return (
       <>
         {events.map((e) => (
-          <div key={e.employeeId} className="event-card">
-            <span className="event-icon">🥂</span>
-            <div className="event-body">
-              <div className="event-title">
-                <strong>{e.name}</strong> 입사 {e.years}주년
-              </div>
-              <div className="event-desc">함께한 {e.years}년을 축하해주세요</div>
+          <Link key={e.employeeId} href={`/members/${e.employeeId}`} className="event-row">
+            <div className="date"><div className="m">{mon}</div><div className="d">{day}</div></div>
+            <div className="icon-c">🥂</div>
+            <div className="copy">
+              <div className="t"><strong>{e.name}</strong> 입사 {e.years}주년</div>
+              <div className="s">함께한 {e.years}년을 축하해주세요</div>
             </div>
-            <Link href="/members" className="event-btn">축하하기 →</Link>
-          </div>
+            <span className="more">축하하기 →</span>
+          </Link>
         ))}
       </>
     );
@@ -121,7 +160,7 @@ export function FeedTab({
 
   return (
     <section>
-      {/* KPI 4장 — 디자인 기준 */}
+      {/* KPI 4장 */}
       {employeeId && (
         <div className="kpis">
           <Link href="/leave" className="kpi">
@@ -130,7 +169,7 @@ export function FeedTab({
               {annualBalance?.remainingDays ?? "—"}
               {annualBalance && <small>/ {annualBalance.grantedDays}일</small>}
             </span>
-            <span className="delta">사용 {annualBalance?.usedDays ?? 0}일 · 휴가 신청 →</span>
+            <span className="delta">휴가 신청 →</span>
           </Link>
           <Link href="/workflow" className={`kpi${pending.length > 0 ? " cta" : ""}`}>
             <span className="lbl">결재 대기</span>
@@ -154,10 +193,10 @@ export function FeedTab({
         </div>
       )}
 
-      {/* 이벤트 카드 — 생일 / 신규 합류 / 입사 기념일 */}
-      <EventCard events={birthdays} type="birthday" />
-      <EventCard events={newJoins} type="new_join" />
-      <EventCard events={anniversaries} type="join_anniversary" />
+      {/* 이벤트 행 */}
+      <EventRow events={birthdays} type="birthday" />
+      <EventRow events={newJoins} type="new_join" />
+      <EventRow events={anniversaries} type="join_anniversary" />
 
       {/* 공지 피드 */}
       {announcements.length > 0 ? (

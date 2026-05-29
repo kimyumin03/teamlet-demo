@@ -42,12 +42,20 @@ export function NewsTab({
 
       {subTab === "notice" && (
         <div>
-          {/* 요약 + 작성 버튼 */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-            <p style={{ fontSize: "12.5px", color: "var(--fg-muted)" }}>
-              {pinnedCount > 0 && <span>📌 필독 {pinnedCount}건 · </span>}
-              이번 주 새 글 <strong style={{ color: "var(--fg)" }}>{thisWeekCount}</strong>건
-            </p>
+          {/* 2열 KPI */}
+          <div className="kpis" style={{ gridTemplateColumns: "1fr 1fr", marginBottom: "16px" }}>
+            <div className="kpi">
+              <span className="lbl">읽지 않은 공지</span>
+              <span className="val num">{announcements.length}<small>건</small></span>
+            </div>
+            <div className="kpi">
+              <span className="lbl">이번 주 새 글</span>
+              <span className="val num">{thisWeekCount}<small>건</small></span>
+              {pinnedCount > 0 && <span className="delta">📌 필독 {pinnedCount}건</span>}
+            </div>
+          </div>
+          {/* 작성 버튼 */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
             <CreateAnnouncementButton />
           </div>
 

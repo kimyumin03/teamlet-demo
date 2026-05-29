@@ -89,7 +89,7 @@ export function AddPositionButton() {
               onChange={(e) => setIsOrgHead(e.target.checked)}
               className="size-4 rounded border-border text-primary"
             />
-            <span>조직장 직책 (DYNAMIC_ORG_HEAD 권한 평가용)</span>
+            <span>조직장 직책으로 지정 (부서장 권한 자동 부여)</span>
           </label>
 
           {error && (

@@ -18,29 +18,16 @@ export const dynamic = "force-dynamic";
 const UNASSIGNED = "__none__";
 
 const STATUS_LABEL: Record<EmployeeListItem["employmentStatus"], string> = {
-  ACTIVE: "재직",
-  PROBATION: "수습",
-  ON_LEAVE: "휴직",
-  SECONDED: "파견",
-  RESIGNED: "퇴직",
-  SCHEDULED: "입사예정",
+  ACTIVE: "재직", PROBATION: "수습", ON_LEAVE: "휴직",
+  SECONDED: "파견", RESIGNED: "퇴직", SCHEDULED: "입사예정",
 };
-
 const STATUS_CLS: Record<EmployeeListItem["employmentStatus"], string> = {
-  ACTIVE: "ok",
-  PROBATION: "wait",
-  ON_LEAVE: "end",
-  SECONDED: "run",
-  RESIGNED: "end",
-  SCHEDULED: "wait",
+  ACTIVE: "ok", PROBATION: "wait", ON_LEAVE: "end",
+  SECONDED: "run", RESIGNED: "end", SCHEDULED: "wait",
 };
-
 const EMP_TYPE_LABEL: Record<string, string> = {
-  FULL_TIME: "정규",
-  PART_TIME: "파트",
-  CONTRACT: "계약",
-  INTERN: "인턴",
-  DISPATCH: "파견",
+  FULL_TIME: "정규", PART_TIME: "파트", CONTRACT: "계약",
+  INTERN: "인턴", DISPATCH: "파견",
 };
 
 function formatHireDate(d: Date | null): string {
@@ -121,12 +108,21 @@ export default async function MembersPage({
     const d = new Date(e.hireDate);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
+  // 온보딩 완료 = 입사 후 30일 이상 경과
+  const onboardedCount = allEmployees.filter((e) => {
+    if (!e.hireDate) return false;
+    const diff = (now.getTime() - new Date(e.hireDate).getTime()) / 86400000;
+    return diff >= 30 && (e.employmentStatus === "ACTIVE" || e.employmentStatus === "PROBATION");
+  }).length;
+  // 역할 없는 구성원 (일반 권한 미배정)
+  const noRoleCount = allEmployees.filter(
+    (e) => !e.roleName && (e.employmentStatus === "ACTIVE" || e.employmentStatus === "PROBATION"),
+  ).length;
 
   const filtered = allEmployees.filter((e) => {
     if (selected === UNASSIGNED && e.departmentId) return false;
     if (selected && selected !== UNASSIGNED && e.departmentId !== selected) return false;
-    if (statusFilter === "active" && !ACTIVE_STATUSES.has(e.employmentStatus)) return false;
-    if (statusFilter === "resigned" && e.employmentStatus !== "RESIGNED") return false;
+    if (statusFilter && e.employmentStatus !== statusFilter) return false;
     if (empTypeFilter && e.employmentType !== empTypeFilter) return false;
     if (!query) return true;
     return (
@@ -180,8 +176,8 @@ export default async function MembersPage({
         </div>
       </div>
 
-      {/* KPI 카드 */}
-      <div className="kpis" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+      {/* KPI 카드 4개 */}
+      <div className="kpis">
         <div className="kpi">
           <span className="lbl">재직</span>
           <span className="val num">{employedCount}<small>명</small></span>
@@ -190,12 +186,23 @@ export default async function MembersPage({
         <div className="kpi">
           <span className="lbl">이번달 입사</span>
           <span className="val num">{newHiresCount}<small>명</small></span>
-          <span className="delta">{newHiresCount === 0 ? "신규 입사자 없음" : `${now.getMonth() + 1}월 입사`}</span>
+          <span className="delta">
+            {newHiresCount > 0
+              ? `온보딩 완료 ${Math.min(onboardedCount, newHiresCount)} / ${newHiresCount}`
+              : `${now.getMonth() + 1}월 신규 없음`}
+          </span>
         </div>
         <div className="kpi">
           <span className="lbl">휴직</span>
           <span className="val num">{onLeaveCount}<small>명</small></span>
           <span className="delta">{scheduledCount > 0 ? `입사예정 ${scheduledCount}명` : "입사예정 없음"}</span>
+        </div>
+        <div className={`kpi${noRoleCount > 0 ? " cta" : ""}`}>
+          <span className="lbl">권한 미배정</span>
+          <span className="val num">{noRoleCount}<small>명</small></span>
+          <span className="delta">
+            {noRoleCount > 0 ? "역할 배정 필요 →" : "모두 배정됨"}
+          </span>
         </div>
       </div>
 
@@ -236,13 +243,14 @@ export default async function MembersPage({
             <thead>
               <tr>
                 <th style={{ width: "32px" }}><span className="cb-box" /></th>
-                <th style={{ width: "24%" }}>이름</th>
+                <th style={{ width: "22%" }}>이름</th>
                 <th>사번</th>
                 <th>이메일</th>
                 <th>조직 · 직책</th>
                 <th>입사일</th>
-                <th>유형</th>
+                <th>근로유형</th>
                 <th>상태</th>
+                <th>권한</th>
               </tr>
             </thead>
             <tbody>
@@ -254,21 +262,32 @@ export default async function MembersPage({
                       <div className="av">{emp.name.slice(-2)}</div>
                       <div>
                         <div className="n">{emp.name}</div>
-                        <div className="m">{emp.departmentName ?? "—"}</div>
+                        <div className="m" style={{ fontSize: "11.5px" }}>{emp.companyEmail ?? emp.departmentName ?? "—"}</div>
                       </div>
                     </Link>
                   </td>
-                  <td><Link href={`/members/${emp.id}`} className="sn" style={{ textDecoration: "none" }}>{emp.employeeNumber ?? "—"}</Link></td>
-                  <td><Link href={`/members/${emp.id}`} className="em" style={{ textDecoration: "none", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{emp.companyEmail ?? "—"}</Link></td>
+                  <td><span className="sn">{emp.employeeNumber ?? "—"}</span></td>
                   <td>
-                    <Link href={`/members/${emp.id}`} className="role-cell" style={{ textDecoration: "none" }}>
+                    <span style={{ fontSize: "12.5px", color: "var(--fg-muted)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                      {emp.companyEmail ?? "—"}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="role-cell">
                       <div className="r">{emp.departmentName ?? "—"}</div>
                       {emp.positionName && <div className="o">{emp.positionName}</div>}
-                    </Link>
+                    </div>
                   </td>
-                  <td><Link href={`/members/${emp.id}`} className="sn" style={{ textDecoration: "none" }}>{formatHireDate(emp.hireDate)}</Link></td>
+                  <td><span className="sn">{formatHireDate(emp.hireDate)}</span></td>
                   <td><span className="tag">{EMP_TYPE_LABEL[emp.employmentType] ?? "—"}</span></td>
                   <td><span className={`st ${STATUS_CLS[emp.employmentStatus]}`}>{STATUS_LABEL[emp.employmentStatus]}</span></td>
+                  <td>
+                    {emp.roleName ? (
+                      <span className="tag adm">{emp.roleName}</span>
+                    ) : (
+                      <span className="tag" style={{ color: "var(--fg-subtle)" }}>일반</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

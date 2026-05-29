@@ -88,7 +88,7 @@ export function LeaveStatusView({
               onChange={(e) => setDeptFilter(e.target.value)}
               className={chipClass}
             >
-              <option value="">조직 · 전사</option>
+              <option value="">조직 · 전체</option>
               {departments.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
             <svg className="pointer-events-none absolute right-2 h-3 w-3 text-foreground-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

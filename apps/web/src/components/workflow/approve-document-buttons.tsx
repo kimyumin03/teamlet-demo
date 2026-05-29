@@ -2,12 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Input } from "@teamlet/ui";
 import { approveDocumentAction, rejectDocumentAction } from "@/lib/actions/workflow";
 
 export function ApproveDocumentButtons({ lineId }: { lineId: string }) {
   const router = useRouter();
-  const [rejectOpen, setRejectOpen] = useState(false);
+  const [mode, setMode] = useState<"idle" | "rejecting">("idle");
   const [comment, setComment] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -21,36 +20,57 @@ export function ApproveDocumentButtons({ lineId }: { lineId: string }) {
   function handleReject() {
     startTransition(async () => {
       await rejectDocumentAction(lineId, comment || undefined);
-      setRejectOpen(false);
+      setMode("idle");
       setComment("");
       router.refresh();
     });
   }
 
-  return (
-    <>
-      <div className="flex gap-2">
-        <Button size="sm" disabled={isPending} onClick={handleApprove}>승인</Button>
-        <Button size="sm" variant="secondary" disabled={isPending} onClick={() => setRejectOpen(true)}>반려</Button>
+  if (mode === "rejecting") {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", minWidth: 220 }}
+        onClick={(e) => e.preventDefault()}>
+        <input
+          autoFocus
+          placeholder="반려 사유 (선택)"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleReject(); if (e.key === "Escape") setMode("idle"); }}
+          disabled={isPending}
+          style={{
+            width: "100%", padding: "5px 9px", borderRadius: 7,
+            border: "1px solid var(--destructive)", outline: "none",
+            fontSize: 12, fontFamily: "inherit", background: "var(--bg-primary)", color: "var(--fg)",
+          }}
+        />
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={() => setMode("idle")} disabled={isPending}
+            className="btn btn-outline sm" style={{ fontSize: 12 }}>취소</button>
+          <button onClick={handleReject} disabled={isPending}
+            className="btn btn-destructive sm" style={{ fontSize: 12 }}>
+            {isPending ? "처리 중…" : "반려 확인"}
+          </button>
+        </div>
       </div>
+    );
+  }
 
-      <Dialog open={rejectOpen} onOpenChange={(o) => { if (!isPending) setRejectOpen(o); }}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>반려 사유</DialogTitle></DialogHeader>
-          <Input
-            placeholder="반려 사유 (선택)"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            maxLength={200}
-          />
-          <DialogFooter>
-            <Button variant="secondary" disabled={isPending} onClick={() => setRejectOpen(false)}>취소</Button>
-            <Button variant="destructive" disabled={isPending} onClick={handleReject}>
-              {isPending ? "처리 중…" : "반려"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+  return (
+    <div style={{ display: "flex", gap: 6 }} onClick={(e) => e.preventDefault()}>
+      <button
+        disabled={isPending}
+        onClick={() => setMode("rejecting")}
+        className="btn btn-destructive sm"
+      >
+        반려
+      </button>
+      <button
+        disabled={isPending}
+        onClick={handleApprove}
+        className="btn btn-success sm"
+      >
+        {isPending ? "처리 중…" : "승인"}
+      </button>
+    </div>
   );
 }

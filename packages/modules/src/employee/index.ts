@@ -47,6 +47,7 @@ export type EmployeeListItem = {
   departmentName: string | null;
   positionId: string | null;
   positionName: string | null;
+  roleName: string | null;
 };
 
 export type EmployeeListFilter = {
@@ -102,6 +103,7 @@ export async function listEmployees(
       department: { select: { name: true } },
       positionId: true,
       position: { select: { name: true } },
+      userRoles: { select: { role: { select: { name: true } } }, take: 1 },
     },
     orderBy: [{ isActive: "desc" }, { name: "asc" }],
   });
@@ -120,6 +122,7 @@ export async function listEmployees(
       departmentName: e.department?.name ?? null,
       positionId: e.positionId,
       positionName: e.position?.name ?? null,
+      roleName: e.userRoles[0]?.role?.name ?? null,
     })),
   );
 }
@@ -472,6 +475,7 @@ export async function getEmployee(
     departmentName: emp.department?.name ?? null,
     positionId: emp.positionId,
     positionName: emp.position?.name ?? null,
+    roleName: emp.userRoles[0]?.role?.name ?? null,
     leaveBalances: emp.leaveBalances.map((lb) => ({
       leaveTypeName: lb.leaveType.name,
       granted: Number(lb.grantedDays),

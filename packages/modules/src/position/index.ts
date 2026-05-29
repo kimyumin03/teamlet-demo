@@ -128,6 +128,44 @@ export async function createPosition(
   return ok({ positionId: pos.id });
 }
 
+/** 직책 이름 변경. */
+export async function updatePosition(
+  actorEmployeeId: string,
+  positionId: string,
+  data: { name: string },
+): Promise<Result<{ positionId: string }>> {
+  try {
+    await assertPermission(actorEmployeeId, DIRECTORY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+
+  const pos = await prisma.position.findUnique({
+    where: { id: positionId },
+    select: { id: true, companyId: true, isActive: true },
+  });
+  if (!pos || pos.companyId !== actor.companyId) return err(errors.notFound("직책을 찾을 수 없어요"));
+
+  const dup = await prisma.position.findFirst({
+    where: { companyId: actor.companyId, name: data.name, isActive: true, NOT: { id: positionId } },
+    select: { id: true },
+  });
+  if (dup) return err(errors.conflict("이미 같은 이름의 직책이 있어요"));
+
+  await prisma.position.update({ where: { id: positionId }, data: { name: data.name } });
+
+  await recordAudit({
+    companyId: actor.companyId, actorUserId: actor.userId,
+    activityType: "position", eventType: "UPDATE",
+    targetType: "Position", targetId: positionId, targetLabel: data.name,
+    description: `직책 이름 변경: ${data.name}`,
+  });
+
+  return ok({ positionId });
+}
+
 /** 직책 삭제 (soft). 배정된 직원이 있으면 거절. */
 export async function deletePosition(
   actorEmployeeId: string,

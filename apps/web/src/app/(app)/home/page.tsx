@@ -5,12 +5,14 @@ import { getLeaveBalances, listTeamLeaveCalendar } from "@teamlet/modules/leave"
 import { listPendingApprovals, listMyDocuments } from "@teamlet/modules/workflow";
 import { listAnnouncements } from "@teamlet/modules/announcement";
 import { listHomeEvents, countActiveEmployees } from "@teamlet/modules/employee";
+import { listCompanyHolidays } from "@teamlet/modules/tenancy";
 import { HomeTabs } from "./_components/home-tabs";
 import { FeedTab } from "./_components/feed-tab";
 import { NewsTab } from "./_components/news-tab";
 import { TasksTab } from "./_components/tasks-tab";
 import { HomeRail } from "./_components/home-rail";
 import { CreateAnnouncementButton } from "@/components/announcement/create-announcement-button";
+import { SendToColleagueButton } from "@/components/home/send-to-colleague-button";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +50,7 @@ export default async function HomePage({
   const now = new Date();
   const month = now.getMonth() + 1;
 
-  const [pendingResult, balancesResult, myDocsResult, announcementsResult, calendarResult, homeEvents, totalActive] = employeeId
+  const [pendingResult, balancesResult, myDocsResult, announcementsResult, calendarResult, homeEvents, totalActive, holidaysResult] = employeeId
     ? await Promise.all([
         listPendingApprovals(employeeId),
         getLeaveBalances(employeeId, year),
@@ -57,8 +59,9 @@ export default async function HomePage({
         listTeamLeaveCalendar(employeeId, year, month),
         listHomeEvents(employeeId),
         countActiveEmployees(employeeId),
+        listCompanyHolidays(employeeId, year),
       ])
-    : [null, null, null, null, null, [], 0];
+    : [null, null, null, null, null, [], 0, null];
 
   const pending = pendingResult?.ok ? pendingResult.data : [];
   const balances = balancesResult?.ok ? balancesResult.data : [];
@@ -66,6 +69,7 @@ export default async function HomePage({
   const announcements = announcementsResult?.ok ? announcementsResult.data : [];
   const events = Array.isArray(homeEvents) ? homeEvents : [];
   const activeCount = typeof totalActive === "number" ? totalActive : 0;
+  const holidays = holidaysResult?.ok ? holidaysResult.data : [];
 
   // 오늘 부재 중인 동료
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -104,8 +108,8 @@ export default async function HomePage({
             </div>
           </div>
           <div className="feed-actions">
-            {employeeId && <CreateAnnouncementButton label="+ 새 글" />}
             <a href="/leave/requests" className="btn-sm btn-sm-ghost">휴가 신청</a>
+            {employeeId && <SendToColleagueButton />}
           </div>
         </div>
 
@@ -145,6 +149,8 @@ export default async function HomePage({
         todayAbsent={todayAbsent}
         events={events}
         activeCount={activeCount}
+        holidays={holidays}
+        monthCalendar={calendarResult?.ok ? calendarResult.data : []}
       />
     </div>
   );

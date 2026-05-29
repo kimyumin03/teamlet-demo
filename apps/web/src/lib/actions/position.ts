@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createPosition, deletePosition } from "@teamlet/modules/position";
+import { createPosition, deletePosition, updatePosition } from "@teamlet/modules/position";
 import {
   toApiResponse,
   type ApiResponse,
@@ -21,6 +21,14 @@ export async function createPositionAction(
 ): Promise<ApiResponse<{ positionId: string }>> {
   const employeeId = await requireEmployeeId();
   return toApiResponse(await createPosition(employeeId, input));
+}
+
+export async function updatePositionAction(
+  positionId: string,
+  data: { name: string },
+): Promise<ApiResponse<{ positionId: string }>> {
+  const employeeId = await requireEmployeeId();
+  return toApiResponse(await updatePosition(employeeId, positionId, data));
 }
 
 export async function deletePositionAction(

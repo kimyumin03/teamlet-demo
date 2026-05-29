@@ -28,8 +28,10 @@
 | **개인 설정** | ✅ 디자인 교체 완료 | 그라디언트 아바타 카드 + set-card + 2열 필드 |
 | **설정 운영 페이지** | ✅ 디자인 교체 완료 | permissions/leave-policies/leave-types/approval-policies/form-templates/join-requests — set-card 패턴 |
 | **⌘K 커맨드 팔레트** | ✅ 완료 | 구성원 검색 + 전체 페이지 네비게이션 |
-| **홈 대시보드** | ✅ 디자인 교체 완료 | 2-col grid + HomeRail + 히어로 인사말 + KPI 카드 + PostCard |
-| **구성원 페이지** | ✅ 디자인 교체 완료 | KPI 카드 3개 + 뷰 토글 + MembersFilterBar + 전체 테이블 |
+| **홈 대시보드** | ✅ 완료 | 2-col grid + HomeRail + KPI + PostCard + 동료전달모달 + 공휴일 캘린더 |
+| **구성원 페이지** | ✅ 완료 | KPI 4개 + 권한열 + 커스텀 필터 + 6종 재직상태 |
+| **구성원 프로필** | ✅ 완료 | 3탭 + 7아코디언 + hero 5 quick chips + 사이드바 연동 |
+| **조직·직책 설정** | ✅ 완료 | /settings/org 인라인 편집/삭제 |
 | 도메인 권한 가드 | ✅ 완료 | 휴가/채용/증명서/문서/설정 모듈 assertPermission 적용 |
 | **플랫폼 운영 콘솔** | ✅ 디자인 교체 완료 | `/admin` — 디자인 토큰 전체 교체 (zinc 제거) |
 | **HR 휴가 관리** | ✅ 디자인 교체 완료 | 2열 레이아웃(테이블+상세패널) + KPI 4개 + 미적용 타입 점선 배지 ⚠️ 런타임 미검증 |
@@ -39,6 +41,16 @@
 | **결재 정책 관리** | ✅ 완료 | `ApprovalPolicy` 스키마 + 모듈 + `/settings/approval-policies` + db:push 완료 |
 | **조직도 시각화** | ✅ 완료 | `/members/org-chart` RSC + `OrgTree` 클라이언트 컴포넌트 (트리 빌드 + 연결선) |
 | Worker | ⬜ 빈 skeleton | BullMQ 미구현 |
+
+## 전체 진행도 업데이트 (2026-05-29 세션)
+
+| 영역 | 상태 | 비고 |
+|---|---|---|
+| **홈 대시보드** | ✅ 완료 | 동료 전달 모달 + 이벤트 행(.event-row) + 반응 버튼 + 소식탭 KPI + 공휴일 캘린더 |
+| **구성원 목록** | ✅ 완료 | 4 KPI + 권한 열 + 커스텀 드롭다운 필터 + 재직상태 6종 |
+| **구성원 프로필** | ✅ 완료 | 3탭(기본정보/발령이력/권한) + 7 아코디언 + hero 5 quick chips |
+| **조직·직책 설정** | ✅ 완료 | /settings/org — 부서·직책 인라인 이름변경/삭제 |
+| **사이드바 유저 박스** | ✅ 완료 | 클릭 시 본인 프로필(/members/{id})로 이동 |
 
 ## 현재 위치
 
@@ -96,12 +108,60 @@
 13. **IP 제한 실적용** — IP 화이트리스트 강제
 14. **Worker(BullMQ)** — 휴가 자동 부여·소멸, 비동기 알림
 
+### 📌 구성원 AxHub 연동 (TODO)
+- **구성원 데이터 AxHub API 동기화** — 나중에 axhub API로 구성원 데이터를 가져와서 추가할 예정. `sync_locked_fields` 우회 금지. 현재는 수동 등록만.
+
+### 📌 홈 페이지 미완 (TODO)
+- **공지 댓글 기능** — DB 모델(Comment) + API + 댓글 목록 UI (현재 클라이언트 반응만 구현)
+- **왼쪽 사이드바 근무중 바** — "근무중 09:12 · 2h 47m" 근태 타이머 (근태 모듈 미구현)
+
 ### 🟢 LOW — 선택적 강화
 - 채용 depth (지원서 양식·이력서 첨부·면접 일정·스코어카드)
 - 파일 업로드(S3)·이메일 발송 실연동
 - 모바일 반응형 (웹 우선이라 후순위)
 
 ## 최근 한 일
+
+### 2026-05-29 — 구성원 프로필 재설계 + 조직 설정 + 사이드바 연동
+
+**구성원 프로필 (3탭 + 7 아코디언)**
+- `members/[id]/page.tsx`: RSC 간소화 (데이터 fetch만)
+- `members/[id]/_components/profile-shell.tsx` (NEW): 클라이언트 ProfileShell
+  - hero 섹션: 아바타 + 이름 + 상태 + 5 quick chips (사번/입사일/연차잔여/이메일/계정상태)
+  - 3탭: 기본정보 / 발령이력 / 권한 (URL param → useState)
+  - 기본정보 탭: 7 아코디언 (기본정보/인사정보/휴가잔여/휴가이력/결재문서/경력·학력/가족)
+- `design.css`: `.profile-hero`, `.profile-chips`, `.profile-tabs`, `.accordion`, `.pf-grid` 추가
+
+**조직·직책 설정 페이지 (/settings/org)**
+- `packages/modules/src/position/index.ts`: `updatePosition` 함수 추가
+- `lib/actions/position.ts`: `updatePositionAction` 추가
+- `settings/org/page.tsx` (NEW): RSC
+- `settings/org/_components/org-client.tsx` (NEW): 인라인 이름 변경 + 삭제 UI
+- `settings-nav.tsx`: "조직·직책" → `/settings/org` 연결
+
+**구성원 목록 개선**
+- 재직 상태 필터: 6종 (재직/수습/휴직/파견/입사예정/퇴직)
+- 커스텀 드롭다운 (appearance-none + 둥근 리스트)
+- "전사" → "전체" 문구 통일
+- `DYNAMIC_ORG_HEAD` → "부서장 권한 자동 부여" 한국어화
+- KPI 4번째: 권한 미배정 인원
+
+**사이드바 유저 박스 연동**
+- `AppSidebar`: `employeeId` prop 추가
+- 아바타/이름 클릭 → `/members/{employeeId}` 이동
+
+⚠️ 런타임 검증 완료 (프로필 페이지 로드 확인)
+
+### 2026-05-29 — 홈 페이지 완성 (동료 전달 모달 + 공휴일 캘린더)
+
+**홈 빠진 기능 추가**
+- `components/home/send-to-colleague-button.tsx` (NEW): "동료에게 전달하기" 액션 허브 모달 — 공지사항(인라인 작성) / 할일요청 / 작성요청 / 인정(준비 중) / 피드백(준비 중) 5개 카드
+- `home/_components/mini-calendar.tsx`: `holidays` prop 추가 — 공휴일 날짜 빨간 dot + 빨간색 텍스트
+- `home/_components/home-rail.tsx`: `holidays` prop 추가 + "월 보기 →" `<Link href="/leave/calendar">` 실제 링크로 교체
+- `home/page.tsx`: `listCompanyHolidays` 병렬 fetch 추가 + `SendToColleagueButton` 교체 + holidays HomeRail 전달
+- 헤더 버튼: `CreateAnnouncementButton` → `SendToColleagueButton` (공지 작성은 모달 2단계로 통합)
+
+⚠️ 타입체크 통과 (기존 pre-existing 에러만). 런타임 미검증.
 
 ### 2026-05-29 — 홈 페이지 기능 보강 + 디자인 갭 분석
 
