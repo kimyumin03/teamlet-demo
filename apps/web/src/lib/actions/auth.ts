@@ -23,13 +23,15 @@ function safeCallbackUrl(raw: string | null | undefined): string {
   return raw;
 }
 
-/** 로그인 (docs/06 §1.1) — 이메일 전용. 플랫폼 관리자는 비밀키 페이지로 분기. */
+/** 로그인 — 이메일+비밀번호. 플랫폼 관리자는 비밀키 페이지로 분기. */
 export async function loginAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "").trim();
   if (!email) return { error: "이메일을 입력해 주세요" };
+  if (!password) return { error: "비밀번호를 입력해 주세요" };
 
   if (isPlatformAdminEmail(email)) {
     redirect(`/admin-key?email=${encodeURIComponent(email)}`);
@@ -37,11 +39,11 @@ export async function loginAction(
 
   const callbackUrl = safeCallbackUrl(formData.get("callbackUrl") as string | null);
   try {
-    await signIn("credentials", { email, redirectTo: callbackUrl });
+    await signIn("credentials", { email, password, redirectTo: callbackUrl });
     return { error: null };
   } catch (e) {
     if (e instanceof AuthError) {
-      return { error: "등록되지 않은 이메일이에요" };
+      return { error: "이메일 또는 비밀번호가 올바르지 않아요" };
     }
     throw e;
   }
@@ -80,6 +82,7 @@ export async function signupAction(
     name: String(formData.get("name") ?? ""),
     email: String(formData.get("email") ?? ""),
     phone: String(formData.get("phone") ?? "").replace(/\D/g, ""),
+    password: String(formData.get("password") ?? ""),
   };
 
   const parsed = signupSchema.safeParse(raw);
@@ -96,7 +99,7 @@ export async function signupAction(
   const redirectTo = callbackUrl !== "/home" ? callbackUrl : "/join-company";
 
   try {
-    await signIn("credentials", { email: raw.email, redirectTo });
+    await signIn("credentials", { email: raw.email, password: raw.password, redirectTo });
     return { error: null };
   } catch (e) {
     if (e instanceof AuthError) {
@@ -121,6 +124,11 @@ export async function verify2faAction(
   if (!valid) return { error: "인증 코드가 올바르지 않아요" };
 
   const token = signMfaToken(session.user.id);
-  await signIn("credentials", { email: session.user.email!, mfaToken: token, redirectTo: "/home" });
+  try {
+    await signIn("credentials", { email: session.user.email!, mfaToken: token, redirectTo: "/home" });
+  } catch (e) {
+    if (e instanceof AuthError) return { error: "인증에 실패했어요. 다시 시도해 주세요." };
+    throw e;
+  }
   return { error: null };
 }

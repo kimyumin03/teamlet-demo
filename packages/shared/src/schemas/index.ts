@@ -24,6 +24,7 @@ export const signupSchema = z.object({
   phone: z
     .string()
     .regex(/^01[016789]\d{7,8}$/, "휴대폰 번호 형식이 아니에요"),
+  password: passwordSchema,
 });
 export type SignupInput = z.infer<typeof signupSchema>;
 

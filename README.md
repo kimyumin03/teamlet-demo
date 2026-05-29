@@ -127,11 +127,23 @@ pnpm dev              # http://localhost:3000
 
 ---
 
-### 2026-05-29 금요일 (예정)
+### 2026-05-29 금요일
 
 **[Teamlet]**
-☐ 디자인 대비 미구현 기능 목록 분석 및 우선순위 설계
-☐ AxHub 연동 설계 — 구성원·회사 데이터 sync 정합성 정의 (`sync_locked_fields` 범위 확정)
-☐ HomeRail 축하 보낼 동료 위젯 (생일·입사기념일 실데이터 연결)
-☐ 반려된 휴가 신청 재신청 기능 구현
+☑ 인증 방식 복구: 이메일 전용 → 이메일+비밀번호 2-step 로그인 (login 폼 비밀번호 필드 복구)
+☑ 회원가입 password 직접 입력 전환 — tempPassword 자동생성 제거, signupSchema에 password 필드 추가
+☑ 플랫폼 관리자 authorize 분기 정리 — adminKey / mfaToken / 일반 로그인 3경로 명확 분리
+☑ AxHub 플러그인 마켓플레이스 연동 확인 (axhub@axhub 0.7.0 설치 확인)
+☐ HomeRail 생일·입사기념일 위젯 실데이터 연결
+☐ 반려된 휴가 신청 재신청 기능
 ☐ 활성 세션 목록 + 강제 로그아웃 (settings/security)
+
+---
+
+### 2026-05-30 토요일 (예정)
+
+**[Teamlet]**
+☐ 반려된 휴가 신청 재신청 기능 구현
+☐ HomeRail 생일·입사기념일 축하 위젯
+☐ 활성 세션 목록 + 강제 로그아웃 (settings/security)
+☐ AxHub 연동 설계 — 구성원·회사 데이터 sync 정합성 정의 (`sync_locked_fields` 범위 확정)

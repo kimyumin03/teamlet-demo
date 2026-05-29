@@ -103,6 +103,19 @@
 
 ## 최근 한 일
 
+### 2026-05-29 — 인증 방식 복구 (이메일+비밀번호 2-step)
+
+**변경 내용**
+- `auth.ts` authorize: 이메일 전용 → `authenticateUser(email, password)` 로 비밀번호 검증 복구
+- `auth.ts` 3경로 분리: mfaToken 재인증 → adminKey(플랫폼 관리자) → 일반 비밀번호 로그인
+- `actions/auth.ts` loginAction: password 필드 추가, 에러 메시지 정확화 ("이메일 또는 비밀번호가 올바르지 않아요")
+- `actions/auth.ts` signupAction: password 파라미터 전달, verify2faAction AuthError 핸들링 추가
+- `signup.ts` 모듈: `generateTempPassword` 제거 → 사용자 입력 password 직접 해시
+- `schemas/index.ts`: signupSchema에 `password: passwordSchema` 추가
+- AxHub 플러그인 마켓플레이스 연동 확인 (axhub@axhub 0.7.0)
+
+⚠️ 미커밋 상태. 타입체크 미실행. 런타임 미검증.
+
 ### 2026-05-28 — 디자인 시스템 전면 교체 (`teamlet_design/` 기반)
 
 **설계**
