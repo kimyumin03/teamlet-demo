@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@teamlet/ui";
 import { createAnnouncementAction } from "@/lib/actions/announcement";
 
-export function CreateAnnouncementButton() {
+export function CreateAnnouncementButton({ label }: { label?: string } = {}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -42,7 +42,7 @@ export function CreateAnnouncementButton() {
         variant="secondary"
         onClick={() => { reset(); setOpen(true); }}
       >
-        공지 작성
+        {label ?? "공지 작성"}
       </Button>
 
       <Dialog open={open} onOpenChange={(o) => { if (!isPending) { setOpen(o); if (!o) reset(); } }}>

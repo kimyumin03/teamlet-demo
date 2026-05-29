@@ -286,6 +286,13 @@
 .tag.purple   { background: var(--purple-50); color: var(--purple); }
 .tag.adm      { background: var(--fg); color: var(--bg-primary); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0; }
 
+/* 인라인 kind 배지 (tasks-tab 등) */
+.tag-xs { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 5px; margin-right: 6px; letter-spacing: 0.01em; flex-shrink: 0; }
+.tag-green  { background: var(--success-50); color: var(--success); }
+.tag-blue   { background: var(--info-50); color: var(--info); }
+.tag-amber  { background: var(--warn-50); color: var(--warn); }
+.tag-purple { background: var(--purple-50); color: var(--purple); }
+
 /* ─── due 배지 (워크플로우) ──────────────────────────── */
 .due {
   font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;

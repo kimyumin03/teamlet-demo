@@ -10,6 +10,11 @@ function formatRelative(d: Date) {
   return `${Math.floor(diff / 1440)}일 전`;
 }
 
+function isThisWeek(d: Date) {
+  const now = Date.now();
+  return now - new Date(d).getTime() < 7 * 24 * 60 * 60 * 1000;
+}
+
 export function NewsTab({
   subTab = "notice",
   announcements,
@@ -19,6 +24,9 @@ export function NewsTab({
   announcements: AnnouncementItem[];
   currentEmployeeId?: string;
 }) {
+  const thisWeekCount = announcements.filter((a) => isThisWeek(a.createdAt)).length;
+  const pinnedCount = announcements.filter((a) => a.isPinned).length;
+
   return (
     <section>
       {/* 서브탭 */}
@@ -34,9 +42,15 @@ export function NewsTab({
 
       {subTab === "notice" && (
         <div>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
+          {/* 요약 + 작성 버튼 */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+            <p style={{ fontSize: "12.5px", color: "var(--fg-muted)" }}>
+              {pinnedCount > 0 && <span>📌 필독 {pinnedCount}건 · </span>}
+              이번 주 새 글 <strong style={{ color: "var(--fg)" }}>{thisWeekCount}</strong>건
+            </p>
             <CreateAnnouncementButton />
           </div>
+
           {announcements.length === 0 ? (
             <div style={{ padding: "60px 20px", textAlign: "center", border: "1px dashed var(--border)", borderRadius: "14px", color: "var(--fg-muted)" }}>
               <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "6px" }}>등록된 공지사항이 없어요</div>
@@ -48,7 +62,10 @@ export function NewsTab({
                 <div className="post-h">
                   <div className="av">{item.authorName?.slice(-2) ?? "??"}</div>
                   <div className="who-block">
-                    <div className="who">{item.authorName} <span className="role">· 공지사항</span></div>
+                    <div className="who">
+                      {item.authorName}
+                      <span className="role"> · 공지사항</span>
+                    </div>
                     <div className="meta">{formatRelative(item.createdAt)}</div>
                   </div>
                   {item.isPinned && <span className="pin">📌 필독</span>}
@@ -68,6 +85,7 @@ export function NewsTab({
 
       {subTab === "recognition" && (
         <div style={{ padding: "60px 20px", textAlign: "center", border: "1px dashed var(--border)", borderRadius: "14px", color: "var(--fg-muted)" }}>
+          <div style={{ fontSize: "28px", marginBottom: "12px" }}>👏</div>
           <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "6px" }}>아직 인정이 없어요</div>
           <div style={{ fontSize: "12.5px" }}>동료의 멋진 점을 인정해 주세요. 조직 문화가 좋아져요.</div>
         </div>

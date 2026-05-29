@@ -10,6 +10,7 @@ import { FeedTab } from "./_components/feed-tab";
 import { NewsTab } from "./_components/news-tab";
 import { TasksTab } from "./_components/tasks-tab";
 import { HomeRail } from "./_components/home-rail";
+import { CreateAnnouncementButton } from "@/components/announcement/create-announcement-button";
 
 export const dynamic = "force-dynamic";
 
@@ -103,7 +104,8 @@ export default async function HomePage({
             </div>
           </div>
           <div className="feed-actions">
-            <a href="/leave/requests" className="btn-sm">휴가 신청</a>
+            {employeeId && <CreateAnnouncementButton label="+ 새 글" />}
+            <a href="/leave/requests" className="btn-sm btn-sm-ghost">휴가 신청</a>
           </div>
         </div>
 
