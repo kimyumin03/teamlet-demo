@@ -310,6 +310,19 @@
 .work { display: grid; grid-template-columns: minmax(0, 1fr) 340px; min-height: calc(100vh - 49px); }
 .feed { padding: 28px 32px 40px; min-width: 0; overflow-y: auto; }
 .feed-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
+.feed-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.btn-sm { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 9px; font-size: 13px; font-weight: 600; background: var(--primary); color: var(--primary-on, #fff); text-decoration: none; transition: opacity 120ms; white-space: nowrap; }
+.btn-sm:hover { opacity: 0.88; }
+.btn-sm-ghost { background: var(--bg-secondary); color: var(--fg); border: 1px solid var(--border); }
+
+/* ─── 이벤트 카드 (생일·신규합류·기념일) ─────────────── */
+.event-card { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-primary); margin-bottom: 10px; }
+.event-icon { font-size: 22px; flex-shrink: 0; width: 36px; height: 36px; display: grid; place-items: center; }
+.event-body { flex: 1; min-width: 0; }
+.event-title { font-size: 13.5px; font-weight: 600; color: var(--fg); }
+.event-title .event-dept { font-weight: 400; color: var(--fg-muted); }
+.event-desc { font-size: 12px; color: var(--fg-muted); margin-top: 2px; }
+.event-btn { flex-shrink: 0; font-size: 12px; font-weight: 600; color: var(--primary); text-decoration: none; white-space: nowrap; }
 .h-title-h { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 6px; line-height: 1.2; }
 .h-title-h .wave { display: inline-block; transform-origin: 70% 70%; animation: wave 1.6s ease-in-out 1; }
 .h-sub-h { font-size: 13px; color: var(--fg-muted); }

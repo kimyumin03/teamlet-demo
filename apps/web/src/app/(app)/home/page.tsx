@@ -4,6 +4,7 @@ import { getMembershipSummary } from "@teamlet/modules/tenancy";
 import { getLeaveBalances, listTeamLeaveCalendar } from "@teamlet/modules/leave";
 import { listPendingApprovals, listMyDocuments } from "@teamlet/modules/workflow";
 import { listAnnouncements } from "@teamlet/modules/announcement";
+import { listHomeEvents, countActiveEmployees } from "@teamlet/modules/employee";
 import { HomeTabs } from "./_components/home-tabs";
 import { FeedTab } from "./_components/feed-tab";
 import { NewsTab } from "./_components/news-tab";
@@ -46,20 +47,24 @@ export default async function HomePage({
   const now = new Date();
   const month = now.getMonth() + 1;
 
-  const [pendingResult, balancesResult, myDocsResult, announcementsResult, calendarResult] = employeeId
+  const [pendingResult, balancesResult, myDocsResult, announcementsResult, calendarResult, homeEvents, totalActive] = employeeId
     ? await Promise.all([
         listPendingApprovals(employeeId),
         getLeaveBalances(employeeId, year),
         listMyDocuments(employeeId),
         listAnnouncements(employeeId),
         listTeamLeaveCalendar(employeeId, year, month),
+        listHomeEvents(employeeId),
+        countActiveEmployees(employeeId),
       ])
-    : [null, null, null, null, null];
+    : [null, null, null, null, null, [], 0];
 
   const pending = pendingResult?.ok ? pendingResult.data : [];
   const balances = balancesResult?.ok ? balancesResult.data : [];
   const myDocs = myDocsResult?.ok ? myDocsResult.data : [];
   const announcements = announcementsResult?.ok ? announcementsResult.data : [];
+  const events = Array.isArray(homeEvents) ? homeEvents : [];
+  const activeCount = typeof totalActive === "number" ? totalActive : 0;
 
   // 오늘 부재 중인 동료
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -93,9 +98,12 @@ export default async function HomePage({
               {today}
               <span className="ping">
                 <i />
-                {pending.length > 0 ? `결재 대기 ${pending.length}건` : "오늘도 좋은 하루"}
+                출근 {activeCount - todayAbsent.length} · 휴가 {todayAbsent.length}
               </span>
             </div>
+          </div>
+          <div className="feed-actions">
+            <a href="/leave/requests" className="btn-sm">휴가 신청</a>
           </div>
         </div>
 
@@ -113,6 +121,7 @@ export default async function HomePage({
             myDocs={myDocs}
             annualBalance={annualBalance}
             announcements={announcements}
+            events={events}
             year={year}
           />
         )}
@@ -128,7 +137,13 @@ export default async function HomePage({
         )}
       </main>
 
-      <HomeRail balances={balances} annualBalance={annualBalance} todayAbsent={todayAbsent} />
+      <HomeRail
+        balances={balances}
+        annualBalance={annualBalance}
+        todayAbsent={todayAbsent}
+        events={events}
+        activeCount={activeCount}
+      />
     </div>
   );
 }

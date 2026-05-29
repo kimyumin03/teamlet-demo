@@ -103,18 +103,21 @@
 
 ## 최근 한 일
 
-### 2026-05-29 — 인증 방식 복구 (이메일+비밀번호 2-step)
+### 2026-05-29 — 홈 페이지 기능 보강 + 디자인 갭 분석
 
-**변경 내용**
-- `auth.ts` authorize: 이메일 전용 → `authenticateUser(email, password)` 로 비밀번호 검증 복구
-- `auth.ts` 3경로 분리: mfaToken 재인증 → adminKey(플랫폼 관리자) → 일반 비밀번호 로그인
-- `actions/auth.ts` loginAction: password 필드 추가, 에러 메시지 정확화 ("이메일 또는 비밀번호가 올바르지 않아요")
-- `actions/auth.ts` signupAction: password 파라미터 전달, verify2faAction AuthError 핸들링 추가
-- `signup.ts` 모듈: `generateTempPassword` 제거 → 사용자 입력 password 직접 해시
-- `schemas/index.ts`: signupSchema에 `password: passwordSchema` 추가
-- AxHub 플러그인 마켓플레이스 연동 확인 (axhub@axhub 0.7.0)
+**디자인 갭 분석**
+- 디자인 전사 파일(teamlet-full-transcription.md) 기반 30개 화면 전수 조사
+- 실제 코드 확인: 미구현 12개, 부분 구현 3개, 구현 완료 15개 우선순위 확정
+- 개발 순서: 홈 → 구성원 상세 → 워크플로우 → 설정 보안/알림
 
-⚠️ 미커밋 상태. 타입체크 미실행. 런타임 미검증.
+**홈 페이지 기능 보강**
+- `packages/modules/src/employee/index.ts`: `listHomeEvents` (생일·입사기념일·신규합류 쿼리) + `countActiveEmployees` 추가
+- `home/page.tsx`: 새 데이터 병렬 fetch (events, activeCount), 헤더에 팀 현황(출근/휴가 수) 표시, 휴가 신청 버튼 추가
+- `feed-tab.tsx`: 이벤트 카드 컴포넌트 (EventCard — birthday/new_join/join_anniversary 3종), KPI 4장 디자인 기준 정렬
+- `home-rail.tsx`: 오늘의 팀 현황 위젯 (연차 잔여 대체), 축하 보낼 동료 위젯 추가
+- `design.css`: `.event-card`, `.btn-sm`, `.feed-actions` 클래스 추가
+
+⚠️ 타입체크 통과 (기존 pre-existing 에러만). 런타임 미검증.
 
 ### 2026-05-28 — 디자인 시스템 전면 교체 (`teamlet_design/` 기반)
 

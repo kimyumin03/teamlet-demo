@@ -634,6 +634,65 @@ export async function createEmployee(
   return ok({ employeeId: employee.id });
 }
 
+// ─── 홈 이벤트 (생일·입사기념일·신규합류) ────────────────────────────────────
+
+export type HomeEventItem = {
+  employeeId: string;
+  name: string;
+  departmentName: string | null;
+  eventType: "birthday" | "join_anniversary" | "new_join";
+  years?: number;   // join_anniversary: 몇 주년
+  daysAgo?: number; // new_join: 입사 며칠 전
+};
+
+export async function listHomeEvents(actorEmployeeId: string): Promise<HomeEventItem[]> {
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return [];
+
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+  const todayM = now.getMonth() + 1;
+  const todayD = now.getDate();
+  const todayY = now.getFullYear();
+  const twoWeeksAgo = new Date(now);
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+  const emps = await prisma.employee.findMany({
+    where: { companyId: actor.companyId, isActive: true, id: { not: actorEmployeeId } },
+    select: {
+      id: true, name: true, birthDate: true, hireDate: true,
+      department: { select: { name: true } },
+    },
+  });
+
+  const events: HomeEventItem[] = [];
+  for (const emp of emps) {
+    if (emp.birthDate) {
+      const bd = emp.birthDate;
+      if (bd.getMonth() + 1 === todayM && bd.getDate() === todayD) {
+        events.push({ employeeId: emp.id, name: emp.name, departmentName: emp.department?.name ?? null, eventType: "birthday" });
+      }
+    }
+    if (emp.hireDate) {
+      const hd = emp.hireDate;
+      const years = todayY - hd.getFullYear();
+      if (years > 0 && hd.getMonth() + 1 === todayM && hd.getDate() === todayD) {
+        events.push({ employeeId: emp.id, name: emp.name, departmentName: emp.department?.name ?? null, eventType: "join_anniversary", years });
+      }
+      if (hd >= twoWeeksAgo && hd <= now) {
+        const daysAgo = Math.floor((now.getTime() - hd.getTime()) / 86400000);
+        events.push({ employeeId: emp.id, name: emp.name, departmentName: emp.department?.name ?? null, eventType: "new_join", daysAgo });
+      }
+    }
+  }
+  return events;
+}
+
+export async function countActiveEmployees(actorEmployeeId: string): Promise<number> {
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return 0;
+  return prisma.employee.count({ where: { companyId: actor.companyId, isActive: true } });
+}
+
 export { bulkCreateEmployees, type BulkEmployeeRow, type BulkCreateResult } from "./bulk";
 export {
   listCareerHistories, createCareerHistory, updateCareerHistory, deleteCareerHistory,
