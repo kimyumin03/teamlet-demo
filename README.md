@@ -187,29 +187,13 @@ pnpm dev              # http://localhost:3000
 
 ---
 
-### 2026-06-01 일요일
+### 6월 1일 일요일
 
-오늘은 먼저 "Flex 대비 실제 완성도가 몇 %인가"를 정직하게 진단하는 것으로 시작했습니다. 화면 커버리지는 60%대지만 "확실히 작동하는 제품" 기준으로는 40% 안팎 — 가장 큰 적자는 자동화 테스트 0건이라 뭐가 진짜 도는지 증명할 수 없다는 점이었습니다. 그래서 "깨진 토대 위에 기능 쌓지 않기" 원칙대로 **남은 CRITICAL/HIGH 토대를 먼저 잠그고**, 그 다음 사용자 지시(Flex 분석+디자인대로 모든 기능)에 따라 **파일 업로드(MinIO) 인프라**부터 기능 빌드로 전환했습니다.
-
-**[Teamlet · 오전 — 토대 마무리]**
-☑ C6 증명서 인쇄 렌더버그 수정: 서버컴포넌트 `onClick` → `print-button.tsx` 클라이언트 컴포넌트 분리
-☑ C7 결재정책 자동배정 구현: `resolveApprovalSteps`(정책 step→실제 결재자 해석, SPECIFIC/DEPARTMENT_HEAD/ORG_HEAD) + `createDocument` 연결 + 작성 UI "자동/직접" 토글 — UI의 "자동 배정" 약속이 이제 진짜
-☑ H3 CC 참조자 cross-tenant 검증: `createDocument`에서 참조자도 회사 소속 확인
-☑ H5 공지 작성 권한: `company.announcement.manage` 신규 + 작성 게이트(전 직원 작성 차단) + 홈 버튼 비권한자 비활성
-☑ H8 CSV 입사자 HIRE 발령: `bulkCreateEmployees`도 발령 생성(Anti-Pattern #1 재발 차단)
-☑ H9 락아웃 가드: 코드 검증 결과 이미 해소 확인(없는 버그 안 만듦)
-
-**[Teamlet · 오후 — 기능 빌드: 파일 업로드(MinIO)]**
-☑ 스토리지 레이어 `lib/storage.ts`: `@aws-sdk/client-s3` MinIO 클라이언트 + 버킷 자동생성/정책 + `uploadObject`
-☑ 업로드 API `/api/uploads`: auth + 타입/10MB 검증 + scope별 키 → URL (재사용 가능)
-☑ 클라이언트 헬퍼 `lib/upload-client.ts`: `uploadFile(file, scope)`
-☑ 소비처 연결: 회사 문서함(URL 수동입력 → 파일 선택), 회사 로고("준비 중" → 실제 업로드+미리보기)
-※ 코드 변경 전부 타입체크 통과(모듈+웹 exit 0). **MinIO 미기동으로 실제 업로드 런타임 미검증.**
-
-**다음 (작업 이어가기)**
-☐ `pnpm docker:up` 후 파일 업로드 실제 PUT/GET 1회 검증 (storage 레이어)
-☐ 남은 업로드 소비처: 프로필 사진 · 증명서 PDF · 이력서/직원 제출문서
-☐ C5 Worker(BullMQ) 잡 프로세서 — 연차 자동부여·소멸 스케줄
-☐ H6/H7 휴가 잔여계산 정합성 + finalize 트랜잭션
-☐ Flex 신규 기능: 연차 사용 촉진 4-칸반 · 근태 모듈(스코프 결정 대기)
-☐ 테스트 인프라(vitest) — 토대 변경분 회귀 커버
+[HR 웹 기능 개발]
+☑ Flex 대비 완성도 진단 (화면 60%대 / "확실히 작동" 40%대) → 토대 우선 결정
+☑ 토대 마무리: C6 증명서 인쇄·C7 결재정책 자동배정·H3 CC cross-tenant·H5 공지 작성 권한·H8 CSV HIRE 발령 (H9 락아웃은 이미 해소)
+☑ 파일 업로드(MinIO) 인프라 구축: storage 레이어 + /api/uploads + uploadFile 헬퍼
+☑ 업로드 소비처 연결: 회사 문서함 · 회사 로고
+☐ 홈 기능 재작업: 소식 탭·할 일 탭 완성, 공지 댓글 UI 연결, 공감 반응 영속화
+☐ 휴가 기능 재작업: 사용 내역 탭, 연차 사용 촉진 4-칸반, 잔여 계산 정합성(H6/H7)
+※ 코드 변경 전부 타입체크 통과. MinIO 미기동으로 업로드 런타임 미검증
