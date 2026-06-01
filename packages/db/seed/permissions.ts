@@ -64,6 +64,7 @@ export const PERMISSION_CATALOG: PermissionSeed[] = [
   ...pair("company", "basic_info", "회사 기본 정보"),
   ...pair("company", "holidays", "쉬는 날"),
   ...pair("company", "documents", "회사 문서"),
+  ...pair("company", "announcement", "공지사항"),
 
   // ── 구성원 (Core HR) — scope 적용 핵심
   ...pair("member", "directory", "구성원", { hasScope: true }),

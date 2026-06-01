@@ -1,6 +1,10 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
+import { assertPermission } from "../permission/assert";
+import { catchDomainErr } from "../permission/_actor";
 import type { AnnouncementItem, CreateAnnouncementInput, UpdateAnnouncementInput } from "./types";
+
+const ANNOUNCEMENT_MANAGE = "company.announcement.manage";
 
 export async function listAnnouncements(
   employeeId: string,
@@ -37,6 +41,13 @@ export async function listAnnouncements(
 export async function createAnnouncement(
   input: CreateAnnouncementInput,
 ): Promise<Result<{ id: string }>> {
+  // 공지 작성 권한 보유자만 (H5 — 전 직원 작성 차단)
+  try {
+    await assertPermission(input.authorId, ANNOUNCEMENT_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
   if (!input.title.trim()) return err(errors.validation("제목을 입력해 주세요"));
   if (!input.content.trim()) return err(errors.validation("내용을 입력해 주세요"));
 

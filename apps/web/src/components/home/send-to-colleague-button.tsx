@@ -14,7 +14,7 @@ type ActionCard = {
   onClick: () => void;
 };
 
-export function SendToColleagueButton() {
+export function SendToColleagueButton({ canAnnounce = false }: { canAnnounce?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -47,7 +47,8 @@ export function SendToColleagueButton() {
       icon: <Megaphone className="h-5 w-5" />,
       label: "공지사항",
       desc: "전 구성원에게 공지를 전달해요",
-      onClick: () => setSubMode("announce"),
+      badge: canAnnounce ? undefined : "권한 필요",
+      onClick: () => { if (canAnnounce) setSubMode("announce"); },
     },
     {
       icon: <ClipboardList className="h-5 w-5" />,

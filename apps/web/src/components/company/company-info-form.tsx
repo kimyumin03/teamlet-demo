@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@teamlet/ui";
 import type { CompanyInfo } from "@teamlet/modules/tenancy";
 import { updateCompanyInfoAction } from "@/lib/actions/company";
+import { uploadFile } from "@/lib/upload-client";
 
 function toDateInput(d: Date | null | undefined): string {
   if (!d) return "";
@@ -49,6 +50,20 @@ export function CompanyInfoForm({ initialInfo }: { initialInfo: CompanyInfo }) {
   const [addressDetail, setAddressDetail] = useState(initialInfo.addressDetail ?? "");
   const [visionMission, setVisionMission] = useState(initialInfo.visionMission ?? "");
   const [companyCodeActive, setCompanyCodeActive] = useState(initialInfo.companyCodeActive);
+  const [logoUrl, setLogoUrl] = useState(initialInfo.logoUrl ?? "");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  async function handleLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setSuccess(false);
+    setUploadingLogo(true);
+    const res = await uploadFile(file, "logos");
+    setUploadingLogo(false);
+    if (!res.ok) { setError(res.error); return; }
+    setLogoUrl(res.url);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -63,6 +78,7 @@ export function CompanyInfoForm({ initialInfo }: { initialInfo: CompanyInfo }) {
         addressDetail: addressDetail.trim() || null,
         visionMission: visionMission.trim() || null,
         companyCodeActive,
+        logoUrl: logoUrl.trim() || null,
       });
       if (!res.ok) { setError(res.error.message); return; }
       setSuccess(true);
@@ -79,13 +95,29 @@ export function CompanyInfoForm({ initialInfo }: { initialInfo: CompanyInfo }) {
         <h3 className="mb-1.5 text-[15px] font-bold text-foreground">회사 로고</h3>
         <p className="mb-4 text-[12.5px] text-foreground-muted">사이드바·증명서·결재 문서 상단에 표시됩니다.</p>
         <div className="flex items-center gap-4">
-          <div
-            className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-[14px] text-[22px] font-bold"
-            style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-hover))", color: "var(--primary-on)" }}
-          >
-            {companyInitial}
-          </div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt="회사 로고"
+              className="h-[72px] w-[72px] shrink-0 rounded-[14px] border border-border object-contain bg-background-primary"
+            />
+          ) : (
+            <div
+              className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-[14px] text-[22px] font-bold"
+              style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-hover))", color: "var(--primary-on)" }}
+            >
+              {companyInitial}
+            </div>
+          )}
           <label className="flex flex-1 max-w-[380px] cursor-pointer items-center gap-3 rounded-[10px] border border-dashed border-border-strong bg-background-secondary px-4 py-3 transition-colors hover:bg-background-tertiary">
+            <input
+              type="file"
+              accept=".png,.jpg,.jpeg,.webp"
+              onChange={handleLogo}
+              disabled={uploadingLogo || isPending}
+              className="hidden"
+            />
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border border-border bg-background-primary text-foreground-muted">
               <svg viewBox="0 0 20 20" fill="currentColor" className="size-4">
                 <path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z" />
@@ -93,8 +125,10 @@ export function CompanyInfoForm({ initialInfo }: { initialInfo: CompanyInfo }) {
               </svg>
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-foreground">새 로고 업로드</p>
-              <p className="text-[11.5px] text-foreground-muted">SVG 권장 · PNG 최소 256×256 · 준비 중</p>
+              <p className="text-[13px] font-semibold text-foreground">
+                {uploadingLogo ? "업로드 중…" : logoUrl ? "로고 변경" : "새 로고 업로드"}
+              </p>
+              <p className="text-[11.5px] text-foreground-muted">PNG·JPG·WEBP · 변경 후 저장하면 반영돼요</p>
             </div>
           </label>
         </div>

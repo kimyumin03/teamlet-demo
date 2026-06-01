@@ -15,7 +15,20 @@
 > - **C4 가입알림** — 권한(member.directory.manage)기준 대상화+필터버그+deepLink (타입클린)
 > - +부수: `MembershipStatus.REJECTED` 추가(반려기능 복구), bulk.ts import 수정 → **모듈 타입체크 전체 클린**, dev DB `db push` 적용
 >
-> **남은 CRITICAL: C5(Worker 빈껍데기)·C6(증명서 렌더버그)·C7(결재정책 미연결) + §2 HIGH 9건.**
+> **남은 CRITICAL: C5(Worker 빈껍데기) + §2 HIGH 8건(H3 해소).**
+>
+> ✅ **2026-06-01 세션 (토대 Phase 0 이어감):**
+> - **C6 증명서 렌더버그** — 인쇄 버튼을 `print-button.tsx` 클라이언트 컴포넌트로 분리 (서버컴포넌트 onClick 차단 해소). 타입클린, 런타임 미검증
+> - **H3 CC cross-tenant** — `createDocument`에서 참조자(ccRecipientIds)도 회사 소속 검증 추가 (결재자와 동일 패턴). 타입클린
+> - **C7 결재정책 자동배정** — `resolveApprovalSteps` 신규(정책 step→실제 결재자 해석: SPECIFIC_PERSON/DEPARTMENT_HEAD/ORG_HEAD, DIRECT_MANAGER는 데이터 부재로 부서장 대체) + `createDocument`가 결재자 미지정 시 정책으로 자동 결재선 생성 + 작성 UI "정책 자동 배정/직접 지정" 토글. 모듈·웹 타입클린, 런타임 미검증. ⚠️ 휴가 bridge(requestLeave) 자동배정은 미적용(후속)
+> - **H5 공지 작성 권한** — `company.announcement.manage` 권한 신규(시드 카탈로그) + `createAnnouncement` assertPermission 게이트(전 직원 작성 차단) + 홈 "동료에게 전달하기"의 공지 카드 비권한자에 "권한 필요" 비활성. 모듈·웹 타입클린. ⚠️ **dev DB `db:seed`(권한 upsert) + 기존 회사 `bootstrapCompanyRoles` 재실행 필요**(최고관리자에 자동 부여). 런타임 미검증
+>
+> - **H8 CSV HIRE 발령** — `bulkCreateEmployees`가 employee+HIRE 발령을 한 트랜잭션으로 생성(createEmployee와 일관). 발령이력 공백/Anti-Pattern #1 재발 차단. 모듈 타입클린
+> - **H9 락아웃 가드 — 코드검증 결과 이미 해소** (변경 없음): `deactivateEmployee` 가드 보유 + UserRole 동시 비활성화, `updateRole`이 시스템역할 수정 차단, membership 활성멤버 정지경로 없음. 감사(05-29) 이후 추가된 것으로 확인
+>
+> **이번 세션 검증 수준: 코드 변경분 전부 타입체크 통과(모듈+웹 exit 0). 런타임/통합 미검증 — Phase 0.5 테스트 인프라에서 회귀 커버 예정.**
+>
+> **남은 토대: H6/H7(휴가 잔여계산 정합성·finalize 트랜잭션) + C5(Worker). 그 후 Phase 0.5 테스트 인프라(vitest).**
 
 ## 전체 진행도 (2026-05-28 세션3 기준)
 
@@ -65,6 +78,25 @@
 | **구성원 프로필** | ✅ 완료 | 3탭(기본정보/발령이력/권한) + 7 아코디언 + hero 5 quick chips |
 | **조직·직책 설정** | ✅ 완료 | /settings/org — 부서·직책 인라인 이름변경/삭제 |
 | **사이드바 유저 박스** | ✅ 완료 | 클릭 시 본인 프로필(/members/{id})로 이동 |
+
+## 2026-06-01 세션2 — 기능 빌드 전환 (파일 업로드 MinIO)
+
+> 사용자 지시: Flex 분석+디자인대로 **모든 기능 빌드**. 시작 트랙 = 파일 업로드(MinIO).
+
+**파일 업로드 인프라 (로고/프로필/문서/이력서/증명서PDF 공용)**
+- `apps/web/src/lib/storage.ts` (NEW): `@aws-sdk/client-s3` MinIO 클라이언트(forcePathStyle) + `ensureBucket`(멱등, dev public-read 정책) + `uploadObject(key,body,type)→URL` + `sanitizeFilename`
+- `apps/web/src/app/api/uploads/route.ts` (NEW): POST multipart 업로드 — auth 게이트 + 타입(pdf/이미지/office/txt/csv) + 10MB 제한 + scope 화이트리스트(company-documents/logos/profiles/certificates/resumes/employee-documents) + 키 `{scope}/{companyId}/{uuid}-{name}` 반환 URL
+- `apps/web/src/lib/upload-client.ts` (NEW): 클라이언트 `uploadFile(file, scope)` 헬퍼 (재사용)
+- `components/document/add-document-button.tsx`: "파일 URL 수동입력" → **파일 선택 업로드**로 교체 (업로드 중 표시, 첨부 파일명, 제목 자동완성)
+- `@aws-sdk/client-s3` apps/web 의존 추가 (+47 pkg)
+- ⚠️ **타입체크 통과(web exit 0). 런타임 미검증 — Docker Desktop 미기동(`pnpm docker:up` 필요).**
+- ⚠️ **dev 전제: 버킷 public-read.** 운영은 private + presigned/인증프록시 전환 필요(storage.ts 주석 명시)
+
+**소비처 연결 (동일 `uploadFile` 패턴)**
+- ✅ **회사 문서함** — `add-document-button` 파일 선택 업로드
+- ✅ **회사 로고** — `company-info-form` 로고 카드 "준비 중" → 실제 업로드+미리보기. `companyUpdateSchema`/`CompanyUpdateInput`/`updateCompanyInfo`에 `logoUrl` 추가(shared+모듈), SVG 제외(라우트 허용목록·XSS). 모듈+웹 타입클린
+- 📌 남은 소비처(후속): 프로필 사진 / 증명서 PDF / 이력서·직원제출문서
+- ⚠️ **전부 타입체크만 통과(런타임 미검증) — MinIO 미기동. `pnpm docker:up` 후 실제 업로드 1회 검증 필요.**
 
 ## 현재 위치
 

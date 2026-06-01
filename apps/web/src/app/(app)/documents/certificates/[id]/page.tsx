@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getCertificate } from "@teamlet/modules/document";
+import { PrintButton } from "./print-button";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +25,7 @@ export default async function CertificatePrintPage({ params }: { params: Promise
       <div className="mx-auto max-w-2xl rounded-[14px] border border-border bg-background-primary p-10 print:border-none print:shadow-none">
         {/* 인쇄 버튼 */}
         <div className="mb-8 flex justify-end print:hidden">
-          <button
-            onClick={() => window.print()}
-            className="rounded-[8px] border border-border px-4 py-1.5 text-[13px] text-foreground hover:bg-background-secondary transition-colors"
-          >
-            인쇄하기
-          </button>
+          <PrintButton />
         </div>
 
         {/* 증명서 본문 */}

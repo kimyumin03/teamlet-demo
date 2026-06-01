@@ -84,6 +84,107 @@ export async function listApprovalPolicies(
   );
 }
 
+/**
+ * 결재 정책 기반 자동 결재선 해석 (C7).
+ * 기안자(authorId)의 부서·회사 컨텍스트로 해당 kind 의 활성 정책 step 들을
+ * 실제 결재자 employeeId 순서 배열로 변환한다.
+ *
+ * 해석 규칙:
+ * - SPECIFIC_PERSON  → step.approverId (회사 소속·재직 검증)
+ * - DEPARTMENT_HEAD  → 기안자 부서의 isOrgHead 직책 보유 재직자
+ * - ORG_HEAD         → 기안자 부서 트리 최상위(root) 부서의 isOrgHead 재직자
+ * - DIRECT_MANAGER   → 직속상사 데이터 모델 부재 → DEPARTMENT_HEAD 로 대체 (한계)
+ *
+ * 활성 정책이 없으면 ok(null) — 호출부가 수동 결재자로 폴백.
+ * 정책은 있으나 해석 실패 시 err(검증 메시지).
+ */
+export async function resolveApprovalSteps(
+  companyId: string,
+  authorId: string,
+  kind: FormDocumentKind,
+): Promise<Result<string[] | null>> {
+  const policy = await prisma.approvalPolicy.findFirst({
+    where: { companyId, category: kind, isActive: true },
+    include: { steps: { orderBy: { step: "asc" } } },
+    orderBy: { createdAt: "asc" },
+  });
+  if (!policy || policy.steps.length === 0) return ok(null);
+
+  const author = await prisma.employee.findFirst({
+    where: { id: authorId, companyId },
+    select: { id: true, departmentId: true },
+  });
+  if (!author) return err(errors.notFound("기안자 정보를 찾을 수 없어요"));
+
+  // 부서장 해석 헬퍼: 특정 부서의 isOrgHead 재직자 (sortOrder→name 결정적 선택)
+  const findDeptHead = async (departmentId: string | null): Promise<string | null> => {
+    if (!departmentId) return null;
+    const head = await prisma.employee.findFirst({
+      where: {
+        companyId,
+        departmentId,
+        isActive: true,
+        employmentStatus: "ACTIVE",
+        position: { isOrgHead: true },
+      },
+      orderBy: [{ position: { sortOrder: "asc" } }, { name: "asc" }],
+      select: { id: true },
+    });
+    return head?.id ?? null;
+  };
+
+  // 부서 트리 최상위 부서 id 해석 (순환 방지: 방문 집합)
+  const findRootDeptId = async (departmentId: string | null): Promise<string | null> => {
+    if (!departmentId) return null;
+    const depts = await prisma.department.findMany({
+      where: { companyId },
+      select: { id: true, parentId: true },
+    });
+    const parentOf = new Map(depts.map((d) => [d.id, d.parentId]));
+    let current: string | null = departmentId;
+    const seen = new Set<string>();
+    while (current && parentOf.get(current) && !seen.has(current)) {
+      seen.add(current);
+      current = parentOf.get(current) ?? null;
+    }
+    return current;
+  };
+
+  const resolved: string[] = [];
+  for (const s of policy.steps) {
+    let approverId: string | null = null;
+    const type = s.approverType as ApproverType;
+
+    if (type === "SPECIFIC_PERSON") {
+      if (!s.approverId) return err(errors.validation(`결재 정책 ${s.step}단계에 지정 결재자가 없어요`));
+      const exists = await prisma.employee.count({
+        where: { id: s.approverId, companyId, isActive: true },
+      });
+      if (exists === 0) return err(errors.validation(`결재 정책 ${s.step}단계 결재자가 더 이상 재직하지 않아요`));
+      approverId = s.approverId;
+    } else if (type === "DEPARTMENT_HEAD" || type === "DIRECT_MANAGER") {
+      approverId = await findDeptHead(author.departmentId);
+      if (!approverId)
+        return err(errors.validation(`결재 정책 ${s.step}단계: 기안자 부서의 부서장을 찾을 수 없어요`));
+    } else if (type === "ORG_HEAD") {
+      const rootId = await findRootDeptId(author.departmentId);
+      approverId = await findDeptHead(rootId);
+      if (!approverId)
+        return err(errors.validation(`결재 정책 ${s.step}단계: 조직 책임자를 찾을 수 없어요`));
+    }
+
+    if (!approverId) return err(errors.validation(`결재 정책 ${s.step}단계를 해석할 수 없어요`));
+    // 기안자 본인·연속 중복 결재자 제거 (의미 없는 자기결재/중복 단계 방지)
+    if (approverId === author.id) continue;
+    if (resolved.includes(approverId)) continue;
+    resolved.push(approverId);
+  }
+
+  if (resolved.length === 0)
+    return err(errors.validation("결재 정책으로 유효한 결재자를 만들 수 없어요"));
+  return ok(resolved);
+}
+
 export async function createApprovalPolicy(
   actorEmployeeId: string,
   input: ApprovalPolicyCreateInput,

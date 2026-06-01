@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, Input } from "@teamlet/ui";
 import { createCompanyDocumentAction } from "@/lib/actions/document";
+import { uploadFile } from "@/lib/upload-client";
 import type { CompanyDocumentCategory } from "@teamlet/db";
 
 const CATEGORIES: { value: CompanyDocumentCategory; label: string }[] = [
@@ -17,11 +18,26 @@ export function AddDocumentButton() {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [fileUrl, setFileUrl] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [category, setCategory] = useState<CompanyDocumentCategory>("GENERAL");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function reset() { setTitle(""); setFileUrl(""); setCategory("GENERAL"); setError(null); }
+  function reset() { setTitle(""); setFileUrl(""); setFileName(""); setUploading(false); setCategory("GENERAL"); setError(null); }
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    const res = await uploadFile(file, "company-documents");
+    setUploading(false);
+    if (!res.ok) { setError(res.error); return; }
+    setFileUrl(res.url);
+    setFileName(res.name);
+    if (!title.trim()) setTitle(res.name.replace(/\.[^.]+$/, ""));
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,13 +70,21 @@ export function AddDocumentButton() {
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] text-foreground-muted">파일 URL</label>
-            <Input required type="url" placeholder="https://..." value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} />
+            <label className="text-[13px] text-foreground-muted">파일</label>
+            <input
+              type="file"
+              onChange={handleFile}
+              disabled={uploading || isPending}
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.txt,.csv"
+              className="text-[13px] text-foreground file:mr-3 file:rounded-[8px] file:border file:border-border file:bg-background-secondary file:px-3 file:py-1.5 file:text-[13px] file:text-foreground hover:file:bg-background-tertiary"
+            />
+            {uploading && <p className="text-[12px] text-foreground-muted">업로드 중…</p>}
+            {!uploading && fileUrl && <p className="text-[12px] text-foreground-muted">첨부됨: {fileName}</p>}
           </div>
           {error && <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">{error}</p>}
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="secondary" disabled={isPending}>취소</Button></DialogClose>
-            <Button type="submit" disabled={isPending || !title.trim() || !fileUrl.trim()}>
+            <Button type="submit" disabled={isPending || uploading || !title.trim() || !fileUrl.trim()}>
               {isPending ? "추가 중…" : "추가"}
             </Button>
           </DialogFooter>

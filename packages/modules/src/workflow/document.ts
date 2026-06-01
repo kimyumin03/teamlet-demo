@@ -2,6 +2,7 @@ import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
 import type { CreateDocumentInput, DocumentListItem, PendingApprovalItem, DocumentDetail, CcDocumentItem } from "./types";
 import type { FieldDef } from "./template";
+import { resolveApprovalSteps } from "./approval-policy";
 
 export async function getDocument(
   employeeId: string,
@@ -65,12 +66,22 @@ export async function getDocument(
 export async function createDocument(
   input: CreateDocumentInput,
 ): Promise<Result<{ id: string }>> {
-  if (input.approverIds.length === 0)
+  // 결재자 미지정 시 결재 정책으로 자동 배정 (C7). 지정 시엔 그대로 사용(변경 허용).
+  let approverIds = input.approverIds;
+  if (approverIds.length === 0) {
+    const resolved = await resolveApprovalSteps(input.companyId, input.authorId, input.kind);
+    if (!resolved.ok) return resolved;
+    if (!resolved.data)
+      return err(errors.validation("결재자를 지정하거나 해당 문서 종류의 결재 정책을 먼저 설정해 주세요"));
+    approverIds = resolved.data;
+  }
+
+  if (approverIds.length === 0)
     return err(errors.validation("결재자를 한 명 이상 지정해야 해요"));
 
   // 결재자 중복 지정 차단
-  const uniqueApprovers = new Set(input.approverIds);
-  if (uniqueApprovers.size !== input.approverIds.length)
+  const uniqueApprovers = new Set(approverIds);
+  if (uniqueApprovers.size !== approverIds.length)
     return err(errors.validation("같은 결재자를 중복 지정할 수 없어요"));
 
   // 결재자가 모두 같은 회사 소속인지 검증 (cross-tenant 방지)
@@ -79,6 +90,18 @@ export async function createDocument(
   });
   if (approverCount !== uniqueApprovers.size)
     return err(errors.validation("결재자 중 회사 소속이 아닌 사람이 있어요"));
+
+  // CC 참조자도 같은 회사 소속인지 검증 (cross-tenant 열람권 부여 방지 — H3)
+  const uniqueCc = input.ccRecipientIds && input.ccRecipientIds.length > 0
+    ? [...new Set(input.ccRecipientIds)]
+    : [];
+  if (uniqueCc.length > 0) {
+    const ccCount = await prisma.employee.count({
+      where: { id: { in: uniqueCc }, companyId: input.companyId },
+    });
+    if (ccCount !== uniqueCc.length)
+      return err(errors.validation("참조자 중 회사 소속이 아닌 사람이 있어요"));
+  }
 
   const doc = await prisma.$transaction(async (tx) => {
     const created = await tx.formDocument.create({
@@ -96,7 +119,7 @@ export async function createDocument(
 
     // 모든 결재선은 PENDING 으로 시작 — 순차 진행은 approveDocument 가 step 순서로 강제
     await tx.approvalLine.createMany({
-      data: input.approverIds.map((approverId, idx) => ({
+      data: approverIds.map((approverId, idx) => ({
         documentId: created.id,
         step: idx + 1,
         approverId,
@@ -104,8 +127,7 @@ export async function createDocument(
       })),
     });
 
-    if (input.ccRecipientIds && input.ccRecipientIds.length > 0) {
-      const uniqueCc = [...new Set(input.ccRecipientIds)];
+    if (uniqueCc.length > 0) {
       await tx.documentCcRecipient.createMany({
         data: uniqueCc.map((employeeId) => ({ documentId: created.id, employeeId })),
         skipDuplicates: true,

@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1057.0",
     "@hookform/resolvers": "^3.9.1",
     "@teamlet/db": "workspace:*",
     "@teamlet/modules": "workspace:*",

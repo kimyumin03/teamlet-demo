@@ -30,6 +30,7 @@ export type CompanyUpdateInput = {
   addressDetail?: string | null;
   visionMission?: string | null;
   companyCodeActive?: boolean;
+  logoUrl?: string | null;
 };
 
 export async function getCompanyInfo(
@@ -98,6 +99,7 @@ export async function updateCompanyInfo(
       ...(input.addressDetail !== undefined && { addressDetail: input.addressDetail }),
       ...(input.visionMission !== undefined && { visionMission: input.visionMission }),
       ...(input.companyCodeActive !== undefined && { companyCodeActive: input.companyCodeActive }),
+      ...(input.logoUrl !== undefined && { logoUrl: input.logoUrl }),
     },
   });
 

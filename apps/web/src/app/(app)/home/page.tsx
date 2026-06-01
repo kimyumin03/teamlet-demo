@@ -6,6 +6,7 @@ import { listPendingApprovals, listMyDocuments } from "@teamlet/modules/workflow
 import { listAnnouncements } from "@teamlet/modules/announcement";
 import { listHomeEvents, countActiveEmployees } from "@teamlet/modules/employee";
 import { listCompanyHolidays } from "@teamlet/modules/tenancy";
+import { hasPermission } from "@teamlet/modules/permission";
 import { HomeTabs } from "./_components/home-tabs";
 import { FeedTab } from "./_components/feed-tab";
 import { NewsTab } from "./_components/news-tab";
@@ -70,6 +71,7 @@ export default async function HomePage({
   const events = Array.isArray(homeEvents) ? homeEvents : [];
   const activeCount = typeof totalActive === "number" ? totalActive : 0;
   const holidays = holidaysResult?.ok ? holidaysResult.data : [];
+  const canAnnounce = employeeId ? await hasPermission(employeeId, "company.announcement.manage") : false;
 
   // 오늘 부재 중인 동료
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -109,7 +111,7 @@ export default async function HomePage({
           </div>
           <div className="feed-actions">
             <a href="/leave/requests" className="btn-sm btn-sm-ghost">휴가 신청</a>
-            {employeeId && <SendToColleagueButton />}
+            {employeeId && <SendToColleagueButton canAnnounce={canAnnounce} />}
           </div>
         </div>
 

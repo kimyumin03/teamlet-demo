@@ -135,6 +135,7 @@ export const companyUpdateSchema = z.object({
   addressDetail: z.string().trim().max(200).nullable().optional(),
   visionMission: z.string().trim().max(2000).nullable().optional(),
   companyCodeActive: z.boolean().optional(),
+  logoUrl: z.string().trim().max(500).nullable().optional(),
 });
 export type CompanyUpdateSchemaInput = z.infer<typeof companyUpdateSchema>;
 

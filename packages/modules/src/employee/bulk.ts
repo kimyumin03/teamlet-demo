@@ -67,6 +67,12 @@ export async function bulkCreateEmployees(
   const deptMap = new Map(depts.map((d) => [d.name, d.id]));
   const posMap = new Map(positions.map((p) => [p.name, p.id]));
 
+  // 발령 기록자(actor) 이름 — HIRE 발령 appointedByName 용 (한 번만 조회)
+  const actorEmp = await prisma.employee.findUnique({
+    where: { id: actorEmployeeId },
+    select: { name: true },
+  });
+
   const results: BulkCreateResult[] = [];
 
   for (let i = 0; i < rows.length; i++) {
@@ -116,17 +122,34 @@ export async function bulkCreateEmployees(
       empTypeRaw ? (EMPLOYMENT_TYPE_MAP[empTypeRaw] ?? "FULL_TIME") : "FULL_TIME";
 
     try {
-      await prisma.employee.create({
-        data: {
-          companyId: actor.companyId,
-          name,
-          employeeNumber,
-          companyEmail,
-          hireDate,
-          departmentId,
-          positionId,
-          employmentType: employmentType as EmploymentType,
-        },
+      // employee + HIRE 발령을 한 트랜잭션으로 — createEmployee 와 일관 (H8, Anti-Pattern #1 재발 차단)
+      await prisma.$transaction(async (tx) => {
+        const created = await tx.employee.create({
+          data: {
+            companyId: actor.companyId,
+            name,
+            employeeNumber,
+            companyEmail,
+            hireDate,
+            departmentId,
+            positionId,
+            employmentType: employmentType as EmploymentType,
+          },
+        });
+        await tx.appointment.create({
+          data: {
+            companyId: actor.companyId,
+            employeeId: created.id,
+            kind: "HIRE",
+            effectiveDate: hireDate ?? new Date(),
+            toDepartmentId: departmentId,
+            toDepartmentName: departmentId ? (departmentName ?? null) : null,
+            toPositionId: positionId,
+            toPositionName: positionId ? (positionName ?? null) : null,
+            appointedById: actorEmployeeId,
+            appointedByName: actorEmp?.name ?? null,
+          },
+        });
       });
       results.push({ row: rowNum, name, ok: true });
     } catch (e: unknown) {

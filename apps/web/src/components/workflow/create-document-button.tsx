@@ -38,6 +38,7 @@ export function CreateDocumentButton({ employees, templates }: Props) {
   const [formData, setFormData] = useState<Record<string, string>>({});
 
   // Step 3
+  const [approvalMode, setApprovalMode] = useState<"auto" | "manual">("auto");
   const [approverIds, setApproverIds] = useState<string[]>([""]);
   const [ccIds, setCcIds] = useState<string[]>([]);
 
@@ -49,6 +50,7 @@ export function CreateDocumentButton({ employees, templates }: Props) {
     setSelectedTemplateId(null);
     setTitle("");
     setFormData({});
+    setApprovalMode("auto");
     setApproverIds([""]);
     setCcIds([]);
     setError(null);
@@ -77,13 +79,14 @@ export function CreateDocumentButton({ employees, templates }: Props) {
     e.preventDefault();
     setError(null);
     const valid = approverIds.filter(Boolean);
-    if (valid.length === 0) { setError("결재자를 한 명 이상 선택해야 해요"); return; }
+    if (approvalMode === "manual" && valid.length === 0) { setError("결재자를 한 명 이상 선택해야 해요"); return; }
     startTransition(async () => {
       const res = await createDocumentAction({
         title: title.trim() || (selectedTemplate?.name ?? "새 문서"),
         kind: selectedTemplate?.kind ?? "GENERAL",
         templateId: selectedTemplateId ?? undefined,
-        approverIds: valid,
+        // 자동 배정: 빈 배열 → 서버가 결재 정책으로 결재선 생성 (C7)
+        approverIds: approvalMode === "auto" ? [] : valid,
         ccRecipientIds: ccIds.filter(Boolean),
         formData: Object.fromEntries(
           Object.entries(formData).map(([k, v]) => [k, v]),
@@ -252,6 +255,33 @@ export function CreateDocumentButton({ employees, templates }: Props) {
         {/* ── STEP 3: 결재선 ── */}
         {step === 3 && (
           <form id="step3" onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* 결재선 배정 방식 (C7) */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-foreground-muted">결재선 배정</label>
+              <div className="flex gap-2">
+                {([["auto", "정책 자동 배정"], ["manual", "직접 지정"]] as const).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setApprovalMode(mode)}
+                    className={`flex-1 rounded-md border px-3 py-2 text-sm transition-colors ${
+                      approvalMode === mode
+                        ? "border-border-focus bg-background-secondary font-medium text-foreground"
+                        : "border-border text-foreground-muted hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {approvalMode === "auto" && (
+                <p className="text-xs text-foreground-subtle">
+                  문서 종류의 결재 정책에 따라 결재선이 자동 배정돼요. 정책이 없으면 직접 지정해 주세요.
+                </p>
+              )}
+            </div>
+
+            {approvalMode === "manual" && (
             <div className="flex flex-col gap-2">
               <label className="text-sm text-foreground-muted">결재선 (순서대로)</label>
               {approverIds.map((id, idx) => (
@@ -284,6 +314,7 @@ export function CreateDocumentButton({ employees, templates }: Props) {
                 </Button>
               )}
             </div>
+            )}
 
             {/* 참조자 (선택) */}
             <div className="flex flex-col gap-2 pt-2 border-t border-border">
