@@ -238,6 +238,44 @@ enum DecimalRule {
   NO_ADJUSTMENT
 }
 
+enum LeaveUseUnit {
+  HOUR      // 시간 단위
+  HALF_DAY  // 반차 단위
+  DAY       // 일 단위
+}
+
+enum MonthlyExpiryMode {
+  NONE                   // 소멸 안 함
+  HIRE_DATE_1Y           // 입사일로부터 1년 후
+  HIRE_DATE_1Y_FISCAL    // 입사일로부터 1년 후 첫 회계일
+}
+
+enum AnnualExpiryMode {
+  NONE          // 소멸 안 함
+  GRANT_DATE_1Y // 부여일로부터 1년 후
+}
+
+enum RetirementAdjustMode {
+  EMPLOYEE_FAVORABLE // 구성원에게 유리한 기준
+  LABOR_LAW          // 항상 근로기준법 기준
+}
+
+enum LeavePromotionType {
+  ANNUAL       // 연차 (1년 이상 재직)
+  MONTHLY_1ST  // 월차 1차 (1~9번째)
+  MONTHLY_2ND  // 월차 2차 (10~11번째)
+}
+
+enum LeavePromotionStatus {
+  REQUESTED         // 작성 요청됨
+  ADMIN_WRITING     // 관리자 작성 기간
+  APPROVAL_PENDING  // 승인 진행 중
+  REJECTED          // 반려
+  COMPLETED         // 완료
+  EXPIRED           // 작성 기간 지남
+  CANCELLED         // 촉진 취소
+}
+
 // ─────────────────────────────────────────────────────────────
 // 인증 · 멀티 테넌시 (docs/03 §13)
 // ─────────────────────────────────────────────────────────────
@@ -322,6 +360,7 @@ model Company {
   securityPolicy    CompanySecurityPolicy?
   notifications     Notification[]
   leavePolicies     LeavePolicy[]
+  leaveSettings     CompanyLeaveSettings?
   appointments      Appointment[]
   announcements     Announcement[]
   approvalPolicies  ApprovalPolicy[]
@@ -499,6 +538,10 @@ model Employee {
   careerHistories         CareerHistory[]
   educationHistories      EducationHistory[]
   familyMembers           FamilyMember[]
+  // 휴가 승인선 (휴가 종류·연차 정책에 고정 지정된 승인자)
+  leaveTypesAsApprover    LeaveType[]      @relation("LeaveTypeApprover")
+  leavePoliciesAsApprover LeavePolicy[]    @relation("LeavePolicyApprover")
+  leavePromotions         LeavePromotion[] @relation("EmployeeLeavePromotions")
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
@@ -732,11 +775,27 @@ model LeaveType {
   paymentType          LeavePaymentType        @default(PAID)
   genderRestriction    LeaveGenderRestriction  @default(ALL)
   evidenceRequirement  LeaveEvidenceRequirement @default(NONE)
+  // 사용 단위 (한번에 모두 / 나눠서: 일·반차·시간)
+  useUnit              LeaveUseUnit            @default(DAY)
+  // 일부 유급 % (paymentType = PARTIAL_PAID 일 때)
+  partialPayPercent    Int?
+  // 휴가 기간에 휴일이 포함된 경우 휴일도 차감하는지
+  deductOnHoliday      Boolean                 @default(false)
+  // 주기 부여 옵션 — 반복 부여 주기 / 근속 시 부여 연수
+  periodicCycle        String?
+  tenureYears          Int?
+  // 제외 대상 (근로유형·조직)
+  excludedEmploymentTypes String[]             @default([])
+  excludedDepartmentIds   String[]             @default([])
+  // 승인·참조 설정 (맞춤 휴가 설정에서 지정 — 신청 시 자동 적용·고정)
+  approverEmployeeId   String?                 // null = 승인 불필요
+  ccEmployeeIds        String[]                @default([]) // 참조자
   sortOrder            Int                     @default(0)
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
 
   company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  approver          Employee?         @relation("LeaveTypeApprover", fields: [approverEmployeeId], references: [id], onDelete: SetNull)
   leaveBalances     LeaveBalance[]
   leaveRequests     LeaveRequest[]
   leaveTransactions LeaveTransaction[]
@@ -777,6 +836,11 @@ model LeaveRequest {
   endDate     DateTime           @db.Date
   days        Decimal
   reason      String             @default("")
+  // 사용 단위 — FULL(하루종일)/AM_HALF(오전반차)/PM_HALF(오후반차)/HOURLY(시간차)
+  unitType    String             @default("FULL")
+  startTime   String?            // 시간차/반차 시작 (HH:mm)
+  endTime     String?            // 시간차/반차 종료 (HH:mm)
+  evidenceFileUrl String?        // 증명 자료 업로드 URL
   status      LeaveRequestStatus @default(PENDING)
   reviewNote  String?
   reviewedAt  DateTime?
@@ -853,6 +917,27 @@ model LeavePolicy {
   decimalRule         DecimalRule          @default(ROUND_UP_DAY)
   expiryMonths        Int                  @default(12)
   carryoverMaxDays    Decimal?
+  // 부여 시작일
+  grantStartDate      DateTime?            @db.Date
+  // 연차 사용 단위 (시간/반차/일) + 시간 단위 분(시간 선택 시 1·5·10·15·20·30·60·120)
+  useUnit             LeaveUseUnit         @default(HALF_DAY)
+  hourUnitMinutes     Int?
+  // 당겨쓰기 — 제한 없으면 overdraftMaxDays = null
+  overdraftEnabled    Boolean              @default(false)
+  overdraftMaxDays    Int?
+  // 월차·연차 자동 소멸 (분리 + 유예)
+  monthlyExpiryMode   MonthlyExpiryMode    @default(HIRE_DATE_1Y)
+  monthlyGraceMonths  Int?
+  annualExpiryMode    AnnualExpiryMode     @default(GRANT_DATE_1Y)
+  annualGraceMonths   Int?
+  // 승인 요청 시점
+  approveOnRegister   Boolean              @default(true)
+  approveOnCancel     Boolean              @default(false)
+  // 정책 승인선 (연차 신청 시 적용)
+  approverEmployeeId  String?
+  ccEmployeeIds       String[]             @default([])
+  // 스마트 연차 촉진 사용
+  smartPromotionEnabled Boolean            @default(false)
   isDefault           Boolean              @default(false)
   isActive            Boolean              @default(true)
   createdAt           DateTime             @default(now())
@@ -860,6 +945,7 @@ model LeavePolicy {
 
   company     Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   leaveType   LeaveType                @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  approver    Employee?                @relation("LeavePolicyApprover", fields: [approverEmployeeId], references: [id], onDelete: SetNull)
   assignments LeavePolicyAssignment[]
 
   @@index([companyId, isActive])
@@ -880,6 +966,72 @@ model LeavePolicyAssignment {
   @@index([employeeId])
   @@index([policyId])
   @@map("leave_policy_assignments")
+}
+
+/// 회사 단위 휴가 설정 (퇴직자 조정 기준 + 연차 촉진 설정). 회사당 1행.
+model CompanyLeaveSettings {
+  id        String @id @default(cuid())
+  companyId String @unique
+  // 퇴직자 연차 조정 기준
+  retirementAdjustMode RetirementAdjustMode @default(EMPLOYEE_FAVORABLE)
+  // 연차 촉진 설정
+  promotionApproverEmployeeId String?
+  promotionCcEmployeeIds      String[] @default([])
+  memberRemindEnabled         Boolean  @default(false) // 구성원 작성 리마인드
+  adminRemindEnabled          Boolean  @default(false) // 관리자 작성 리마인드
+  planNoticeDaysBefore        Int      @default(10)     // 사용 계획일 N일 전 알림 (1·3·5·7·10)
+  // 스마트 촉진 시점 (소멸 N개월 전 + offsetDays)
+  annualPromotionMonthsBefore   Int @default(6)
+  annualPromotionOffsetDays     Int @default(0)
+  monthly1stPromotionMonthsBefore Int @default(3)
+  monthly1stPromotionOffsetDays   Int @default(0)
+  monthly2ndPromotionMonthsBefore Int @default(1)
+  monthly2ndPromotionOffsetDays   Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("company_leave_settings")
+}
+
+/// 연차·월차 촉진 (근로기준법 제61조). worker 스케줄러가 자동 생성.
+model LeavePromotion {
+  id            String                @id @default(cuid())
+  employeeId    String
+  year          Int
+  promotionType LeavePromotionType    // 연차 / 월차 1차 / 월차 2차
+  targetDays    Decimal               // 촉진 대상 일수 (월차 2차는 10~11번째분만)
+  expiryDate    DateTime              @db.Date // 법정 소멸일
+  status        LeavePromotionStatus  @default(REQUESTED)
+  requestedAt   DateTime              @default(now()) // 촉구 시점
+  submittedAt   DateTime?             // 구성원 제출 시점
+  approvedAt    DateTime?
+  // 사용 계획 문서 (통합 결재 인프라 — 전자문서 법적효력)
+  formDocumentId String?              @unique
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  employee     Employee                   @relation("EmployeeLeavePromotions", fields: [employeeId], references: [id], onDelete: Cascade)
+  formDocument FormDocument?              @relation(fields: [formDocumentId], references: [id], onDelete: SetNull)
+  planDates    LeavePromotionPlanDate[]
+
+  @@index([employeeId, year])
+  @@index([status])
+  @@map("leave_promotions")
+}
+
+/// 연차 사용 계획 — 사용 희망일 (촉진 1건당 N개).
+model LeavePromotionPlanDate {
+  id          String   @id @default(cuid())
+  promotionId String
+  planDate    DateTime @db.Date
+  createdAt   DateTime @default(now())
+
+  promotion LeavePromotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@index([promotionId])
+  @@map("leave_promotion_plan_dates")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -924,6 +1076,7 @@ model FormDocument {
   approvalLines ApprovalLine[]
   actions       ApprovalAction[]
   leaveRequest  LeaveRequest?
+  leavePromotion LeavePromotion?
   ccRecipients  DocumentCcRecipient[]
 
   @@index([companyId, status])

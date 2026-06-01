@@ -36,7 +36,7 @@ async function hashPw(plain: string): Promise<string> {
 const DEMO_PW = "Test1234!";
 const COMPANY_CODE = "DEMO-0001";
 const BUSINESS_NUMBER = "000-00-00000";
-const LEAVE_KEY = "annual_demo";
+const LEAVE_KEY = "annual";
 
 /** DEFAULT 역할이 갖는 기본 권한 키 목록 */
 const DEFAULT_ROLE_KEYS = [

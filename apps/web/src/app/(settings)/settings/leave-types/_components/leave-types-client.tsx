@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Lock } from "lucide-react";
+import { Plus, Pencil, Trash2, Lock, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
 import { Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@teamlet/ui";
 import {
   createLeaveTypeAction,
@@ -14,238 +14,582 @@ import type {
   LeaveGrantMethod,
   LeaveGrantUnit,
   LeavePaymentType,
+  LeaveGenderRestriction,
+  LeaveEvidenceRequirement,
+  LeaveUseUnit,
 } from "@teamlet/db";
 
+/* ── 레이블 맵 ─────────────────────────────────────── */
 const GRANT_METHOD_LABEL: Record<LeaveGrantMethod, string> = {
-  ON_REQUEST: "신청 시 차감",
-  ON_OTHER_EXHAUSTED: "다른 휴가 소진 후",
-  MANUAL: "수동 부여",
-  ON_HIRE: "입사 시 자동 부여",
-  PERIODIC: "주기적 부여",
-  ON_TENURE: "근속 기준 부여",
+  ON_REQUEST: "신청 시 부여",
+  ON_OTHER_EXHAUSTED: "연차 소진 시 부여",
+  MANUAL: "관리자가 직접 부여",
+  ON_HIRE: "입사 시 부여",
+  PERIODIC: "반복 부여",
+  ON_TENURE: "근속 시 부여",
 };
 
 const GRANT_UNIT_LABEL: Record<LeaveGrantUnit, string> = {
-  DAY: "일",
-  HOUR: "시간",
-  MINUTE: "분",
-  UNLIMITED: "무제한",
+  DAY: "일 단위 부여",
+  HOUR: "시간 단위 부여",
+  MINUTE: "분 단위 부여",
+  UNLIMITED: "신청하는 만큼 부여",
 };
 
-const PAYMENT_TYPE_LABEL: Record<LeavePaymentType, string> = {
+const PAYMENT_LABEL: Record<LeavePaymentType, string> = {
   PAID: "유급",
   UNPAID: "무급",
-  PARTIAL_PAID: "부분유급",
+  PARTIAL_PAID: "일부 유급",
 };
 
-const PAYMENT_COLORS: Record<LeavePaymentType, string> = {
-  PAID: "bg-green-50 text-green-700",
-  UNPAID: "bg-slate-100 text-slate-600",
-  PARTIAL_PAID: "bg-amber-50 text-amber-700",
+const GENDER_LABEL: Record<LeaveGenderRestriction, string> = {
+  ALL: "모두",
+  MALE: "남성만",
+  FEMALE: "여성만",
 };
 
-type DialogMode = "create" | "edit";
+const EVIDENCE_LABEL: Record<LeaveEvidenceRequirement, string> = {
+  NONE: "없음",
+  BEFORE: "사전 제출",
+  AFTER: "사후 제출",
+};
 
+const USE_UNIT_LABEL: Record<LeaveUseUnit, string> = {
+  DAY: "나눠서 사용 (일)",
+  HALF_DAY: "반차 단위",
+  HOUR: "나눠서 사용 (시간)",
+};
+
+const EMPLOYMENT_TYPES = [
+  { value: "REGULAR", label: "정규직" },
+  { value: "CONTRACT", label: "계약직" },
+  { value: "DISPATCH", label: "파견직" },
+  { value: "DAILY", label: "일용직" },
+  { value: "FREELANCE", label: "프리랜서" },
+  { value: "REGISTERED_OFFICER", label: "등기 임원" },
+  { value: "NON_REGISTERED_OFFICER", label: "비등기 임원" },
+  { value: "COMMISSIONED", label: "위촉직" },
+];
+
+const PERIODIC_CYCLE_OPTS = [
+  { value: "monthly_from_hire", label: "입사 월부터 매월" },
+  { value: "annually_from_hire", label: "입사 연도부터 매년" },
+  { value: "annually_from_2nd", label: "2년 차부터 매년" },
+  { value: "annually_from_3rd", label: "3년 차부터 매년" },
+];
+
+const SELECT_CLS = "rounded-lg border border-border bg-background-primary px-2 py-2 text-sm text-foreground outline-none focus:border-foreground-subtle";
+const INPUT_CLS = "w-full rounded-lg border border-border bg-background-primary px-3 py-2 text-sm text-foreground outline-none focus:border-foreground-subtle";
+
+/* ── 폼 상태 타입 ─────────────────────────────────── */
+type FormState = {
+  name: string;
+  description: string;
+  grantMethod: LeaveGrantMethod;
+  grantUnit: LeaveGrantUnit;
+  grantAmount: string;
+  periodicCycle: string;
+  tenureYears: string;
+  paymentType: LeavePaymentType;
+  partialPayPercent: string;
+  useUnit: LeaveUseUnit;
+  genderRestriction: LeaveGenderRestriction;
+  evidenceRequirement: LeaveEvidenceRequirement;
+  deductOnHoliday: boolean;
+  excludedEmploymentTypes: string[];
+  approverEmployeeId: string;
+  ccEmployeeIds: string[];
+  isActive: boolean;
+};
+
+function defaultForm(): FormState {
+  return {
+    name: "",
+    description: "",
+    grantMethod: "ON_REQUEST",
+    grantUnit: "DAY",
+    grantAmount: "1",
+    periodicCycle: "monthly_from_hire",
+    tenureYears: "1",
+    paymentType: "PAID",
+    partialPayPercent: "",
+    useUnit: "DAY",
+    genderRestriction: "ALL",
+    evidenceRequirement: "NONE",
+    deductOnHoliday: false,
+    excludedEmploymentTypes: [],
+    approverEmployeeId: "",
+    ccEmployeeIds: [],
+    isActive: true,
+  };
+}
+
+function typeToForm(t: LeaveTypeFullItem): FormState {
+  return {
+    name: t.name,
+    description: t.description,
+    grantMethod: t.grantMethod,
+    grantUnit: t.grantUnit,
+    grantAmount: t.grantAmount != null ? String(t.grantAmount) : "",
+    periodicCycle: t.periodicCycle ?? "monthly_from_hire",
+    tenureYears: t.tenureYears != null ? String(t.tenureYears) : "1",
+    paymentType: t.paymentType,
+    partialPayPercent: t.partialPayPercent != null ? String(t.partialPayPercent) : "",
+    useUnit: t.useUnit,
+    genderRestriction: t.genderRestriction,
+    evidenceRequirement: t.evidenceRequirement,
+    deductOnHoliday: t.deductOnHoliday,
+    excludedEmploymentTypes: t.excludedEmploymentTypes,
+    approverEmployeeId: t.approverEmployeeId ?? "",
+    ccEmployeeIds: t.ccEmployeeIds ?? [],
+    isActive: t.isActive,
+  };
+}
+
+/* ── 섹션 라벨 ─────────────────────────────────────── */
+function Field({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-medium text-foreground-muted">
+        {label}
+        {desc && <span className="ml-1 font-normal text-foreground-subtle">— {desc}</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+/* ── 메인 다이얼로그 ────────────────────────────────── */
 function LeaveTypeDialog({
-  open,
-  onClose,
-  initial,
+  open, onClose, initial, employees,
 }: {
   open: boolean;
   onClose: () => void;
   initial?: LeaveTypeFullItem;
+  employees: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const isEdit = !!initial;
   const isSystem = initial?.isSystem ?? false;
 
-  const [name, setName] = useState(initial?.name ?? "");
+  const [form, setForm] = useState<FormState>(() => initial ? typeToForm(initial) : defaultForm());
   const [key, setKey] = useState(initial?.key ?? "");
-  const [description, setDescription] = useState(initial?.description ?? "");
-  const [grantMethod, setGrantMethod] = useState<LeaveGrantMethod>(initial?.grantMethod ?? "ON_REQUEST");
-  const [grantUnit, setGrantUnit] = useState<LeaveGrantUnit>(initial?.grantUnit ?? "DAY");
-  const [grantAmount, setGrantAmount] = useState<string>(
-    initial?.grantAmount != null ? String(initial.grantAmount) : "",
-  );
-  const [paymentType, setPaymentType] = useState<LeavePaymentType>(initial?.paymentType ?? "PAID");
-  const [isActive, setIsActive] = useState(initial?.isActive ?? true);
+  const [extraOpen, setExtraOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function autoKey(v: string) {
-    return v
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^a-z0-9_]/g, "");
+  function set<K extends keyof FormState>(k: K, v: FormState[K]) {
+    setForm((f) => ({ ...f, [k]: v }));
+    setIsDirty(true);
   }
 
-  function handleNameChange(v: string) {
-    setName(v);
-    if (!isEdit) setKey(autoKey(v));
+  function autoKey(v: string) {
+    return v.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+  }
+
+  function handleClose() {
+    if (isDirty && !isEdit) { setShowExitConfirm(true); return; }
+    onClose();
+  }
+
+  // 부여 단위·시간 숨김 조건
+  const hideGrantAmount = form.grantMethod === "MANUAL" || form.grantUnit === "UNLIMITED";
+  const showPeriodicCycle = form.grantMethod === "PERIODIC";
+  const showTenureYears = form.grantMethod === "ON_TENURE";
+
+  function toggleExcluded(val: string) {
+    set("excludedEmploymentTypes",
+      form.excludedEmploymentTypes.includes(val)
+        ? form.excludedEmploymentTypes.filter((v) => v !== val)
+        : [...form.excludedEmploymentTypes, val]
+    );
   }
 
   function handleSubmit() {
-    if (!name.trim()) { setError("이름을 입력해 주세요"); return; }
+    if (!form.name.trim()) { setError("이름을 입력해 주세요"); return; }
     if (!isEdit && !key.trim()) { setError("key를 입력해 주세요"); return; }
     setError(null);
-    const amount = grantUnit === "UNLIMITED" ? null : grantAmount ? parseFloat(grantAmount) : null;
+
+    const amount = hideGrantAmount ? null : form.grantAmount ? parseFloat(form.grantAmount) : null;
+    const partialPay = form.paymentType === "PARTIAL_PAID" && form.partialPayPercent
+      ? parseInt(form.partialPayPercent, 10) : null;
+
     startTransition(async () => {
       const res = isEdit
         ? await updateLeaveTypeAction(initial!.id, {
-            name,
-            description,
-            grantMethod,
-            grantUnit,
-            grantAmount: amount,
-            paymentType,
-            isActive,
+            name: form.name, description: form.description,
+            grantMethod: form.grantMethod, grantUnit: form.grantUnit,
+            grantAmount: amount, paymentType: form.paymentType,
+            partialPayPercent: partialPay,
+            genderRestriction: form.genderRestriction,
+            evidenceRequirement: form.evidenceRequirement,
+            useUnit: form.useUnit,
+            deductOnHoliday: form.deductOnHoliday,
+            periodicCycle: showPeriodicCycle ? form.periodicCycle : null,
+            tenureYears: showTenureYears ? parseInt(form.tenureYears, 10) : null,
+            excludedEmploymentTypes: form.excludedEmploymentTypes,
+            approverEmployeeId: form.approverEmployeeId || null,
+            ccEmployeeIds: form.ccEmployeeIds,
+            isActive: form.isActive,
           })
         : await createLeaveTypeAction({
-            name,
-            key,
-            description,
-            grantMethod,
-            grantUnit,
-            grantAmount: amount,
-            paymentType,
+            name: form.name, key, description: form.description,
+            grantMethod: form.grantMethod, grantUnit: form.grantUnit,
+            grantAmount: amount, paymentType: form.paymentType,
+            partialPayPercent: partialPay,
+            genderRestriction: form.genderRestriction,
+            evidenceRequirement: form.evidenceRequirement,
+            useUnit: form.useUnit,
+            deductOnHoliday: form.deductOnHoliday,
+            periodicCycle: showPeriodicCycle ? form.periodicCycle : null,
+            tenureYears: showTenureYears ? parseInt(form.tenureYears, 10) : null,
+            excludedEmploymentTypes: form.excludedEmploymentTypes,
+            approverEmployeeId: form.approverEmployeeId || null,
+            ccEmployeeIds: form.ccEmployeeIds,
           });
+
       if (res.ok) { onClose(); router.refresh(); }
       else setError(res.error.message);
     });
   }
 
+  const approverName = employees.find((e) => e.id === form.approverEmployeeId)?.name;
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!isPending && !o) onClose(); }}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "휴가 종류 수정" : "휴가 종류 추가"}</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-4 py-1">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-foreground-muted">이름</label>
-            <input
-              className="w-full rounded-lg border border-border bg-background-primary px-3 py-2 text-sm text-foreground outline-none focus:border-foreground-subtle"
-              placeholder="예: 연차, 병가, 경조사"
-              value={name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              disabled={isPending}
-            />
-          </div>
+    <>
+      <Dialog open={open} onOpenChange={(o) => { if (!isPending && !o) handleClose(); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{isEdit ? `${initial!.name} 수정` : "맞춤 휴가 추가"}</DialogTitle>
+          </DialogHeader>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-foreground-muted">
-              키 (key)
-              {isSystem && <span className="ml-1 text-foreground-subtle">(법정 — 변경 불가)</span>}
-            </label>
-            <input
-              className="w-full rounded-lg border border-border bg-background-secondary px-3 py-2 font-mono text-sm text-foreground outline-none focus:border-foreground-subtle disabled:opacity-60"
-              placeholder="예: annual_leave"
-              value={key}
-              onChange={(e) => setKey(autoKey(e.target.value))}
-              disabled={isPending || isEdit}
-            />
+          <div className="flex flex-col gap-4 py-1 max-h-[72vh] overflow-y-auto pr-1">
+            {/* 이름 + key */}
+            <Field label="이름">
+              <input className={INPUT_CLS} placeholder="예: 병가, 경조사" value={form.name}
+                onChange={(e) => {
+                  set("name", e.target.value);
+                  if (!isEdit) setKey(autoKey(e.target.value));
+                }} disabled={isPending} />
+            </Field>
+
             {!isEdit && (
-              <p className="text-[10px] text-foreground-subtle">소문자·숫자·밑줄(_)만 사용. 생성 후 변경 불가.</p>
+              <Field label="키 (key)" desc="소문자·숫자·밑줄만, 생성 후 변경 불가">
+                <input className={`${INPUT_CLS} font-mono opacity-80`}
+                  value={key} onChange={(e) => setKey(autoKey(e.target.value))} disabled={isPending} />
+              </Field>
             )}
-          </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-foreground-muted">설명 <span className="text-foreground-subtle">(선택)</span></label>
-            <input
-              className="w-full rounded-lg border border-border bg-background-primary px-3 py-2 text-sm text-foreground outline-none focus:border-foreground-subtle"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={isPending}
-            />
-          </div>
+            <Field label="설명" desc="선택">
+              <input className={INPUT_CLS} value={form.description}
+                onChange={(e) => set("description", e.target.value)} disabled={isPending} />
+            </Field>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-foreground-muted">부여 방식</label>
-              <select
-                className="rounded-lg border border-border bg-background-primary px-2 py-2 text-sm text-foreground outline-none"
-                value={grantMethod}
-                onChange={(e) => setGrantMethod(e.target.value as LeaveGrantMethod)}
-                disabled={isPending}
-              >
-                {(Object.keys(GRANT_METHOD_LABEL) as LeaveGrantMethod[]).map((v) => (
-                  <option key={v} value={v}>{GRANT_METHOD_LABEL[v]}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-foreground-muted">급여 유형</label>
-              <select
-                className="rounded-lg border border-border bg-background-primary px-2 py-2 text-sm text-foreground outline-none"
-                value={paymentType}
-                onChange={(e) => setPaymentType(e.target.value as LeavePaymentType)}
-                disabled={isPending}
-              >
-                {(Object.keys(PAYMENT_TYPE_LABEL) as LeavePaymentType[]).map((v) => (
-                  <option key={v} value={v}>{PAYMENT_TYPE_LABEL[v]}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+            <div style={{ borderTop: "1px solid var(--border)", margin: "0 -2px" }} />
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-foreground-muted">단위</label>
-              <select
-                className="rounded-lg border border-border bg-background-primary px-2 py-2 text-sm text-foreground outline-none"
-                value={grantUnit}
-                onChange={(e) => setGrantUnit(e.target.value as LeaveGrantUnit)}
-                disabled={isPending}
-              >
-                {(Object.keys(GRANT_UNIT_LABEL) as LeaveGrantUnit[]).map((v) => (
-                  <option key={v} value={v}>{GRANT_UNIT_LABEL[v]}</option>
+            {/* 부여 방법 */}
+            <div>
+              <div style={{ marginBottom: 6, fontSize: 12, fontWeight: 600, color: "var(--fg-muted)" }}>
+                부여 방법 <span style={{ fontWeight: 400, color: "var(--fg-subtle)" }}>— 휴가의 성격에 따라 선택해요.</span>
+              </div>
+              <div style={{ marginBottom: 8, fontSize: 11, fontWeight: 600, color: "var(--fg-subtle)", letterSpacing: "0.04em" }}>조건에 따라 부여</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                {(["ON_REQUEST", "ON_OTHER_EXHAUSTED", "MANUAL", "ON_HIRE"] as const).map((m) => (
+                  <button key={m} type="button" onClick={() => set("grantMethod", m)}
+                    style={{
+                      padding: "5px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 600,
+                      border: `1.5px solid ${form.grantMethod === m ? "var(--primary)" : "var(--border)"}`,
+                      background: form.grantMethod === m ? "var(--primary-soft)" : "var(--bg-primary)",
+                      color: form.grantMethod === m ? "var(--primary)" : "var(--fg-muted)", cursor: "pointer",
+                    }}>
+                    {GRANT_METHOD_LABEL[m]}
+                  </button>
                 ))}
-              </select>
+              </div>
+              <div style={{ marginBottom: 6, fontSize: 11, fontWeight: 600, color: "var(--fg-subtle)", letterSpacing: "0.04em" }}>주기 단위로 부여</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {(["PERIODIC", "ON_TENURE"] as const).map((m) => (
+                  <button key={m} type="button" onClick={() => set("grantMethod", m)}
+                    style={{
+                      padding: "5px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 600,
+                      border: `1.5px solid ${form.grantMethod === m ? "var(--primary)" : "var(--border)"}`,
+                      background: form.grantMethod === m ? "var(--primary-soft)" : "var(--bg-primary)",
+                      color: form.grantMethod === m ? "var(--primary)" : "var(--fg-muted)", cursor: "pointer",
+                    }}>
+                    {GRANT_METHOD_LABEL[m]}
+                  </button>
+                ))}
+              </div>
             </div>
-            {grantUnit !== "UNLIMITED" && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-foreground-muted">기본 부여량 <span className="text-foreground-subtle">(선택)</span></label>
-                <input
-                  type="number"
-                  min={0}
-                  step={0.5}
-                  className="rounded-lg border border-border bg-background-primary px-2 py-2 text-sm text-foreground outline-none focus:border-foreground-subtle"
-                  placeholder="예: 15"
-                  value={grantAmount}
-                  onChange={(e) => setGrantAmount(e.target.value)}
-                  disabled={isPending}
-                />
+
+            {/* 반복 주기 (PERIODIC) */}
+            {showPeriodicCycle && (
+              <Field label="반복 주기" desc="어떤 주기로 부여할지 설정해요.">
+                <select className={SELECT_CLS} value={form.periodicCycle} onChange={(e) => set("periodicCycle", e.target.value)}>
+                  {PERIODIC_CYCLE_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </Field>
+            )}
+
+            {/* 근속 시점 (ON_TENURE) */}
+            {showTenureYears && (
+              <Field label="부여 시점" desc="휴가를 부여할 근속 연수를 선택해요.">
+                <select className={SELECT_CLS} value={form.tenureYears} onChange={(e) => set("tenureYears", e.target.value)}>
+                  {[1,2,3,4,5,6,7,8,9,10].map((y) => (
+                    <option key={y} value={String(y)}>{y}년 근속 시</option>
+                  ))}
+                </select>
+              </Field>
+            )}
+
+            {/* 부여 단위 + 부여량 (MANUAL 제외) */}
+            {form.grantMethod !== "MANUAL" && (
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="부여 단위">
+                  <select className={SELECT_CLS} value={form.grantUnit} onChange={(e) => set("grantUnit", e.target.value as LeaveGrantUnit)}>
+                    {(Object.keys(GRANT_UNIT_LABEL) as LeaveGrantUnit[]).map((v) => (
+                      <option key={v} value={v}>{GRANT_UNIT_LABEL[v]}</option>
+                    ))}
+                  </select>
+                </Field>
+                {!hideGrantAmount && (
+                  <Field label="부여 시간" desc="얼마나 부여할지">
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <input type="number" min={0} step={0.5} className={INPUT_CLS}
+                        placeholder="1" value={form.grantAmount}
+                        onChange={(e) => set("grantAmount", e.target.value)} />
+                      <span style={{ fontSize: 12, color: "var(--fg-muted)", whiteSpace: "nowrap" }}>
+                        {form.grantUnit === "DAY" ? "일" : form.grantUnit === "HOUR" ? "시간" : "분"}
+                      </span>
+                    </div>
+                  </Field>
+                )}
               </div>
             )}
+            {form.grantUnit === "UNLIMITED" && (
+              <p style={{ fontSize: 12, color: "var(--warning, #d97706)" }}>
+                신청하는 만큼 부여됩니다. 부여량에 제약이 없으니 신중하게 선택해주세요.
+              </p>
+            )}
+
+            {/* 사용 단위 */}
+            <Field label="사용 단위" desc="최소 사용 단위를 지정해요.">
+              <select className={SELECT_CLS} value={form.useUnit}
+                onChange={(e) => set("useUnit", e.target.value as LeaveUseUnit)}>
+                {(Object.keys(USE_UNIT_LABEL) as LeaveUseUnit[]).map((v) => (
+                  <option key={v} value={v}>{USE_UNIT_LABEL[v]}</option>
+                ))}
+              </select>
+              {form.useUnit === "HOUR" && (
+                <p style={{ fontSize: 11.5, color: "var(--fg-muted)", marginTop: 4 }}>
+                  시간차 신청 시 최소 30분 단위로 사용할 수 있어요.
+                </p>
+              )}
+            </Field>
+
+            {/* 급여 지급 유무 */}
+            <Field label="급여 지급 유무" desc="이 휴가의 급여 기준을 선택해요.">
+              <select className={SELECT_CLS} value={form.paymentType}
+                onChange={(e) => set("paymentType", e.target.value as LeavePaymentType)}>
+                {(Object.keys(PAYMENT_LABEL) as LeavePaymentType[]).map((v) => (
+                  <option key={v} value={v}>{PAYMENT_LABEL[v]}</option>
+                ))}
+              </select>
+              {form.paymentType === "PARTIAL_PAID" && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                  <span style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>얼마나 유급 휴가로 인정할까요?</span>
+                  <input type="number" min={0} max={100} className={INPUT_CLS} style={{ width: 80 }}
+                    placeholder="0" value={form.partialPayPercent}
+                    onChange={(e) => set("partialPayPercent", e.target.value)} />
+                  <span style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>%</span>
+                </div>
+              )}
+            </Field>
+
+            {/* 승인·참조 사용 */}
+            <Field label="승인·참조 사용" desc="이 휴가 신청 시 고정 적용돼요.">
+              <select className={SELECT_CLS} value={form.approverEmployeeId}
+                onChange={(e) => set("approverEmployeeId", e.target.value)}>
+                <option value="">승인 없음 (즉시 등록)</option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
+                ))}
+              </select>
+              {form.approverEmployeeId && (
+                <p style={{ fontSize: 11.5, color: "var(--fg-muted)", marginTop: 4 }}>
+                  {approverName}님이 모든 {form.name || "이 휴가"} 신청을 승인해요.
+                </p>
+              )}
+            </Field>
+
+            {/* 참조자 */}
+            <Field label="참조자 (고정)" desc="신청마다 자동으로 참조돼요.">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 5 }}>
+                {form.ccEmployeeIds.map((id) => {
+                  const name = employees.find((e) => e.id === id)?.name ?? id;
+                  return (
+                    <span key={id} style={{
+                      display: "inline-flex", alignItems: "center", gap: 4,
+                      padding: "3px 8px", borderRadius: 999, fontSize: 12,
+                      border: "1.5px solid var(--border)", background: "var(--bg-secondary)",
+                    }}>
+                      {name}
+                      <button type="button" onClick={() => set("ccEmployeeIds", form.ccEmployeeIds.filter((x) => x !== id))}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-muted)", lineHeight: 1, padding: 0 }}>×</button>
+                    </span>
+                  );
+                })}
+              </div>
+              <select className={SELECT_CLS} value=""
+                onChange={(e) => {
+                  const id = e.target.value;
+                  if (id && !form.ccEmployeeIds.includes(id)) set("ccEmployeeIds", [...form.ccEmployeeIds, id]);
+                }}>
+                <option value="">참조자 추가…</option>
+                {employees.filter((e) => !form.ccEmployeeIds.includes(e.id)).map((e) => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
+                ))}
+              </select>
+            </Field>
+
+            {/* 추가 설정 (접이식) */}
+            <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+              <button type="button" onClick={() => setExtraOpen((p) => !p)}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "10px 14px", background: "var(--bg-secondary)", border: "none", cursor: "pointer",
+                  fontSize: 13, fontWeight: 600, color: "var(--fg)",
+                }}>
+                <span>추가 설정</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--fg-muted)", fontWeight: 400 }}>
+                  사용 가능 성별 · 증명 자료 · 휴가 차감 설정
+                  {extraOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </span>
+              </button>
+
+              {extraOpen && (
+                <div style={{ padding: "16px 14px", display: "flex", flexDirection: "column", gap: 14 }}>
+                  {/* 성별 */}
+                  <Field label="사용 가능 성별" desc="선택한 성별의 구성원에게만 휴가가 보여져요.">
+                    <select className={SELECT_CLS} value={form.genderRestriction}
+                      onChange={(e) => set("genderRestriction", e.target.value as LeaveGenderRestriction)}>
+                      {(Object.keys(GENDER_LABEL) as LeaveGenderRestriction[]).map((v) => (
+                        <option key={v} value={v}>{GENDER_LABEL[v]}</option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  {/* 증명 자료 */}
+                  <Field label="증명 자료 제출" desc="휴가 사용 전/후에 증명자료를 받을 수 있어요.">
+                    <select className={SELECT_CLS} value={form.evidenceRequirement}
+                      onChange={(e) => set("evidenceRequirement", e.target.value as LeaveEvidenceRequirement)}>
+                      {(Object.keys(EVIDENCE_LABEL) as LeaveEvidenceRequirement[]).map((v) => (
+                        <option key={v} value={v}>{EVIDENCE_LABEL[v]}</option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  {/* 제외 대상 */}
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--fg-muted)", marginBottom: 6 }}>
+                      제외 대상 설정 <span style={{ fontWeight: 400, color: "var(--fg-subtle)" }}>— 선택한 유형에는 휴가가 부여되지 않아요.</span>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {EMPLOYMENT_TYPES.map(({ value, label }) => {
+                        const checked = form.excludedEmploymentTypes.includes(value);
+                        return (
+                          <button key={value} type="button" onClick={() => toggleExcluded(value)}
+                            style={{
+                              padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                              border: `1.5px solid ${checked ? "var(--destructive)" : "var(--border)"}`,
+                              background: checked ? "var(--destructive-soft, #fef2f2)" : "var(--bg-primary)",
+                              color: checked ? "var(--destructive)" : "var(--fg-muted)",
+                            }}>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {form.excludedEmploymentTypes.length > 0 && (
+                      <p style={{ fontSize: 11.5, color: "var(--fg-muted)", marginTop: 6 }}>
+                        구성원 정보 변경에 따라 제외 대상이 달라질 수 있어요.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* 휴일 차감 */}
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                    <div
+                      onClick={() => set("deductOnHoliday", !form.deductOnHoliday)}
+                      style={{
+                        width: 40, height: 22, borderRadius: 999, padding: 2, cursor: "pointer",
+                        background: form.deductOnHoliday ? "var(--primary)" : "var(--border)",
+                        display: "flex", alignItems: "center", transition: "background 0.2s",
+                      }}>
+                      <div style={{
+                        width: 18, height: 18, borderRadius: "50%", background: "white",
+                        transform: form.deductOnHoliday ? "translateX(18px)" : "translateX(0)",
+                        transition: "transform 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                      }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>휴일에 등록된 휴가 차감</div>
+                      <div style={{ fontSize: 11.5, color: "var(--fg-muted)" }}>
+                        휴가 기간에 휴일이 포함된 경우, 휴일에 등록된 휴가도 수량에서 차감돼요.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* 활성화 (수정 시) */}
+            {isEdit && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <input type="checkbox" checked={form.isActive}
+                  onChange={(e) => set("isActive", e.target.checked)}
+                  className="h-4 w-4 rounded border-border" />
+                <span className="text-sm text-foreground">활성화</span>
+                {!form.isActive && <span style={{ fontSize: 11.5, color: "var(--fg-subtle)" }}>비활성 시 구성원 신청 목록에서 숨겨져요.</span>}
+              </label>
+            )}
+
+            {error && <p style={{ fontSize: 12.5, color: "var(--destructive)" }}>{error}</p>}
           </div>
 
-          {isEdit && (
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                disabled={isPending}
-                className="h-4 w-4 rounded border-border accent-foreground"
-              />
-              <span className="text-sm text-foreground">활성화</span>
-            </label>
-          )}
+          <DialogFooter>
+            <Button variant="secondary" disabled={isPending} onClick={handleClose}>취소</Button>
+            <Button disabled={isPending} onClick={handleSubmit}>
+              {isPending ? "저장 중…" : isEdit ? "저장" : "만들기"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          {error && <p className="text-xs text-destructive-700">{error}</p>}
-        </div>
-        <DialogFooter>
-          <Button variant="secondary" disabled={isPending} onClick={onClose}>취소</Button>
-          <Button disabled={isPending} onClick={handleSubmit}>
-            {isPending ? "저장 중…" : isEdit ? "저장" : "추가"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      {/* 이탈 확인 모달 */}
+      <Dialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>변경사항을 저장하지 않고 나가시겠어요?</DialogTitle></DialogHeader>
+          <p className="text-sm text-foreground-muted">작성한 내용이 저장되지 않아요.</p>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowExitConfirm(false)}>이어서 진행하기</Button>
+            <Button variant="destructive" onClick={() => { setShowExitConfirm(false); onClose(); }}>나가기</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
-export function LeaveTypesClient({ types }: { types: LeaveTypeFullItem[] }) {
+/* ── 목록 클라이언트 ────────────────────────────────── */
+export function LeaveTypesClient({
+  types, employees,
+}: {
+  types: LeaveTypeFullItem[];
+  employees: { id: string; name: string }[];
+}) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<LeaveTypeFullItem | null>(null);
@@ -270,9 +614,13 @@ export function LeaveTypesClient({ types }: { types: LeaveTypeFullItem[] }) {
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h3 className="text-[15px] font-bold text-foreground">휴가 종류</h3>
+          <p className="mt-0.5 text-[12.5px] text-foreground-muted">법정 종류는 삭제할 수 없어요. 비활성화만 가능합니다.</p>
+        </div>
         <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-1.5 h-3.5 w-3.5" /> 휴가 종류 추가
+          <Plus className="mr-1.5 h-3.5 w-3.5" /> 맞춤 휴가 추가
         </Button>
       </div>
 
@@ -281,98 +629,46 @@ export function LeaveTypesClient({ types }: { types: LeaveTypeFullItem[] }) {
           <p className="text-sm font-medium text-foreground">등록된 휴가 종류가 없어요</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-background-secondary">
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-foreground-muted">이름</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-foreground-muted">key</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-foreground-muted">부여 방식</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-foreground-muted">급여</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-foreground-muted">상태</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-foreground-muted">작업</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border bg-background-primary">
-              {types.map((t) => (
-                <tr key={t.id} className={t.isActive ? "" : "opacity-50"}>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {t.isSystem && (
-                        <Lock className="h-3 w-3 shrink-0 text-foreground-subtle" />
-                      )}
-                      <span className="font-medium text-foreground">{t.name}</span>
-                      {t.policyCount > 0 && (
-                        <span className="rounded bg-background-secondary px-1 py-0.5 text-[10px] text-foreground-subtle">
-                          정책 {t.policyCount}개
-                        </span>
-                      )}
-                    </div>
-                    {t.description && (
-                      <p className="mt-0.5 text-xs text-foreground-subtle">{t.description}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <code className="rounded bg-background-secondary px-1.5 py-0.5 text-xs text-foreground-muted">
-                      {t.key}
-                    </code>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-foreground-muted">
-                    {GRANT_METHOD_LABEL[t.grantMethod]}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded px-1.5 py-0.5 text-xs ${PAYMENT_COLORS[t.paymentType]}`}>
-                      {PAYMENT_TYPE_LABEL[t.paymentType]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleToggleActive(t)}
-                      disabled={isPending}
-                      className={`rounded px-1.5 py-0.5 text-xs transition-colors ${
-                        t.isActive
-                          ? "bg-green-50 text-green-700 hover:bg-green-100"
-                          : "bg-background-secondary text-foreground-subtle hover:bg-background-secondary"
-                      }`}
-                    >
-                      {t.isActive ? "활성" : "비활성"}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => setEditTarget(t)}
-                        className="rounded-md p-1.5 text-foreground-subtle hover:bg-background-secondary hover:text-foreground transition-colors"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(t)}
-                        disabled={t.isSystem || isPending}
-                        title={t.isSystem ? "법정 휴가는 삭제할 수 없어요" : "삭제"}
-                        className="rounded-md p-1.5 text-foreground-subtle hover:bg-destructive-50 hover:text-destructive-600 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex flex-col divide-y divide-border overflow-hidden rounded-xl border border-border">
+          {types.map((t) => (
+            <div key={t.id} className={`flex items-center gap-3 bg-background-primary px-4 py-3 transition-colors hover:bg-background-secondary/40 ${!t.isActive ? "opacity-50" : ""}`}>
+              <GripVertical className="h-4 w-4 shrink-0 text-foreground-subtle" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {t.isSystem && <Lock className="h-3 w-3 shrink-0 text-foreground-subtle" />}
+                  <span className="font-medium text-foreground text-sm">{t.name}</span>
+                  {t.isRequired && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">필수</span>}
+                  {!t.isActive && <span className="rounded bg-background-secondary px-1.5 py-0.5 text-[10px] text-foreground-subtle">비활성</span>}
+                </div>
+                {t.description && <p className="mt-0.5 text-xs text-foreground-subtle truncate">{t.description}</p>}
+              </div>
+              {/* 승인/참조 뱃지 */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {t.approverEmployeeId ? (
+                  <span className="rounded-full border border-border px-2 py-0.5 text-[10.5px] text-foreground-muted">1단계 승인</span>
+                ) : (
+                  <span className="rounded-full border border-border px-2 py-0.5 text-[10.5px] text-foreground-subtle">승인 없음</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => setEditTarget(t)}
+                  className="rounded-md p-1.5 text-foreground-subtle hover:bg-background-secondary hover:text-foreground transition-colors">
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={() => handleDelete(t)} disabled={t.isSystem || isPending}
+                  title={t.isSystem ? "법정 휴가는 삭제할 수 없어요" : "삭제"}
+                  className="rounded-md p-1.5 text-foreground-subtle hover:bg-destructive-50 hover:text-destructive-600 transition-colors disabled:cursor-not-allowed disabled:opacity-30">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      <LeaveTypeDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-      />
+      <LeaveTypeDialog open={createOpen} onClose={() => setCreateOpen(false)} employees={employees} />
       {editTarget && (
-        <LeaveTypeDialog
-          open
-          onClose={() => setEditTarget(null)}
-          initial={editTarget}
-        />
+        <LeaveTypeDialog open onClose={() => setEditTarget(null)} initial={editTarget} employees={employees} />
       )}
     </>
   );

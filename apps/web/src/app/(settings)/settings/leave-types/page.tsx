@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { listLeaveTypesFull } from "@teamlet/modules/leave";
+import { listEmployees } from "@teamlet/modules/employee";
 import { LeaveTypesClient } from "./_components/leave-types-client";
 
 export const dynamic = "force-dynamic";
@@ -11,19 +12,24 @@ export default async function LeaveTypesPage() {
   if (!session.user.employeeId) redirect("/join-company");
 
   const employeeId = session.user.employeeId;
-  const result = await listLeaveTypesFull(employeeId);
+  const [result, employeesResult] = await Promise.all([
+    listLeaveTypesFull(employeeId),
+    listEmployees(employeeId),
+  ]);
 
   const noAccess = !result.ok;
-  const types = result.ok ? result.data : [];
+  // 연차는 연차 설정(leave-policies)에서 별도 관리 — 맞춤 휴가 목록에서 제외
+  const types = result.ok ? result.data.filter((t) => t.key !== "annual") : [];
+  const employees = employeesResult.ok
+    ? employeesResult.data.filter((e) => e.isActive).map((e) => ({ id: e.id, name: e.name }))
+    : [];
 
   return (
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="h-title">휴가 종류</h1>
-          <p className="h-sub">
-            회사에서 사용하는 휴가 종류를 관리해요
-          </p>
+          <h1 className="h-title">맞춤 휴가</h1>
+          <p className="h-sub">법정·회사 자율 휴가 종류를 관리해요</p>
         </div>
       </div>
 
@@ -37,9 +43,7 @@ export default async function LeaveTypesPage() {
         </div>
       ) : (
         <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
-          <h3 className="mb-1.5 text-[15px] font-bold text-foreground">휴가 종류 목록</h3>
-          <p className="mb-5 text-[12.5px] text-foreground-muted">법정·회사 자율 휴가 종류를 정의해요. 법정 종류는 삭제할 수 없어요.</p>
-          <LeaveTypesClient types={types} />
+          <LeaveTypesClient types={types} employees={employees} />
         </div>
       )}
     </div>

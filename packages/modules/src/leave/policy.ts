@@ -5,6 +5,9 @@ import type {
   MonthlyGrantRule,
   AnnualFirstYearRule,
   DecimalRule,
+  LeaveUseUnit,
+  MonthlyExpiryMode,
+  AnnualExpiryMode,
 } from "@teamlet/db";
 import { catchDomainErr } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
@@ -24,6 +27,19 @@ export type LeavePolicyItem = {
   decimalRule: DecimalRule;
   expiryMonths: number;
   carryoverMaxDays: number | null;
+  useUnit: LeaveUseUnit;
+  hourUnitMinutes: number | null;
+  overdraftEnabled: boolean;
+  overdraftMaxDays: number | null;
+  monthlyExpiryMode: MonthlyExpiryMode;
+  monthlyGraceMonths: number | null;
+  annualExpiryMode: AnnualExpiryMode;
+  annualGraceMonths: number | null;
+  approverEmployeeId: string | null;
+  ccEmployeeIds: string[];
+  approveOnRegister: boolean;
+  approveOnCancel: boolean;
+  smartPromotionEnabled: boolean;
   isDefault: boolean;
   isActive: boolean;
   assignedCount: number;
@@ -39,6 +55,19 @@ export type LeavePolicyCreateInput = {
   decimalRule?: DecimalRule;
   expiryMonths?: number;
   carryoverMaxDays?: number | null;
+  useUnit?: LeaveUseUnit;
+  hourUnitMinutes?: number | null;
+  overdraftEnabled?: boolean;
+  overdraftMaxDays?: number | null;
+  monthlyExpiryMode?: MonthlyExpiryMode;
+  monthlyGraceMonths?: number | null;
+  annualExpiryMode?: AnnualExpiryMode;
+  annualGraceMonths?: number | null;
+  approverEmployeeId?: string | null;
+  ccEmployeeIds?: string[];
+  approveOnRegister?: boolean;
+  approveOnCancel?: boolean;
+  smartPromotionEnabled?: boolean;
   isDefault?: boolean;
   isActive?: boolean;
 };
@@ -82,6 +111,19 @@ export async function listLeavePolicies(
       decimalRule: p.decimalRule,
       expiryMonths: p.expiryMonths,
       carryoverMaxDays: p.carryoverMaxDays ? Number(p.carryoverMaxDays) : null,
+      useUnit: p.useUnit,
+      hourUnitMinutes: p.hourUnitMinutes,
+      overdraftEnabled: p.overdraftEnabled,
+      overdraftMaxDays: p.overdraftMaxDays,
+      monthlyExpiryMode: p.monthlyExpiryMode,
+      monthlyGraceMonths: p.monthlyGraceMonths,
+      annualExpiryMode: p.annualExpiryMode,
+      annualGraceMonths: p.annualGraceMonths,
+      approverEmployeeId: p.approverEmployeeId,
+      ccEmployeeIds: p.ccEmployeeIds,
+      approveOnRegister: p.approveOnRegister,
+      approveOnCancel: p.approveOnCancel,
+      smartPromotionEnabled: p.smartPromotionEnabled,
       isDefault: p.isDefault,
       isActive: p.isActive,
       assignedCount: p._count.assignments,
@@ -129,6 +171,19 @@ export async function createLeavePolicy(
         decimalRule: input.decimalRule ?? "ROUND_UP_DAY",
         expiryMonths: input.expiryMonths ?? 12,
         carryoverMaxDays: input.carryoverMaxDays ?? null,
+        useUnit: input.useUnit ?? "HALF_DAY",
+        hourUnitMinutes: input.hourUnitMinutes ?? null,
+        overdraftEnabled: input.overdraftEnabled ?? false,
+        overdraftMaxDays: input.overdraftMaxDays ?? null,
+        monthlyExpiryMode: input.monthlyExpiryMode ?? "HIRE_DATE_1Y",
+        monthlyGraceMonths: input.monthlyGraceMonths ?? null,
+        annualExpiryMode: input.annualExpiryMode ?? "GRANT_DATE_1Y",
+        annualGraceMonths: input.annualGraceMonths ?? null,
+        approverEmployeeId: input.approverEmployeeId ?? null,
+        ccEmployeeIds: input.ccEmployeeIds ?? [],
+        approveOnRegister: input.approveOnRegister ?? true,
+        approveOnCancel: input.approveOnCancel ?? false,
+        smartPromotionEnabled: input.smartPromotionEnabled ?? false,
         isDefault: input.isDefault ?? false,
       },
     });
@@ -177,6 +232,19 @@ export async function updateLeavePolicy(
         ...(input.decimalRule !== undefined && { decimalRule: input.decimalRule }),
         ...(input.expiryMonths !== undefined && { expiryMonths: input.expiryMonths }),
         ...(input.carryoverMaxDays !== undefined && { carryoverMaxDays: input.carryoverMaxDays }),
+        ...(input.useUnit !== undefined && { useUnit: input.useUnit }),
+        ...(input.hourUnitMinutes !== undefined && { hourUnitMinutes: input.hourUnitMinutes }),
+        ...(input.overdraftEnabled !== undefined && { overdraftEnabled: input.overdraftEnabled }),
+        ...(input.overdraftMaxDays !== undefined && { overdraftMaxDays: input.overdraftMaxDays }),
+        ...(input.monthlyExpiryMode !== undefined && { monthlyExpiryMode: input.monthlyExpiryMode }),
+        ...(input.monthlyGraceMonths !== undefined && { monthlyGraceMonths: input.monthlyGraceMonths }),
+        ...(input.annualExpiryMode !== undefined && { annualExpiryMode: input.annualExpiryMode }),
+        ...(input.annualGraceMonths !== undefined && { annualGraceMonths: input.annualGraceMonths }),
+        ...(input.approverEmployeeId !== undefined && { approverEmployeeId: input.approverEmployeeId }),
+        ...(input.ccEmployeeIds !== undefined && { ccEmployeeIds: input.ccEmployeeIds }),
+        ...(input.approveOnRegister !== undefined && { approveOnRegister: input.approveOnRegister }),
+        ...(input.approveOnCancel !== undefined && { approveOnCancel: input.approveOnCancel }),
+        ...(input.smartPromotionEnabled !== undefined && { smartPromotionEnabled: input.smartPromotionEnabled }),
         ...(input.isDefault !== undefined && { isDefault: input.isDefault }),
         ...(input.isActive !== undefined && { isActive: input.isActive }),
       },
@@ -329,4 +397,28 @@ export async function removeLeavePolicy(
 
   await prisma.leavePolicyAssignment.delete({ where: { id: assignmentId } });
   return ok(undefined);
+}
+
+/** 권한 없이 내 연차 정책의 승인자 정보 조회 (내 휴가 페이지용). */
+export async function getMyAnnualPolicyApprover(
+  employeeId: string,
+): Promise<{ approverId: string | null; approverName: string | null }> {
+  const emp = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { companyId: true },
+  });
+  if (!emp) return { approverId: null, approverName: null };
+
+  const policy = await prisma.leavePolicy.findFirst({
+    where: { companyId: emp.companyId, isActive: true, isDefault: true },
+    select: { approverEmployeeId: true, approver: { select: { name: true } } },
+  }) ?? await prisma.leavePolicy.findFirst({
+    where: { companyId: emp.companyId, isActive: true },
+    select: { approverEmployeeId: true, approver: { select: { name: true } } },
+  });
+
+  return {
+    approverId: policy?.approverEmployeeId ?? null,
+    approverName: policy?.approver?.name ?? null,
+  };
 }

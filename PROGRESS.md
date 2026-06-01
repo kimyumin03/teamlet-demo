@@ -98,6 +98,115 @@
 - 📌 남은 소비처(후속): 프로필 사진 / 증명서 PDF / 이력서·직원제출문서
 - ⚠️ **전부 타입체크만 통과(런타임 미검증) — MinIO 미기동. `pnpm docker:up` 후 실제 업로드 1회 검증 필요.**
 
+## 2026-06-01 세션3 — 휴가 Flex 갭 분석 & 구현 준비 (Opus 파악 페이즈)
+
+> 사용자 지시: **휴가 → 홈 → 구성원** 순으로 디자인+Flex 기능에 맞춰 "제대로 동작"하게 개발.
+> 이 세션(Opus)은 **파악·설계 전담**. 구현(기능개발)은 **Sonnet으로 전환해 이어감**.
+
+**완료한 파악 (전부 `docs/08_휴가_Flex갭분석.md`에 정리)**
+- Flex 휴가 화면 캡처 89장 분석(내 휴가 3탭 + 신청 모달 + 연차/맞춤휴가 설정 전체) — 3 에이전트 병렬
+- 연차/월차 촉진 = `[flex webinar] 2025 연차촉진 웨비나자료.pdf` 정밀 분석(법정 절차·1·2차·회계일/입사일·전자문서 효력·FAQ 엣지케이스)
+- 우리 코드/스키마 대조: **모델은 Flex 수준(부여방법 6종·단위·급여·성별·증명 enum 다 존재), UI/엔진이 못 따라감**이 갭의 본질
+- **법정의무휴가 자동등록 확인**: `tenancy/approval.ts:122` `bootstrapCompanyLeaveTypes()` 동작 중. 단 시드 8종 → Flex 11종 대비 **3종 누락**(산전후 다태아·유산사산·유산사산 다태아)
+- 디자인 패키지 흡수: `C:\Users\PC\OneDrive\바탕 화면\인사관리\`(flex-analysis.md + Hi-Fi HTML/JSX + 토큰). 촉진 4상태 칸반·side sheet·3중 인코딩 등 `docs/08 §7-2`
+
+**구현 우선순위 (Sonnet이 이 순서로 진행 — 상세는 `docs/08 §7`)**
+1. **연차 상세 탭** ⚡ — 데이터(`LeaveTransaction`) 이미 있음, 집계+UI만. 디자인 = `My Leave Hi-Fi.html`
+2. **휴가 신청 모달** — 일수 자동계산(공휴일 제외 영업일) + 반차/시간차 + 다단계 결재선(`RecipientPicker` 재사용)
+3. **맞춤 휴가 폼 확장** — 성별·증명(모델 O/UI X) + 사용단위 + 추가설정 + 부여방법 동적폼
+4. **연차 설정 심화** — 소멸 유예(월차/연차 분리)·당겨쓰기·퇴직자 기준 (모델 확장 필요)
+5. **월차·연차 촉진** — 모델·엔진·worker 스케줄러·화면 신규 (법정 절차, 정확도 최우선, 마지막)
+
+**Sonnet 착수 지점 (#1 — 일부 선작업됨)**
+- ✅ `packages/modules/src/leave/types.ts` — `AnnualLeaveLedgerRow`·`AnnualLeaveLedger` 타입 추가됨
+- ⬜ `balance.ts`에 `getAnnualLeaveLedger(employeeId, year)` 구현: 연차 `LeaveType`의 해당연도 `LeaveTransaction`을 월별 그룹핑(GRANT/EXPIRE/USE/ADJUST) + 누적 잔여 + 입사월/현재월 마커 + 요약
+- ⬜ `index.ts` export 추가
+- ⬜ `/leave/page.tsx` `VALID_TABS`에 `"detail"` 추가 + ledger fetch + `<AnnualDetailTab>` 렌더
+- ⬜ `_components/leave-tabs.tsx`에 "연차 상세" 탭 추가
+- ⬜ `_components/annual-detail-tab.tsx` 신규(요약 카드 4개 + 월별 테이블, `My Leave Hi-Fi.html` 스킨)
+
+**보완 사항(별도)**: 법정휴가 시드 3종 추가(`seed/leave-types.ts`) — 신규 회사 자동 반영, 기존 회사는 재부트스트랩 필요
+
+## 2026-06-01 세션4 — 휴가 기능 구현 (Sonnet)
+
+**구현됨 (타입체크 통과, 런타임 미검증)**
+- ✅ `packages/modules/src/leave/types.ts` — `AnnualLeaveLedger`/`AnnualLeaveLedgerRow` 타입 + `CompanyLeaveRequestItem`에 `formDocumentId` 추가
+- ✅ `packages/modules/src/leave/balance.ts` — `getAnnualLeaveLedger()` 집계 함수 (월별 GRANT/EXPIRE/USE/ADJUST + 누적 잔여 + 입사월/현재월 마커)
+- ✅ `packages/modules/src/leave/index.ts` — `getAnnualLeaveLedger`, `AnnualLeaveLedger`, `AnnualLeaveLedgerRow` export 추가
+- ✅ `packages/modules/src/leave/request.ts` — `listCompanyLeaveRequests` 매핑에 `formDocumentId` 포함
+- ✅ `apps/web/src/app/(app)/leave/page.tsx` — 3탭(개요/연차상세/신청이력) + 연도 파라미터 + `getAnnualLeaveLedger` fetch
+- ✅ `apps/web/src/app/(app)/leave/_components/leave-tabs.tsx` — 연차 상세 탭 추가 + year 파라미터
+- ✅ `apps/web/src/app/(app)/leave/_components/annual-detail-tab.tsx` — 신규: 요약카드 4개 + 월별 원장 테이블 + 연도 네비게이터
+- ✅ `apps/web/src/components/leave/leave-request-button.tsx` — 날짜→일수 자동계산(공휴일/주말 제외) + 반차(오전/오후) + 승인 요청하기
+- ✅ `apps/web/src/lib/actions/leave.ts` — `getHolidayDatesAction` 추가
+- ✅ `apps/web/src/app/(settings)/settings/leave-types/_components/leave-types-client.tsx` — 부여방법 라벨 개선 + 성별/증명 필드 추가 + 추가설정 접이식 섹션 + 목록 컬럼 확장
+- ✅ `apps/web/src/app/(app)/hr/leave/_components/requests-table.tsx` — 기본 탭 "대기"로 변경 + 결재함 링크 + 승인/반려 버튼 + 대기 배너
+- ✅ 데모 시드 `annual_demo` → `annual` key 변경 (DB 직접 적용)
+- ✅ `hr@teamlet.test` 계정에 `leave.balance.manage`, `leave.adjust.execute`, `leave.policy.read`, `leave.type.read` 권한 추가 (DB 직접 적용)
+
+## 2026-06-01 세션5 — 휴가 도메인 통합 설계 + 스키마 토대 (Opus) ★
+
+> 사용자 지시: Flex 3폴더 전수 분석 → 휴가 도메인 **모든 기능·화면·모달·선택지·연계**를 완벽 설계. **개발은 Sonnet**으로 이어가되 **이 설계대로** 진행.
+
+**설계 — `docs/09_휴가도메인_통합설계.md` (휴가 구현 단일 기준 SSOT)**
+- Flex 캡처 전수 분석: `flex`(347장 전영역) + `flexv2`(97 휴가심층) + `teamlet`(37 관리자뷰) — 8 에이전트 병렬
+- 휴가 종류 마스터 18~19종 / 연차설정(정책·부여방식·소멸·촉진·퇴직자) / 맞춤휴가(승인참조·추가설정·동적폼) / 내휴가(신청 2단계 플로우·연차상세·사용계획) / 휴가관리 4탭 / 촉진 7상태 / 승인참조 공통피커 / 연계(워크플로우·알림·승인정책·worker) 전부 verbatim 정리
+- 화면별 모든 모달·이벤트·드롭다운 선택지 문구 포함
+
+**스키마 step 0 완료 — `db push` 적용 + 타입체크 클린 ✅ (런타임 미검증)**
+- enum 추가: `LeaveUseUnit`, `MonthlyExpiryMode`, `AnnualExpiryMode`, `RetirementAdjustMode`, `LeavePromotionType`, `LeavePromotionStatus`
+- `LeaveType` 확장: `useUnit`·`partialPayPercent`·`deductOnHoliday`·`periodicCycle`·`tenureYears`·`excludedEmploymentTypes[]`·`excludedDepartmentIds[]`·`approverEmployeeId`(고정 승인자)·`ccEmployeeIds[]`
+- `LeavePolicy` 확장: `grantStartDate`·`useUnit`·`hourUnitMinutes`·`overdraftEnabled`·`overdraftMaxDays`·`monthlyExpiryMode`·`monthlyGraceMonths`·`annualExpiryMode`·`annualGraceMonths`·`approveOnRegister`·`approveOnCancel`·`approverEmployeeId`·`ccEmployeeIds[]`·`smartPromotionEnabled`
+- `LeaveRequest` 확장: `unitType`·`startTime`·`endTime`·`evidenceFileUrl`
+- 신규 모델: `CompanyLeaveSettings`(퇴직자 조정+촉진 설정) / `LeavePromotion`(촉진) + `LeavePromotionPlanDate`(사용 희망일)
+- Employee 역관계: `leaveTypesAsApprover`·`leavePoliciesAsApprover`·`leavePromotions` / FormDocument: `leavePromotion`
+
+### ⏭️ Sonnet 구현 로드맵 (docs/09 §9 순서 — **이 설계대로**)
+> 모든 화면은 `docs/09` 해당 섹션의 verbatim 문구·선택지·플로우를 그대로 구현. 디자인은 `teamlet-design.css` 토큰 + docs/08 §7-2.
+1. **맞춤 휴가 설정 완성** (`leave-types-client.tsx`) — 승인·참조자(고정) + 사용단위 + 추가설정(제외대상·휴일차감·일부유급%) + 부여방법 동적폼. 모듈: `leave-type.ts` create/update 입력에 새 필드 반영. → docs/09 §4
+2. **휴가 신청 모달** (`leave-type-cards.tsx`) — 휴가별 고정 승인자(`LeaveType.approverEmployeeId`) 자동 적용, `unitType/startTime/endTime` 저장. → §5-3
+3. **연차 설정** (`leave-policies-client.tsx`) — 정책 편집(승인선·승인시점·사용단위·당겨쓰기) + 부여방식/자동소멸 서브모달. → §3-2~3-4
+4. **퇴직자 조정 + 연차 촉진 설정** — `CompanyLeaveSettings` 모듈/액션 + 설정 모달 2종. → §3-5,3-6
+5. **휴가 관리(관리자) 4탭** — 보유현황(side sheet)/사용내역/월별/촉진 + 맞춤휴가부여·연차조정·엑셀업로드 모달. → §6
+6. **촉진 엔진(worker)** + 사용 계획 작성/응답 — `LeavePromotion` 상태머신, 법정 소멸일 계산(회계일/입사일, 월차 1~9/10~11). → §6-5, docs/08 §6
+7. **승인·참조자 공통 피커** 통합 (Anti-Pattern #10). → §7
+- 별도: 법정휴가 시드 누락분 보완(`seed/leave-types.ts`)
+
+## 2026-06-01 세션6 — 휴가 설정 완성도 + 버그 수정 (Sonnet)
+
+**구현됨 (타입체크 통과, 런타임 검증 진행 중)**
+
+### 맞춤 휴가 (#1 완성)
+- `leave-types-client.tsx` — `useUnit`(DAY/HALF_DAY/HOUR) select 교체(`useAllAtOnce` 제거) + `ccEmployeeIds` 참조자 UI + submit 반영
+- `leave-types/page.tsx` — `key !== "annual"` 필터 (연차는 연차 설정에서만 관리)
+
+### 휴가 신청 모달 (#2 완성)
+- `leave-type-cards.tsx` — 헤더 문구: 다일 선택 시 "· 하루 종일" 제거 → `{fmtDate(start)}{start !== end ? ` – ${fmtDate(end)}` : ` · ${unitLabel}`}`
+- 사용 단위 옵션: 단일 날짜일 때만 반차/시간차 노출 (다일 = "하루 종일"만)
+- 종료일 변경 시 unit 자동 리셋
+- 증명 자료 파일 업로드 (사유 아래): `uploadFile("employee-documents")` + 파일명 표시 + 제거 버튼
+- `RequestLeaveInput.evidenceFileUrl` 추가 → `requestLeave` DB 저장 + 액션 전달
+
+### 연차 설정 (#3 완성)
+- `policy.ts` — `LeavePolicyItem`/`CreateInput`/`UpdateInput` 새 필드 14개: useUnit·hourUnitMinutes·overdraftEnabled·overdraftMaxDays·monthlyExpiryMode·monthlyGraceMonths·annualExpiryMode·annualGraceMonths·approverEmployeeId·ccEmployeeIds·approveOnRegister·approveOnCancel·smartPromotionEnabled
+- `leave-policies-client.tsx` 전면 재작성 (docs/09 §3-2~3-4): 기본설정(승인자+참조자+승인시점+사용단위+당겨쓰기) + 연차부여방식(접이식) + 자동소멸(접이식) + 스마트연차촉진
+- `leave-policies/page.tsx` — 제목 "연차 설정" + employees fetch + annualTypeId 전달
+- **연차 유형 자동 upsert**: 페이지 로드 시 `annual` 없으면 prisma 직접 생성 (서버사이드, 항상 실행)
+- `scripts/seed-annual.mjs` — DB에 annual 타입 직접 삽입 (모든 회사 적용 완료)
+- `KR_STATUTORY_LEAVE_TYPES`에 `annual` 추가 (신규 회사도 자동 부트스트랩)
+
+### 퇴직자 조정 + 연차 촉진 설정 (#4 완성)
+- `company-leave-settings.ts` 모듈 + `company-leave-settings.ts` 액션 신규
+- `CompanyLeaveSettingsSection` — 퇴직자 조정 모달(동적 ✓ 예시 테이블) + 연차 촉진 설정 모달(§3-5,3-6)
+- 퇴직자 모달 예시: 모드에 따라 ✓ + 녹색 하이라이트 동적 반영
+
+### 연차 자동부여 엔진 개선
+- `auto-grant.ts` — 기본 정책 fallback (미배정 구성원에게도 자동 적용)
+- `grantAmount=null`일 때 법정 연차 계산: 1년미만=11일, 1년+=15일, 3년+2년마다+1(max25일)
+- `noPolicyCount`: 기본 정책 있으면 항상 0 (전체 구성원 대상)
+
+**⚠️ 런타임 검증 진행 중 — dev 서버 재시작 후 연차 자동부여 테스트 필요**
+
 ## 현재 위치
 
 - **Phase**: 디자인 전면 교체 완료 → 빈 기능 채우기 단계

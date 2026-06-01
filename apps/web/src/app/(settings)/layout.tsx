@@ -17,12 +17,13 @@ export default async function SettingsLayout({ children }: { children: React.Rea
     .join("");
 
   const employeeId = session.user.employeeId;
-  const [canSeeCompany, canSeeOps] = employeeId
+  const [canSeeCompany, canSeeOps, canSeeLeave] = employeeId
     ? await Promise.all([
         hasPermission(employeeId, "company.basic_info.read"),
         hasPermission(employeeId, "permission.role.manage"),
+        hasPermission(employeeId, "leave.policy.manage"),
       ])
-    : [false, false];
+    : [false, false, false];
 
   return (
     <div className="flex min-h-screen bg-[var(--bg)]">
@@ -40,21 +41,26 @@ export default async function SettingsLayout({ children }: { children: React.Rea
           </svg>
           <span className="text-[12.5px] font-semibold text-[var(--fg)]">설정</span>
         </div>
-        <SettingsNav canSeeCompany={canSeeCompany} canSeeOps={canSeeOps} />
+        <SettingsNav canSeeCompany={canSeeCompany} canSeeOps={canSeeOps} canSeeLeave={canSeeLeave} />
       </nav>
 
       {/* 콘텐츠 */}
       <div className="flex-1 min-w-0 overflow-y-auto">
         {/* 상단 바 */}
         <header className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-primary)] px-6">
-          <div />
+          <span className="text-[13px] font-semibold text-[var(--fg)]">설정</span>
           <div className="flex items-center gap-3">
-            <span className="text-[12.5px] text-[var(--fg-muted)]">{session.user.name}</span>
-            <form action={async () => { "use server"; await signOut({ redirectTo: "/login" }); }}>
-              <button type="submit" className="text-[12px] text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors px-2 py-1 rounded hover:bg-[var(--bg-secondary)]">
-                로그아웃
-              </button>
-            </form>
+            <span className="text-[12px] text-[var(--fg-muted)]">{session.user.name}</span>
+            <Link
+              href="/home"
+              className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[12.5px] text-[var(--fg-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--fg)] transition-colors"
+              title="설정 닫기"
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" className="size-3.5">
+                <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z" />
+              </svg>
+              닫기
+            </Link>
           </div>
         </header>
         <main className="px-8 pt-7 pb-16 min-w-0">{children}</main>

@@ -39,6 +39,17 @@ function roundByRule(v: number, rule: DecimalRule): number {
 }
 
 /**
+ * 한국 근로기준법 기준 연차 일수.
+ * yearsWorked = 부여 연도 1월1일 기준 만 근속 연수
+ * 1년 미만: 11일(월차 합산 대체), 1년+: 15일 베이스, 3년+: 2년마다 +1일(최대 25일)
+ */
+function legalAnnualDays(yearsWorked: number): number {
+  if (yearsWorked < 1) return 11;
+  const bonus = yearsWorked >= 3 ? Math.floor((yearsWorked - 1) / 2) : 0;
+  return Math.min(25, 15 + bonus);
+}
+
+/**
  * 부여 일수 계산. 입사 연도 직원은 월할 비례, 그 외는 전액.
  * hireDate 가 부여 연도보다 미래면 0 (아직 입사 전).
  */
@@ -78,6 +89,15 @@ export async function runAnnualLeaveGrant(
   const actor = await loadActor(actorEmployeeId);
   if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
 
+  // 회사의 연차 기본 정책 조회 (미배정 구성원에 사용)
+  const defaultPolicy = await prisma.leavePolicy.findFirst({
+    where: { companyId: actor.companyId, isActive: true, isDefault: true },
+    include: { leaveType: { select: { id: true, name: true, grantAmount: true, isActive: true } } },
+  }) ?? await prisma.leavePolicy.findFirst({
+    where: { companyId: actor.companyId, isActive: true },
+    include: { leaveType: { select: { id: true, name: true, grantAmount: true, isActive: true } } },
+  });
+
   // 회사 내 재직자의 모든 정책 배정 (최신 effectiveDate 우선)
   const assignments = await prisma.leavePolicyAssignment.findMany({
     where: { employee: { companyId: actor.companyId, isActive: true } },
@@ -99,6 +119,29 @@ export async function runAnnualLeaveGrant(
   for (const a of assignments) {
     const key = `${a.employeeId}:${a.policy.leaveTypeId}`;
     if (!latest.has(key)) latest.set(key, a);
+  }
+
+  // 미배정 구성원에게 기본 정책 적용
+  if (defaultPolicy) {
+    const allActive = await prisma.employee.findMany({
+      where: { companyId: actor.companyId, isActive: true },
+      select: { id: true, name: true, hireDate: true },
+    });
+    const assignedIds = new Set(assignments.map((a) => a.employeeId));
+    for (const emp of allActive) {
+      if (assignedIds.has(emp.id)) continue;
+      const key = `${emp.id}:${defaultPolicy.leaveTypeId}`;
+      if (latest.has(key)) continue;
+      latest.set(key, {
+        id: "",
+        employeeId: emp.id,
+        policyId: defaultPolicy.id,
+        effectiveDate: new Date(),
+        createdAt: new Date(),
+        employee: emp,
+        policy: defaultPolicy,
+      } as (typeof assignments)[number]);
+    }
   }
 
   // 이미 부여된 (직원·휴가유형) 집합 — 멱등 검사
@@ -133,16 +176,24 @@ export async function runAnnualLeaveGrant(
       continue;
     }
 
-    const base = policy.leaveType.grantAmount
-      ? Number(policy.leaveType.grantAmount)
-      : 0;
-    if (base <= 0) {
-      skippedNoAmountCount += 1;
+    if (grantedSet.has(key)) {
+      alreadyGrantedCount += 1;
       continue;
     }
 
-    if (grantedSet.has(key)) {
-      alreadyGrantedCount += 1;
+    // grantAmount가 null이면 한국 법정 기준으로 근속 연수 기반 계산
+    let base: number;
+    if (policy.leaveType.grantAmount != null) {
+      base = Number(policy.leaveType.grantAmount);
+    } else if (a.employee.hireDate) {
+      const yearsWorked = year - a.employee.hireDate.getUTCFullYear();
+      base = legalAnnualDays(yearsWorked);
+    } else {
+      base = 15; // 입사일 미상 — 기본 15일
+    }
+
+    if (base <= 0) {
+      skippedNoAmountCount += 1;
       continue;
     }
 
@@ -193,7 +244,7 @@ export async function runAnnualLeaveGrant(
   }
 
   const assignedEmployees = new Set(assignments.map((a) => a.employeeId));
-  const noPolicyCount = Math.max(0, totalActive - assignedEmployees.size);
+  const noPolicyCount = defaultPolicy ? 0 : Math.max(0, totalActive - assignedEmployees.size);
 
   const result: AutoGrantResult = {
     year,

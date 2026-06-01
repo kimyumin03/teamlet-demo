@@ -24,11 +24,18 @@ const GROUPS: { label: string; admin?: boolean; items: NavItem[] }[] = [
     ],
   },
   {
+    label: "휴가",
+    admin: true,
+    items: [
+      { href: "/settings/leave-policies", label: "연차 설정", sub: "연차 정책 · 부여 규칙" },
+      { href: "/settings/leave-types", label: "맞춤 휴가", sub: "법정·자율 휴가 종류 관리" },
+    ],
+  },
+  {
     label: "운영",
     admin: true,
     items: [
       { href: "/settings/permissions", label: "권한 그룹", sub: "역할 · 범위" },
-      { href: "/settings/leave-policies", label: "휴가 정책", sub: "종류 · 부여 규칙" },
       { href: "/settings/approval-policies", label: "워크플로우", sub: "결재선 · 템플릿" },
       { href: "/documents", label: "문서함", sub: "유형 · 보관 · 자동" },
       { href: "/audit-log", label: "감사 로그", sub: "관리자 활동" },
@@ -39,9 +46,11 @@ const GROUPS: { label: string; admin?: boolean; items: NavItem[] }[] = [
 export function SettingsNav({
   canSeeCompany = false,
   canSeeOps = false,
+  canSeeLeave = false,
 }: {
   canSeeCompany?: boolean;
   canSeeOps?: boolean;
+  canSeeLeave?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -49,6 +58,7 @@ export function SettingsNav({
     <nav className="flex flex-col gap-5">
       {GROUPS.map((group) => {
         if (group.label === "회사" && !canSeeCompany) return null;
+        if (group.label === "휴가" && !(canSeeLeave || canSeeOps)) return null;
         if (group.label === "운영" && !canSeeOps) return null;
         return (
           <div key={group.label} className="flex flex-col gap-0.5">

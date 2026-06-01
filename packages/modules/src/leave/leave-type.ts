@@ -6,6 +6,7 @@ import type {
   LeavePaymentType,
   LeaveGenderRestriction,
   LeaveEvidenceRequirement,
+  LeaveUseUnit,
 } from "@teamlet/db";
 import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
@@ -24,8 +25,17 @@ export type LeaveTypeFullItem = {
   grantUnit: LeaveGrantUnit;
   grantAmount: number | null;
   paymentType: LeavePaymentType;
+  partialPayPercent: number | null;
   genderRestriction: LeaveGenderRestriction;
   evidenceRequirement: LeaveEvidenceRequirement;
+  useUnit: LeaveUseUnit;
+  deductOnHoliday: boolean;
+  periodicCycle: string | null;
+  tenureYears: number | null;
+  excludedEmploymentTypes: string[];
+  approverEmployeeId: string | null;
+  approverName: string | null;
+  ccEmployeeIds: string[];
   sortOrder: number;
   policyCount: number;
 };
@@ -38,8 +48,16 @@ export type LeaveTypeCreateInput = {
   grantUnit?: LeaveGrantUnit;
   grantAmount?: number | null;
   paymentType?: LeavePaymentType;
+  partialPayPercent?: number | null;
   genderRestriction?: LeaveGenderRestriction;
   evidenceRequirement?: LeaveEvidenceRequirement;
+  useUnit?: LeaveUseUnit;
+  deductOnHoliday?: boolean;
+  periodicCycle?: string | null;
+  tenureYears?: number | null;
+  excludedEmploymentTypes?: string[];
+  approverEmployeeId?: string | null;
+  ccEmployeeIds?: string[];
 };
 
 export type LeaveTypeUpdateInput = Partial<Omit<LeaveTypeCreateInput, "key">> & {
@@ -61,7 +79,10 @@ export async function listLeaveTypesFull(
 
   const types = await prisma.leaveType.findMany({
     where: { companyId: actor.companyId },
-    include: { _count: { select: { leavePolicies: true } } },
+    include: {
+      _count: { select: { leavePolicies: true } },
+      approver: { select: { name: true } },
+    },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
   });
 
@@ -78,8 +99,17 @@ export async function listLeaveTypesFull(
       grantUnit: t.grantUnit,
       grantAmount: t.grantAmount ? Number(t.grantAmount) : null,
       paymentType: t.paymentType,
+      partialPayPercent: t.partialPayPercent,
       genderRestriction: t.genderRestriction,
       evidenceRequirement: t.evidenceRequirement,
+      useUnit: t.useUnit,
+      deductOnHoliday: t.deductOnHoliday,
+      periodicCycle: t.periodicCycle,
+      tenureYears: t.tenureYears,
+      excludedEmploymentTypes: t.excludedEmploymentTypes,
+      approverEmployeeId: t.approverEmployeeId,
+      approverName: t.approver?.name ?? null,
+      ccEmployeeIds: t.ccEmployeeIds,
       sortOrder: t.sortOrder,
       policyCount: t._count.leavePolicies,
     })),
@@ -125,8 +155,16 @@ export async function createLeaveType(
       grantUnit: input.grantUnit ?? "DAY",
       grantAmount: input.grantAmount ?? null,
       paymentType: input.paymentType ?? "PAID",
+      partialPayPercent: input.partialPayPercent ?? null,
       genderRestriction: input.genderRestriction ?? "ALL",
       evidenceRequirement: input.evidenceRequirement ?? "NONE",
+      useUnit: input.useUnit ?? "DAY",
+      deductOnHoliday: input.deductOnHoliday ?? false,
+      periodicCycle: input.periodicCycle ?? null,
+      tenureYears: input.tenureYears ?? null,
+      excludedEmploymentTypes: input.excludedEmploymentTypes ?? [],
+      approverEmployeeId: input.approverEmployeeId ?? null,
+      ccEmployeeIds: input.ccEmployeeIds ?? [],
       sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
     },
     select: { id: true },
@@ -163,8 +201,16 @@ export async function updateLeaveType(
       ...(input.grantUnit !== undefined && { grantUnit: input.grantUnit }),
       ...(input.grantAmount !== undefined && { grantAmount: input.grantAmount }),
       ...(input.paymentType !== undefined && { paymentType: input.paymentType }),
+      ...(input.partialPayPercent !== undefined && { partialPayPercent: input.partialPayPercent }),
       ...(input.genderRestriction !== undefined && { genderRestriction: input.genderRestriction }),
       ...(input.evidenceRequirement !== undefined && { evidenceRequirement: input.evidenceRequirement }),
+      ...(input.useUnit !== undefined && { useUnit: input.useUnit }),
+      ...(input.deductOnHoliday !== undefined && { deductOnHoliday: input.deductOnHoliday }),
+      ...(input.periodicCycle !== undefined && { periodicCycle: input.periodicCycle }),
+      ...(input.tenureYears !== undefined && { tenureYears: input.tenureYears }),
+      ...(input.excludedEmploymentTypes !== undefined && { excludedEmploymentTypes: input.excludedEmploymentTypes }),
+      ...(input.approverEmployeeId !== undefined && { approverEmployeeId: input.approverEmployeeId }),
+      ...(input.ccEmployeeIds !== undefined && { ccEmployeeIds: input.ccEmployeeIds }),
       ...(input.isActive !== undefined && { isActive: input.isActive }),
       ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
     },

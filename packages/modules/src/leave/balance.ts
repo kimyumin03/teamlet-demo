@@ -3,7 +3,7 @@ import { ok, err, errors, type Result } from "@teamlet/shared";
 import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
 import { getEffectivePermissions } from "../permission/effective";
-import type { GrantLeaveInput, LeaveBalanceSummary, LeaveTypeItem, CompanyLeaveBalanceRow } from "./types";
+import type { GrantLeaveInput, LeaveBalanceSummary, LeaveTypeItem, CompanyLeaveBalanceRow, AnnualLeaveLedger, AnnualLeaveLedgerRow, MonthlyAnnualUsageRow } from "./types";
 
 const ADJUST_EXECUTE = "leave.adjust.execute";
 const BALANCE_MANAGE = "leave.balance.manage";
@@ -19,7 +19,12 @@ export async function listLeaveTypes(
 
   const types = await prisma.leaveType.findMany({
     where: { companyId: emp.companyId, isActive: true },
-    select: { id: true, name: true, key: true, grantAmount: true },
+    select: {
+      id: true, name: true, key: true, grantAmount: true,
+      grantMethod: true, grantUnit: true, paymentType: true, evidenceRequirement: true,
+      approverEmployeeId: true,
+      approver: { select: { name: true } },
+    },
     orderBy: { sortOrder: "asc" },
   });
 
@@ -29,6 +34,12 @@ export async function listLeaveTypes(
       name: t.name,
       key: t.key,
       grantAmount: t.grantAmount ? Number(t.grantAmount) : null,
+      grantMethod: t.grantMethod,
+      grantUnit: t.grantUnit,
+      paymentType: t.paymentType,
+      evidenceRequirement: t.evidenceRequirement,
+      approverEmployeeId: t.approverEmployeeId,
+      approverName: t.approver?.name ?? null,
     })),
   );
 }
@@ -324,4 +335,151 @@ export async function adjustLeave(
   ]);
 
   return ok(undefined);
+}
+
+/** 연차 상세 탭 — 연도별 월별 원장 집계.
+ *  LeaveTransaction(key="annual")을 월별로 그룹핑해 GRANT/EXPIRE/USE/ADJUST 분류 + 누적 잔여.
+ */
+export async function getAnnualLeaveLedger(
+  employeeId: string,
+  year: number,
+): Promise<Result<AnnualLeaveLedger>> {
+  const emp = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { companyId: true, hireDate: true },
+  });
+  if (!emp) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
+
+  const annualType = await prisma.leaveType.findFirst({
+    where: { companyId: emp.companyId, key: "annual", isActive: true },
+    select: { id: true },
+  });
+
+  if (!annualType) {
+    return ok({ year, hasAnnualType: false, rows: [], summary: { granted: 0, expired: 0, used: 0, adjusted: 0 } });
+  }
+
+  const txs = await prisma.leaveTransaction.findMany({
+    where: {
+      employeeId,
+      leaveTypeId: annualType.id,
+      occurredAt: {
+        gte: new Date(`${year}-01-01`),
+        lt: new Date(`${year + 1}-01-01`),
+      },
+    },
+    orderBy: { occurredAt: "asc" },
+  });
+
+  const now = new Date();
+  const currentMonth = now.getFullYear() === year ? now.getMonth() + 1 : (year < now.getFullYear() ? 12 : 0);
+  const hireDate = emp.hireDate ? new Date(emp.hireDate) : null;
+  const hireMonth = hireDate && hireDate.getFullYear() === year ? hireDate.getMonth() + 1 : null;
+
+  type MonthAgg = { granted: number; expired: number; used: number; adjusted: number };
+  const monthMap: MonthAgg[] = Array.from({ length: 13 }, () => ({ granted: 0, expired: 0, used: 0, adjusted: 0 }));
+
+  for (const tx of txs) {
+    const m = new Date(tx.occurredAt).getMonth() + 1;
+    const days = Number(tx.days);
+    const agg = monthMap[m]!;
+    if (tx.txType === "GRANT") agg.granted += days;
+    else if (tx.txType === "EXPIRE") agg.expired += days;
+    else if (tx.txType === "USE") agg.used += days;
+    else if (tx.txType === "ADJUST") agg.adjusted += days;
+  }
+
+  let cumulative = 0;
+  const rows: AnnualLeaveLedgerRow[] = [];
+  const summary = { granted: 0, expired: 0, used: 0, adjusted: 0 };
+
+  for (let m = 1; m <= 12; m++) {
+    const { granted, expired, used, adjusted } = monthMap[m]!;
+    cumulative = cumulative + granted - expired - used + adjusted;
+    summary.granted += granted;
+    summary.expired += expired;
+    summary.used += used;
+    summary.adjusted += adjusted;
+    rows.push({
+      month: m,
+      granted,
+      expired,
+      used,
+      adjusted,
+      remaining: Math.max(0, cumulative),
+      isHireMonth: hireMonth === m,
+      isCurrentMonth: currentMonth === m,
+    });
+  }
+
+  return ok({ year, hasAnnualType: true, rows, summary });
+}
+
+export async function listMonthlyAnnualUsage(
+  actorEmployeeId: string,
+  year: number,
+): Promise<Result<MonthlyAnnualUsageRow[]>> {
+  try {
+    await assertPermission(actorEmployeeId, BALANCE_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const emp = await prisma.employee.findUnique({
+    where: { id: actorEmployeeId },
+    select: { companyId: true },
+  });
+  if (!emp) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
+
+  const annualType = await prisma.leaveType.findFirst({
+    where: { companyId: emp.companyId, key: "annual" },
+    select: { id: true },
+  });
+  if (!annualType) return ok([]);
+
+  const [employees, balances, txns] = await Promise.all([
+    prisma.employee.findMany({
+      where: { companyId: emp.companyId, employmentStatus: { not: "RESIGNED" } },
+      select: { id: true, name: true, employeeNumber: true, hireDate: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.leaveBalance.findMany({
+      where: { leaveTypeId: annualType.id, year },
+      select: { employeeId: true, grantedDays: true, usedDays: true, adjustedDays: true },
+    }),
+    prisma.leaveTransaction.findMany({
+      where: {
+        leaveTypeId: annualType.id,
+        txType: "USE",
+        occurredAt: { gte: new Date(`${year}-01-01`), lt: new Date(`${year + 1}-01-01`) },
+      },
+      select: { employeeId: true, occurredAt: true, days: true },
+    }),
+  ]);
+
+  const balanceMap = new Map(balances.map((b) => [b.employeeId, b]));
+  const txByEmpMonth = new Map<string, number[]>();
+  for (const tx of txns) {
+    const month = tx.occurredAt.getMonth(); // 0-based
+    if (!txByEmpMonth.has(tx.employeeId)) txByEmpMonth.set(tx.employeeId, Array(12).fill(0));
+    const arr = txByEmpMonth.get(tx.employeeId);
+    if (arr) arr[month] = (arr[month] ?? 0) + Number(tx.days);
+  }
+
+  return ok(
+    employees.map((e) => {
+      const bal = balanceMap.get(e.id);
+      const granted = bal ? Number(bal.grantedDays) : 0;
+      const used = bal ? Number(bal.usedDays) : 0;
+      const adjusted = bal ? Number(bal.adjustedDays) : 0;
+      return {
+        employeeId: e.id,
+        employeeName: e.name,
+        employeeNumber: e.employeeNumber,
+        hireDate: e.hireDate,
+        remainingDays: Math.max(0, granted + adjusted - used),
+        monthlyUsage: txByEmpMonth.get(e.id) ?? Array(12).fill(0),
+      };
+    }),
+  );
 }

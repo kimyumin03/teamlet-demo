@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requestLeave, approveLeave, rejectLeave, cancelLeave, grantLeave, processLeaveExpiry } from "@teamlet/modules/leave";
+import { listCompanyHolidays } from "@teamlet/modules/tenancy";
 import { createNotification } from "@teamlet/modules/notification";
 import { toApiResponse, type ApiResponse } from "@teamlet/shared";
 import { auth } from "@/auth";
@@ -21,6 +22,7 @@ export async function requestLeaveAction(input: {
   endDate: string;
   days: number;
   reason?: string;
+  evidenceFileUrl?: string;
 }): Promise<ApiResponse<{ id: string }>> {
   const employeeId = await requireEmployee();
   return toApiResponse(
@@ -32,6 +34,7 @@ export async function requestLeaveAction(input: {
       endDate: new Date(input.endDate),
       days: input.days,
       reason: input.reason,
+      evidenceFileUrl: input.evidenceFileUrl,
     }),
   );
 }
@@ -113,4 +116,12 @@ export async function processLeaveExpiryAction(
 ): Promise<ApiResponse<{ expired: number; carriedOver: number }>> {
   const actorId = await requireEmployee();
   return toApiResponse(await processLeaveExpiry(actorId, year));
+}
+
+/** 공휴일 날짜 문자열 목록 (YYYY-MM-DD) — 신청 모달 일수 자동계산용. */
+export async function getHolidayDatesAction(year: number): Promise<string[]> {
+  const employeeId = await requireEmployee();
+  const result = await listCompanyHolidays(employeeId, year);
+  if (!result.ok) return [];
+  return result.data.map((h) => new Date(h.date).toISOString().slice(0, 10));
 }

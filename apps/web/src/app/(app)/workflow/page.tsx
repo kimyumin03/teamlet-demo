@@ -3,9 +3,12 @@ import { redirect } from "next/navigation";
 import { listMyDocuments, listPendingApprovals, listFormTemplates, listCcDocuments } from "@teamlet/modules/workflow";
 import type { CcDocumentItem, FormDocumentKind } from "@teamlet/modules/workflow";
 import { listEmployees } from "@teamlet/modules/employee";
+import { listPendingMemberships } from "@teamlet/modules/tenancy";
+import { hasPermission } from "@teamlet/modules/permission";
 import { auth } from "@/auth";
 import { CreateDocumentButton } from "@/components/workflow/create-document-button";
 import { WorkflowClient } from "./_components/workflow-client";
+import { JoinRequestsPanel } from "./_components/join-requests-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +28,15 @@ export default async function WorkflowPage({
   const { box = "mine", status = "active" } = await searchParams;
   const employeeId = session.user.employeeId;
 
-  const [myDocsResult, pendingResult, ccDocsResult, employeesResult, templatesResult] = await Promise.all([
+  const canManageMembers = await hasPermission(employeeId, "member.directory.manage");
+
+  const [myDocsResult, pendingResult, ccDocsResult, employeesResult, templatesResult, joinRequestsResult] = await Promise.all([
     listMyDocuments(employeeId),
     listPendingApprovals(employeeId),
     listCcDocuments(employeeId),
     listEmployees(employeeId),
     listFormTemplates(employeeId),
+    canManageMembers ? listPendingMemberships(employeeId) : Promise.resolve(null),
   ]);
 
   const myDocs = myDocsResult.ok ? myDocsResult.data : [];
@@ -40,6 +46,7 @@ export default async function WorkflowPage({
     ? employeesResult.data.filter((e) => e.id !== employeeId && e.employmentStatus === "ACTIVE")
     : [];
   const templates = templatesResult.ok ? templatesResult.data.filter((t) => t.isActive) : [];
+  const joinRequests = joinRequestsResult?.ok ? joinRequestsResult.data : [];
 
   const urgentPending = pending.filter((p) => daysSince(p.createdAt) >= 3);
   const inProgressDocs = myDocs.filter((d) => d.status === "IN_PROGRESS");
@@ -99,6 +106,11 @@ export default async function WorkflowPage({
           <span className="delta">참조자로 지정된 문서</span>
         </div>
       </div>
+
+      {/* 가입 신청 대기 (권한 있는 경우만) */}
+      {canManageMembers && joinRequests.length > 0 && (
+        <JoinRequestsPanel items={joinRequests} />
+      )}
 
       {/* 클라이언트 — 박스 전환 + 탭 + 필터 + 목록 */}
       <WorkflowClient

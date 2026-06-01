@@ -130,12 +130,8 @@ export async function listEmployeeLeaveHistory(
 export async function requestLeave(
   input: RequestLeaveInput,
 ): Promise<Result<{ id: string }>> {
-  const { employeeId, leaveTypeId, approverId, startDate, endDate, days, reason } =
+  const { employeeId, leaveTypeId, approverId, startDate, endDate, days, reason, evidenceFileUrl } =
     input;
-
-  if (approverId === employeeId) {
-    return err(errors.validation("본인을 결재자로 지정할 수 없어요"));
-  }
 
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
@@ -151,15 +147,21 @@ export async function requestLeave(
     return err(errors.validation("비활성 휴가 종류예요"));
   }
 
-  const approver = await prisma.employee.findUnique({
-    where: { id: approverId },
-    select: { companyId: true, isActive: true },
-  });
-  if (!approver || approver.companyId !== employee.companyId) {
-    return err(errors.notFound("결재자를 찾을 수 없어요"));
-  }
-  if (!approver.isActive) {
-    return err(errors.validation("비활성 구성원은 결재자로 지정할 수 없어요"));
+  const needsApproval = !!approverId;
+  if (needsApproval) {
+    if (approverId === employeeId) {
+      return err(errors.validation("본인을 결재자로 지정할 수 없어요"));
+    }
+    const approver = await prisma.employee.findUnique({
+      where: { id: approverId },
+      select: { companyId: true, isActive: true },
+    });
+    if (!approver || approver.companyId !== employee.companyId) {
+      return err(errors.notFound("결재자를 찾을 수 없어요"));
+    }
+    if (!approver.isActive) {
+      return err(errors.validation("비활성 구성원은 결재자로 지정할 수 없어요"));
+    }
   }
 
   const year = startDate.getFullYear();
@@ -194,6 +196,7 @@ export async function requestLeave(
   // 휴가 신청 = FormDocument(LEAVE_REQUEST) + 결재선 — 통합 결재 인프라 경유.
   // 최종 승인/반려는 워크플로우 approveDocument/rejectDocument 가 finalize 를 호출.
   const created = await prisma.$transaction(async (tx) => {
+    const docStatus = needsApproval ? "IN_PROGRESS" : "APPROVED";
     const doc = await tx.formDocument.create({
       data: {
         companyId: employee.companyId,
@@ -207,15 +210,19 @@ export async function requestLeave(
           endDate: endStr,
           days,
           reason: reason ?? "",
+          ...(evidenceFileUrl && { evidenceFileUrl }),
         },
-        status: "IN_PROGRESS",
+        status: docStatus,
       },
       select: { id: true },
     });
-    await tx.approvalLine.create({
-      data: { documentId: doc.id, step: 1, approverId, status: "PENDING" },
-    });
-    return tx.leaveRequest.create({
+    if (needsApproval) {
+      await tx.approvalLine.create({
+        data: { documentId: doc.id, step: 1, approverId: approverId!, status: "PENDING" },
+      });
+    }
+    const leaveStatus = needsApproval ? "PENDING" : "APPROVED";
+    const req = await tx.leaveRequest.create({
       data: {
         employeeId,
         leaveTypeId,
@@ -223,10 +230,32 @@ export async function requestLeave(
         endDate,
         days,
         reason: reason ?? "",
+        status: leaveStatus,
         formDocumentId: doc.id,
+        ...(evidenceFileUrl && { evidenceFileUrl }),
       },
       select: { id: true },
     });
+    // 승인자 없으면 즉시 잔여 차감 + 원장 기록
+    if (!needsApproval) {
+      const yr = startDate.getFullYear();
+      await tx.leaveTransaction.create({
+        data: {
+          employeeId, leaveTypeId,
+          category: "ANNUAL",
+          txType: "USE",
+          days,
+          reason: reason ?? "휴가 사용 (자동 승인)",
+          actorId: employeeId,
+        },
+      });
+      await tx.leaveBalance.upsert({
+        where: { employeeId_leaveTypeId_year: { employeeId, leaveTypeId, year: yr } },
+        create: { employeeId, leaveTypeId, year: yr, grantedDays: 0, usedDays: days },
+        update: { usedDays: { increment: days } },
+      });
+    }
+    return req;
   });
 
   return ok(created);
@@ -446,6 +475,7 @@ export async function listCompanyLeaveRequests(
       reason: r.reason,
       status: r.status,
       createdAt: r.createdAt,
+      formDocumentId: r.formDocumentId ?? null,
     })),
   );
 }

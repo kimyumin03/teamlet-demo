@@ -28,6 +28,7 @@ export type RequestLeaveInput = {
   endDate: Date;
   days: number;
   reason?: string;
+  evidenceFileUrl?: string;
 };
 
 export type LeaveTypeItem = {
@@ -35,6 +36,12 @@ export type LeaveTypeItem = {
   name: string;
   key: string;
   grantAmount: number | null;
+  grantMethod: string;
+  grantUnit: string;
+  paymentType: string;
+  evidenceRequirement: string;
+  approverEmployeeId: string | null;
+  approverName: string | null;
 };
 
 export type PendingLeaveRequestItem = {
@@ -60,6 +67,26 @@ export type LeaveRequestItem = {
   createdAt: Date;
 };
 
+/** 연차 상세 — 월별 원장 한 행 (자동부여/소멸/사용/조정 + 누적 잔여). */
+export type AnnualLeaveLedgerRow = {
+  month: number; // 1-12
+  granted: number; // 자동 부여 (GRANT)
+  expired: number; // 소멸 (EXPIRE)
+  used: number; // 사용 (USE)
+  adjusted: number; // 조정 (ADJUST)
+  remaining: number; // 해당 월말 누적 잔여
+  isHireMonth: boolean;
+  isCurrentMonth: boolean;
+};
+
+/** 연차 상세 탭 데이터 — 월별 원장 + 연간 요약. */
+export type AnnualLeaveLedger = {
+  year: number;
+  hasAnnualType: boolean;
+  rows: AnnualLeaveLedgerRow[];
+  summary: { granted: number; expired: number; used: number; adjusted: number };
+};
+
 export type CompanyLeaveBalanceRow = {
   employeeId: string;
   employeeName: string;
@@ -78,6 +105,15 @@ export type CompanyLeaveBalanceRow = {
   }[];
 };
 
+export type MonthlyAnnualUsageRow = {
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string | null;
+  hireDate: Date | null;
+  remainingDays: number;
+  monthlyUsage: number[]; // 인덱스 0=1월 ~ 11=12월
+};
+
 export type CompanyLeaveRequestItem = {
   id: string;
   employeeId: string;
@@ -90,4 +126,5 @@ export type CompanyLeaveRequestItem = {
   reason: string;
   status: LeaveRequestStatus;
   createdAt: Date;
+  formDocumentId: string | null;
 };

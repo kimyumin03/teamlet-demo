@@ -162,12 +162,33 @@ export default async function DocumentDetailPage({
                 </dl>
               ) : (
                 <dl className="flex flex-col gap-4">
-                  {Object.entries(doc.formData).map(([k, v]) => (
-                    <div key={k}>
-                      <dt className="mb-0.5 text-[11.5px] text-foreground-subtle">{k}</dt>
-                      <dd className="text-[13px] text-foreground whitespace-pre-wrap">{String(v)}</dd>
-                    </div>
-                  ))}
+                  {Object.entries(doc.formData).map(([k, v]) => {
+                    if (k === "leaveTypeId") return null;
+                    const label: Record<string, string> = {
+                      leaveTypeName: "휴가 종류", startDate: "시작일", endDate: "종료일",
+                      days: "사용 일수", reason: "사유", evidenceFileUrl: "증명 자료",
+                    };
+                    if (k === "evidenceFileUrl" && typeof v === "string") {
+                      const fileName = v.split("/").pop() ?? "첨부파일";
+                      return (
+                        <div key={k}>
+                          <dt className="mb-0.5 text-[11.5px] text-foreground-subtle">{label[k] ?? k}</dt>
+                          <dd>
+                            <a href={v} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-[13px] text-primary hover:underline">
+                              📎 {fileName}
+                            </a>
+                          </dd>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={k}>
+                        <dt className="mb-0.5 text-[11.5px] text-foreground-subtle">{label[k] ?? k}</dt>
+                        <dd className="text-[13px] text-foreground whitespace-pre-wrap">{String(v)}</dd>
+                      </div>
+                    );
+                  })}
                 </dl>
               )}
             </div>

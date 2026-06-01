@@ -34,6 +34,19 @@ export type LeaveTypeSeed = {
 
 export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   {
+    key: "annual",
+    name: "연차",
+    description: "연차유급휴가 (정책 기반 자동 부여 — 입사 1년 미만 월차, 1년 이상 15일~25일)",
+    isSystem: true,
+    isRequired: true,
+    grantMethod: "PERIODIC",
+    grantUnit: "DAY",
+    grantAmount: null,
+    paymentType: "PAID",
+    genderRestriction: "ALL",
+    evidenceRequirement: "NONE",
+  },
+  {
     key: "family_care",
     name: "가족돌봄휴가",
     description: "가족의 질병·사고·노령 또는 자녀 양육 사유 (연 최대 10일, 무급)",
