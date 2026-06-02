@@ -43,7 +43,7 @@ for (const company of companies) {
     await prisma.leaveType.upsert({
       where: { companyId_key: { companyId: company.id, key: lt.key } },
       create: { companyId: company.id, isSystem: true, isActive: true, ...lt },
-      update: { name: lt.name, description: lt.description, grantMethod: lt.grantMethod, isRequired: lt.isRequired },
+      update: { name: lt.name, description: lt.description, grantMethod: lt.grantMethod, isRequired: lt.isRequired, grantAmount: lt.grantAmount ?? null },
     });
   }
   console.log(`  ✓ ${company.name}`);
