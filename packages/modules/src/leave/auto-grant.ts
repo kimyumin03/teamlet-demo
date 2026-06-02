@@ -39,33 +39,62 @@ function roundByRule(v: number, rule: DecimalRule): number {
 }
 
 /**
- * 한국 근로기준법 기준 연차 일수.
- * yearsWorked = 부여 연도 1월1일 기준 만 근속 연수
- * 1년 미만: 11일(월차 합산 대체), 1년+: 15일 베이스, 3년+: 2년마다 +1일(최대 25일)
+ * 부여 연도 1월 1일 기준 만 근속 개월 수.
+ * 입사일 day-of-month > 1이면 해당 월은 미완성으로 처리.
+ * 예) 2025-12-31 입사 → 2026-01-01 기준 0개월 (하루)
+ *     2025-01-01 입사 → 2026-01-01 기준 12개월 (만 1년)
+ *     2025-01-15 입사 → 2026-01-01 기준 11개월 (1일이 15일 미만)
  */
-function legalAnnualDays(yearsWorked: number): number {
-  if (yearsWorked < 1) return 11;
-  const bonus = yearsWorked >= 3 ? Math.floor((yearsWorked - 1) / 2) : 0;
+function completedMonthsAsOf(hireDate: Date, grantYear: number): number {
+  const hireTotalMonths = hireDate.getUTCFullYear() * 12 + hireDate.getUTCMonth();
+  const jan1TotalMonths = grantYear * 12; // 1월 = 0
+  const delta = jan1TotalMonths - hireTotalMonths;
+  // 입사일이 1일 초과면 해당 월 미완성 → 1 차감
+  return Math.max(0, hireDate.getUTCDate() > 1 ? delta - 1 : delta);
+}
+
+/**
+ * 한국 근로기준법 §60 기준 연차 일수.
+ * tenureYears: 부여 연도 1월1일 기준 만 근속 연수 (completedMonthsAsOf / 12)
+ *
+ * 근속 연수별 연차 일수:
+ *  0년(1년 미만) → 11일 (월 1일 × 최대 11개월, 월할 부여 MVP 대체)
+ *  1년 → 15일 / 2년 → 15일
+ *  3년 → 16일 / 4년 → 16일
+ *  5년 → 17일 / 6년 → 17일
+ *  ...3년부터 2년마다 +1일, 최대 25일
+ */
+function legalAnnualDays(tenureYears: number): number {
+  if (tenureYears < 1) return 11;
+  const bonus = tenureYears >= 3 ? Math.floor((tenureYears - 1) / 2) : 0;
   return Math.min(25, 15 + bonus);
 }
 
 /**
- * 부여 일수 계산. 입사 연도 직원은 월할 비례, 그 외는 전액.
- * hireDate 가 부여 연도보다 미래면 0 (아직 입사 전).
+ * 실제 부여 일수 계산 (회계연도 모드).
+ * - 입사 연도(hireYear === grantYear): 입사월~12월 비례
+ * - 1년 미만 재직(tenureYears 0, hireYear < grantYear): 전액 11일
+ *   (월별 스케줄러 미도입으로 MVP 근사치 — 이중 부여는 멱등 키로 차단)
+ * - 1년 이상 재직: legalAnnualDays(tenureYears) 전액
  */
 function entitledDays(
   base: number,
   hireDate: Date | null,
-  year: number,
+  grantYear: number,
   rule: DecimalRule,
 ): number {
   if (!hireDate) return roundByRule(base, rule);
   const hireYear = hireDate.getUTCFullYear();
-  if (hireYear > year) return 0;
-  if (hireYear < year) return roundByRule(base, rule);
-  // 입사 연도 — 입사월(0-11)부터 연말까지 개월수로 비례
-  const monthsWorked = 12 - hireDate.getUTCMonth();
-  return roundByRule((base * monthsWorked) / 12, rule);
+  if (hireYear > grantYear) return 0; // 아직 입사 전
+
+  if (hireYear === grantYear) {
+    // 입사 연도 — 입사월(0-11)부터 연말까지 개월수로 비례
+    const monthsInGrantYear = 12 - hireDate.getUTCMonth();
+    return roundByRule((base * monthsInGrantYear) / 12, rule);
+  }
+
+  // 이전 연도 입사 → 전액 (tenureYears 는 호출부에서 이미 정확히 계산됨)
+  return roundByRule(base, rule);
 }
 
 /**
@@ -181,13 +210,14 @@ export async function runAnnualLeaveGrant(
       continue;
     }
 
-    // grantAmount가 null이면 한국 법정 기준으로 근속 연수 기반 계산
+    // grantAmount가 null이면 한국 법정 기준으로 만 근속 연수 기반 계산
     let base: number;
     if (policy.leaveType.grantAmount != null) {
       base = Number(policy.leaveType.grantAmount);
     } else if (a.employee.hireDate) {
-      const yearsWorked = year - a.employee.hireDate.getUTCFullYear();
-      base = legalAnnualDays(yearsWorked);
+      const months = completedMonthsAsOf(a.employee.hireDate, year);
+      const tenureYears = Math.floor(months / 12);
+      base = legalAnnualDays(tenureYears);
     } else {
       base = 15; // 입사일 미상 — 기본 15일
     }
