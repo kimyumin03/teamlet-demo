@@ -1,6 +1,7 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
 import { finalizeLeaveFromApprovedDocument, finalizeLeaveFromRejectedDocument } from "../leave/request";
+import { finalizeLeavePlanFromDocument } from "../leave/promotion";
 
 export async function approveDocument(
   actorId: string,
@@ -57,6 +58,9 @@ export async function approveDocument(
   if (docApproved && line.document.kind === "LEAVE_REQUEST") {
     await finalizeLeaveFromApprovedDocument(line.documentId);
   }
+  if (docApproved && line.document.kind === "LEAVE_PLAN") {
+    await finalizeLeavePlanFromDocument(line.documentId, true);
+  }
 
   return ok(undefined);
 }
@@ -93,6 +97,9 @@ export async function rejectDocument(
 
   if (line.document.kind === "LEAVE_REQUEST") {
     await finalizeLeaveFromRejectedDocument(line.documentId);
+  }
+  if (line.document.kind === "LEAVE_PLAN") {
+    await finalizeLeavePlanFromDocument(line.documentId, false);
   }
 
   return ok(undefined);

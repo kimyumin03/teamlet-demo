@@ -9,10 +9,10 @@ import type { FormTemplateItem } from "@teamlet/modules/workflow";
 import { CreateDocumentButton } from "@/components/workflow/create-document-button";
 
 const KIND_LABEL: Record<FormDocumentKind, string> = {
-  GENERAL: "일반", LEAVE_REQUEST: "휴가 신청", INFO_CHANGE: "정보변경", ANNOUNCEMENT: "공지",
+  GENERAL: "일반", LEAVE_REQUEST: "휴가 신청", LEAVE_PLAN: "연차 사용 계획", INFO_CHANGE: "정보변경", ANNOUNCEMENT: "공지",
 };
 const KIND_CSS: Record<FormDocumentKind, string> = {
-  GENERAL: "", LEAVE_REQUEST: "leave", INFO_CHANGE: "hr", ANNOUNCEMENT: "",
+  GENERAL: "", LEAVE_REQUEST: "leave", LEAVE_PLAN: "leave", INFO_CHANGE: "hr", ANNOUNCEMENT: "",
 };
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: "임시저장", IN_PROGRESS: "진행 중", APPROVED: "승인", REJECTED: "반려", CANCELLED: "취소",

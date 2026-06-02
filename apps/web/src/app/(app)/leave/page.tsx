@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getLeaveBalances, listLeaveTypes, listMyLeaveRequests, getAnnualLeaveLedger, getMyAnnualPolicyApprover } from "@teamlet/modules/leave";
+import { getLeaveBalances, listLeaveTypes, listMyLeaveRequests, getAnnualLeaveLedger, getMyAnnualPolicyApprover, getMyLeavePromotions } from "@teamlet/modules/leave";
 import { listApproverCandidates } from "@teamlet/modules/workflow";
 import type { LeaveRequestItem } from "@teamlet/modules/leave";
 import { auth } from "@/auth";
@@ -8,11 +8,12 @@ import { auth } from "@/auth";
 import { LeaveTabs } from "./_components/leave-tabs";
 import { HistoryTab } from "./_components/history-tab";
 import { AnnualDetailTab } from "./_components/annual-detail-tab";
+import { AnnualPlanTab } from "./_components/annual-plan-tab";
 import { LeaveTypeCards } from "./_components/leave-type-cards";
 
 export const dynamic = "force-dynamic";
 
-const VALID_TABS = ["overview", "detail", "history"] as const;
+const VALID_TABS = ["overview", "detail", "plan", "history"] as const;
 type TabId = (typeof VALID_TABS)[number];
 
 const STATUS_CLS: Record<LeaveRequestItem["status"], string> = {
@@ -50,13 +51,14 @@ export default async function LeavePage({
   const currentYear = new Date().getFullYear();
   const year = yearParam ? parseInt(yearParam, 10) : currentYear;
 
-  const [balancesResult, typesResult, requestsResult, approversResult, ledgerResult, annualPolicyApprover] = await Promise.all([
+  const [balancesResult, typesResult, requestsResult, approversResult, ledgerResult, annualPolicyApprover, promotionsResult] = await Promise.all([
     getLeaveBalances(employeeId, year),
     listLeaveTypes(employeeId),
     listMyLeaveRequests(employeeId),
     listApproverCandidates(employeeId),
     activeTab === "detail" ? getAnnualLeaveLedger(employeeId, year) : Promise.resolve(null),
     getMyAnnualPolicyApprover(employeeId),
+    activeTab === "plan" ? getMyLeavePromotions(employeeId, year) : Promise.resolve(null),
   ]);
 
   const balances = balancesResult.ok ? balancesResult.data : [];
@@ -72,6 +74,7 @@ export default async function LeavePage({
   const requests = requestsResult.ok ? requestsResult.data : [];
   const approverCandidates = approversResult.ok ? approversResult.data : [];
   const ledger = ledgerResult?.ok ? ledgerResult.data : null;
+  const promotions = promotionsResult?.ok ? promotionsResult.data : [];
 
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
   const annualBalance = balances.find((b) => b.leaveTypeKey === "annual");
@@ -180,6 +183,11 @@ export default async function LeavePage({
       {/* 연차 상세 탭 */}
       {activeTab === "detail" && (
         <AnnualDetailTab ledger={ledger} year={year} currentYear={currentYear} />
+      )}
+
+      {/* 연차 사용 계획 탭 (촉진 응답) */}
+      {activeTab === "plan" && (
+        <AnnualPlanTab promotions={promotions} year={year} currentYear={currentYear} />
       )}
 
       {/* 신청 이력 탭 */}

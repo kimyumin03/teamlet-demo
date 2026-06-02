@@ -167,6 +167,7 @@ enum LeaveTxCategory {
 enum FormDocumentKind {
   GENERAL
   LEAVE_REQUEST
+  LEAVE_PLAN      // 연차 사용 계획 (촉진 응답 — 근로기준법 제61조 전자문서)
   INFO_CHANGE
   ANNOUNCEMENT
 }

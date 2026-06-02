@@ -147,3 +147,45 @@ export type LeavePromotionItem = {
   planDates: Date[];
   formDocumentId: string | null;
 };
+
+/** 구성원 본인 — 내 휴가 > 연차 사용 계획 탭 */
+export type MyLeavePromotionItem = {
+  id: string;
+  year: number;
+  promotionType: LeavePromotionType;
+  targetDays: number;
+  expiryDate: Date;
+  status: LeavePromotionStatus;
+  requestedAt: Date;
+  submittedAt: Date | null;
+  planDates: Date[];
+  formDocumentId: string | null;
+  /** 작성 가능 여부 (작성요청됨/관리자작성기간) */
+  canSubmit: boolean;
+};
+
+/** 연차 사용 계획 활동 로그 1줄 (teamlet[28]) */
+export type LeavePlanActivityLog = {
+  actorName: string;
+  message: string;
+  at: Date;
+};
+
+/** 연차 사용 계획 상세 (관리자 사이드 패널 / 본인 조회) */
+export type LeavePromotionDetail = {
+  id: string;
+  employeeName: string;
+  employeeNumber: string | null;
+  year: number;
+  promotionType: LeavePromotionType;
+  targetDays: number;
+  expiryDate: Date;
+  status: LeavePromotionStatus;
+  requestedAt: Date;
+  submittedAt: Date | null;
+  approvedAt: Date | null;
+  planDates: Date[];
+  formDocumentId: string | null;
+  activityLog: LeavePlanActivityLog[];
+  approval: { step: number; approverName: string; status: string }[];
+};

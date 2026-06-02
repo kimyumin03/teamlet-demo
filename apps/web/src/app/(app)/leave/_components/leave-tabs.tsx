@@ -5,6 +5,7 @@ import Link from "next/link";
 const TABS = [
   { id: "overview", label: "휴가 개요" },
   { id: "detail", label: "연차 상세" },
+  { id: "plan", label: "연차 사용 계획" },
   { id: "history", label: "신청 이력" },
 ] as const;
 

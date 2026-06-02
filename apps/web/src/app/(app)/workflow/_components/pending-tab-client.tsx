@@ -7,10 +7,10 @@ import type { FormDocumentKind } from "@teamlet/modules/workflow";
 import { ApproveDocumentButtons } from "@/components/workflow/approve-document-buttons";
 
 const KIND_LABEL: Record<FormDocumentKind, string> = {
-  GENERAL: "일반", LEAVE_REQUEST: "휴가 신청", INFO_CHANGE: "정보변경", ANNOUNCEMENT: "공지",
+  GENERAL: "일반", LEAVE_REQUEST: "휴가 신청", LEAVE_PLAN: "연차 사용 계획", INFO_CHANGE: "정보변경", ANNOUNCEMENT: "공지",
 };
 const KIND_CSS: Record<FormDocumentKind, string> = {
-  GENERAL: "", LEAVE_REQUEST: "leave", INFO_CHANGE: "hr", ANNOUNCEMENT: "",
+  GENERAL: "", LEAVE_REQUEST: "leave", LEAVE_PLAN: "leave", INFO_CHANGE: "hr", ANNOUNCEMENT: "",
 };
 
 function daysSince(d: Date) {

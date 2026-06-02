@@ -11,12 +11,14 @@ export const dynamic = "force-dynamic";
 const KIND_LABEL: Record<DocumentDetail["kind"], string> = {
   GENERAL: "일반",
   LEAVE_REQUEST: "휴가",
+  LEAVE_PLAN: "연차 사용 계획",
   INFO_CHANGE: "정보변경",
   ANNOUNCEMENT: "공지",
 };
 const KIND_CLS: Record<DocumentDetail["kind"], string> = {
   GENERAL: "border-border bg-background-secondary text-foreground-muted",
   LEAVE_REQUEST: "border-emerald-300 bg-emerald-50 text-emerald-700",
+  LEAVE_PLAN: "border-emerald-300 bg-emerald-50 text-emerald-700",
   INFO_CHANGE: "border-destructive bg-destructive-50 text-destructive",
   ANNOUNCEMENT: "border-primary/30 bg-primary/5 text-foreground",
 };
