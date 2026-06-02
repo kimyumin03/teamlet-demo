@@ -3,6 +3,7 @@ import { ok, err, errors, type Result } from "@teamlet/shared";
 import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
 import { getEffectivePermissions } from "../permission/effective";
+import { createNotification } from "../notification/index";
 import type { RequestLeaveInput, LeaveRequestItem, PendingLeaveRequestItem, CompanyLeaveRequestItem } from "./types";
 
 const BALANCE_READ = "leave.balance.read";
@@ -255,10 +256,31 @@ export async function requestLeave(
         update: { usedDays: { increment: days } },
       });
     }
-    return req;
+    return { reqId: req.id, docId: doc.id };
   });
 
-  return ok(created);
+  // 승인자에게 결재 요청 알림 (트랜잭션 밖 — 알림 실패가 신청을 취소시키지 않음)
+  if (needsApproval && approverId) {
+    const submitter = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { name: true, companyId: true },
+    });
+    if (submitter) {
+      await createNotification({
+        companyId: submitter.companyId,
+        recipientEmployeeId: approverId,
+        category: "APPROVAL",
+        eventKey: `leave_request:${created.reqId}`,
+        title: "휴가 결재 요청",
+        body: `${submitter.name}님이 ${leaveType.name} 결재를 요청했어요.`,
+        deepLink: `/workflow/documents/${created.docId}`,
+        relatedTargetType: "LeaveRequest",
+        relatedTargetId: created.reqId,
+      }).catch(() => { /* 알림 실패 무시 */ });
+    }
+  }
+
+  return ok({ id: created.reqId });
 }
 
 /**
