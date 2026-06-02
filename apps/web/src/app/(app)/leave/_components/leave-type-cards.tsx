@@ -101,9 +101,10 @@ function RequestDialog({
   const [hourEnd, setHourEnd] = useState("10:00");
   const [reason, setReason] = useState("");
   // 휴가 종류에 고정 승인자가 있으면 우선 적용
+  // approverEmployeeId가 설정된 경우만 승인 워크플로우 경유 (null = 자동 승인)
   const fixedApproverId = leaveType.approverEmployeeId ?? null;
   const fixedApproverName = leaveType.approverName ?? null;
-  const [approverId, setApproverId] = useState(fixedApproverId ?? approverCandidates[0]?.id ?? "");
+  const [approverId, setApproverId] = useState(fixedApproverId ?? "");
   const [holidays, setHolidays] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -140,7 +141,7 @@ function RequestDialog({
       const effEnd = unit !== "full" ? startDate : endDate;
       const res = await requestLeaveAction({
         leaveTypeId: leaveType.id,
-        approverId: approverId || (approverCandidates[0]?.id ?? ""),
+        approverId: approverId || undefined,
         startDate,
         endDate: effEnd,
         days: computedDays,

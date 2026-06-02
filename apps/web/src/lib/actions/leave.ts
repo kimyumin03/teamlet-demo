@@ -17,7 +17,7 @@ async function requireEmployee(): Promise<string> {
 
 export async function requestLeaveAction(input: {
   leaveTypeId: string;
-  approverId: string;
+  approverId?: string;
   startDate: string;
   endDate: string;
   days: number;
