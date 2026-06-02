@@ -159,11 +159,19 @@ function RequestDialog({
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 20px 12px", borderBottom: "1px solid var(--border)" }}>
         <div style={{ width: 28, height: 28, borderRadius: 7, background: "var(--bg-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🏖</div>
-        <div>
+        <div style={{ flex: 1 }}>
           <span style={{ fontWeight: 700, fontSize: 14.5 }}>{leaveType.name}</span>
           <span style={{ fontSize: 12, color: "var(--fg-muted)", marginLeft: 8 }}>사용 가능 · {payLabel}</span>
         </div>
-        <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--fg-muted)", fontSize: 20, lineHeight: 1, padding: "0 2px" }}>×</button>
+        <button
+          onClick={onClose}
+          aria-label="닫기"
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-subtle)", padding: 4, borderRadius: 4, lineHeight: 1, display: "flex", alignItems: "center" }}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"/>
+          </svg>
+        </button>
       </div>
 
       {/* ── STEP 1: 날짜 + 사용 단위 ── */}
@@ -506,7 +514,7 @@ export function LeaveTypeCards({
 
       {selected && (
         <Dialog open onOpenChange={(o) => { if (!o) setSelected(null); }}>
-          <DialogContent className="max-w-md p-0 overflow-hidden">
+          <DialogContent className="max-w-md p-0 overflow-hidden" showClose={false}>
             <RequestDialog leaveType={selected} approverCandidates={approverCandidates} onClose={() => setSelected(null)} />
           </DialogContent>
         </Dialog>
