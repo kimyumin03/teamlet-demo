@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { listLeaveTypesFull } from "@teamlet/modules/leave";
 import { listEmployees } from "@teamlet/modules/employee";
+import { listDepartments } from "@teamlet/modules/department";
 import { LeaveTypesClient } from "./_components/leave-types-client";
 
 export const dynamic = "force-dynamic";
@@ -12,16 +13,22 @@ export default async function LeaveTypesPage() {
   if (!session.user.employeeId) redirect("/join-company");
 
   const employeeId = session.user.employeeId;
-  const [result, employeesResult] = await Promise.all([
+  const [result, employeesResult, departmentsResult] = await Promise.all([
     listLeaveTypesFull(employeeId),
     listEmployees(employeeId),
+    listDepartments(employeeId),
   ]);
 
   const noAccess = !result.ok;
   // 연차는 연차 설정(leave-policies)에서 별도 관리 — 맞춤 휴가 목록에서 제외
   const types = result.ok ? result.data.filter((t) => t.key !== "annual") : [];
   const employees = employeesResult.ok
-    ? employeesResult.data.filter((e) => e.isActive).map((e) => ({ id: e.id, name: e.name }))
+    ? employeesResult.data
+        .filter((e) => e.isActive)
+        .map((e) => ({ id: e.id, name: e.name, departmentId: e.departmentId, departmentName: e.departmentName }))
+    : [];
+  const departments = departmentsResult.ok
+    ? departmentsResult.data.map((d) => ({ id: d.id, name: d.name, parentId: d.parentId }))
     : [];
 
   return (
@@ -43,7 +50,7 @@ export default async function LeaveTypesPage() {
         </div>
       ) : (
         <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
-          <LeaveTypesClient types={types} employees={employees} />
+          <LeaveTypesClient types={types} employees={employees} departments={departments} />
         </div>
       )}
     </div>

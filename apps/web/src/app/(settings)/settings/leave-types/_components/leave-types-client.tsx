@@ -10,6 +10,8 @@ import {
   deleteLeaveTypeAction,
 } from "@/lib/actions/leave-type";
 import type { LeaveTypeFullItem } from "@teamlet/modules/leave";
+import { RecipientPickerRow, type PickerEmployee, type PickerDepartment } from "@/components/common/recipient-picker";
+import { fromLegacy, toLegacy } from "@/components/common/recipient-picker-types";
 import type {
   LeaveGrantMethod,
   LeaveGrantUnit,
@@ -161,12 +163,13 @@ function Field({ label, desc, children }: { label: string; desc?: string; childr
 
 /* ── 메인 다이얼로그 ────────────────────────────────── */
 function LeaveTypeDialog({
-  open, onClose, initial, employees,
+  open, onClose, initial, employees, departments,
 }: {
   open: boolean;
   onClose: () => void;
   initial?: LeaveTypeFullItem;
-  employees: { id: string; name: string }[];
+  employees: PickerEmployee[];
+  departments: PickerDepartment[];
 }) {
   const router = useRouter();
   const isEdit = !!initial;
@@ -255,7 +258,6 @@ function LeaveTypeDialog({
     });
   }
 
-  const approverName = employees.find((e) => e.id === form.approverEmployeeId)?.name;
 
   return (
     <>
@@ -408,50 +410,19 @@ function LeaveTypeDialog({
               )}
             </Field>
 
-            {/* 승인·참조 사용 */}
-            <Field label="승인·참조 사용" desc="이 휴가 신청 시 고정 적용돼요.">
-              <select className={SELECT_CLS} value={form.approverEmployeeId}
-                onChange={(e) => set("approverEmployeeId", e.target.value)}>
-                <option value="">승인 없음 (즉시 등록)</option>
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>{e.name}</option>
-                ))}
-              </select>
-              {form.approverEmployeeId && (
-                <p style={{ fontSize: 11.5, color: "var(--fg-muted)", marginTop: 4 }}>
-                  {approverName}님이 모든 {form.name || "이 휴가"} 신청을 승인해요.
-                </p>
-              )}
-            </Field>
-
-            {/* 참조자 */}
-            <Field label="참조자 (고정)" desc="신청마다 자동으로 참조돼요.">
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 5 }}>
-                {form.ccEmployeeIds.map((id) => {
-                  const name = employees.find((e) => e.id === id)?.name ?? id;
-                  return (
-                    <span key={id} style={{
-                      display: "inline-flex", alignItems: "center", gap: 4,
-                      padding: "3px 8px", borderRadius: 999, fontSize: 12,
-                      border: "1.5px solid var(--border)", background: "var(--bg-secondary)",
-                    }}>
-                      {name}
-                      <button type="button" onClick={() => set("ccEmployeeIds", form.ccEmployeeIds.filter((x) => x !== id))}
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-muted)", lineHeight: 1, padding: 0 }}>×</button>
-                    </span>
-                  );
-                })}
-              </div>
-              <select className={SELECT_CLS} value=""
-                onChange={(e) => {
-                  const id = e.target.value;
-                  if (id && !form.ccEmployeeIds.includes(id)) set("ccEmployeeIds", [...form.ccEmployeeIds, id]);
-                }}>
-                <option value="">참조자 추가…</option>
-                {employees.filter((e) => !form.ccEmployeeIds.includes(e.id)).map((e) => (
-                  <option key={e.id} value={e.id}>{e.name}</option>
-                ))}
-              </select>
+            {/* 승인·참조 사용 — 공통 피커(RecipientPicker). 여기서 지정 → 이 휴가 신청 시 고정 적용 */}
+            <Field label="승인·참조 사용" desc="여기서 지정하면 이 휴가 신청 시 고정 적용돼요.">
+              <RecipientPickerRow
+                value={fromLegacy(form.approverEmployeeId || null, form.ccEmployeeIds)}
+                onChange={(v) => {
+                  const l = toLegacy(v);
+                  setForm((f) => ({ ...f, approverEmployeeId: l.approverEmployeeId ?? "", ccEmployeeIds: l.ccEmployeeIds }));
+                }}
+                employees={employees}
+                departments={departments}
+                label="승인 · 참조자 선택"
+                description="휴가에 승인 · 참조 대상을 설정할 수 있어요."
+              />
             </Field>
 
             {/* 추가 설정 (접이식) */}
@@ -585,10 +556,11 @@ function LeaveTypeDialog({
 
 /* ── 목록 클라이언트 ────────────────────────────────── */
 export function LeaveTypesClient({
-  types, employees,
+  types, employees, departments,
 }: {
   types: LeaveTypeFullItem[];
-  employees: { id: string; name: string }[];
+  employees: PickerEmployee[];
+  departments: PickerDepartment[];
 }) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
@@ -666,9 +638,9 @@ export function LeaveTypesClient({
         </div>
       )}
 
-      <LeaveTypeDialog open={createOpen} onClose={() => setCreateOpen(false)} employees={employees} />
+      <LeaveTypeDialog open={createOpen} onClose={() => setCreateOpen(false)} employees={employees} departments={departments} />
       {editTarget && (
-        <LeaveTypeDialog open onClose={() => setEditTarget(null)} initial={editTarget} employees={employees} />
+        <LeaveTypeDialog open onClose={() => setEditTarget(null)} initial={editTarget} employees={employees} departments={departments} />
       )}
     </>
   );
