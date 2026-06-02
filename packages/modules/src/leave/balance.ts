@@ -22,11 +22,18 @@ export async function listLeaveTypes(
     select: {
       id: true, name: true, key: true, grantAmount: true,
       grantMethod: true, grantUnit: true, paymentType: true, evidenceRequirement: true,
-      approverEmployeeId: true,
+      approverEmployeeId: true, ccEmployeeIds: true,
       approver: { select: { name: true } },
     },
     orderBy: { sortOrder: "asc" },
   });
+
+  // 고정 참조자 이름 일괄 조회 (확인화면 verbatim 문구용)
+  const allCcIds = [...new Set(types.flatMap((t) => t.ccEmployeeIds))];
+  const ccEmps = allCcIds.length
+    ? await prisma.employee.findMany({ where: { id: { in: allCcIds } }, select: { id: true, name: true } })
+    : [];
+  const ccNameMap = new Map(ccEmps.map((e) => [e.id, e.name]));
 
   return ok(
     types.map((t) => ({
@@ -40,6 +47,7 @@ export async function listLeaveTypes(
       evidenceRequirement: t.evidenceRequirement,
       approverEmployeeId: t.approverEmployeeId,
       approverName: t.approver?.name ?? null,
+      ccNames: t.ccEmployeeIds.map((id) => ccNameMap.get(id)).filter((n): n is string => !!n),
     })),
   );
 }

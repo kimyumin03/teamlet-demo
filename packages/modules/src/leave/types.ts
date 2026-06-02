@@ -42,6 +42,8 @@ export type LeaveTypeItem = {
   evidenceRequirement: string;
   approverEmployeeId: string | null;
   approverName: string | null;
+  /** 고정 참조자 이름 (확인화면 "OOO님, OOO님에게 승인·참조를 요청해요" verbatim) */
+  ccNames: string[];
 };
 
 export type PendingLeaveRequestItem = {

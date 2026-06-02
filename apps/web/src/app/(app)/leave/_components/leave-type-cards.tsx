@@ -6,6 +6,7 @@ import { Dialog, DialogContent } from "@teamlet/ui";
 import type { LeaveTypeItem, LeaveBalanceSummary } from "@teamlet/modules/leave";
 import { requestLeaveAction, getHolidayDatesAction } from "@/lib/actions/leave";
 import { uploadFile } from "@/lib/upload-client";
+import { DualCalendar } from "./dual-calendar";
 
 /* ── 부여 방식 레이블 ─────────────────────── */
 function grantLabel(t: LeaveTypeItem, balance?: LeaveBalanceSummary): string {
@@ -178,48 +179,34 @@ function RequestDialog({
       {/* ── STEP 1: 날짜 + 사용 단위 ── */}
       {step === "pick" && (
         <div style={{ padding: "16px 20px 20px" }}>
-          {/* 날짜 선택 영역 */}
-          {startDate ? (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 2 }}>
-                {fmtDate(startDate)}{startDate !== endDate ? ` – ${fmtDate(endDate)}` : ` · ${unitHeaderLabel}`}
-              </div>
-              {leaveType.grantAmount && (
-                <div style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>
-                  {leaveType.grantMethod === "ON_REQUEST" ? `신청 시 ${leaveType.grantAmount}일 부여` : `최대 ${leaveType.grantAmount}일`}
-                </div>
-              )}
+          {/* 선택 요약 제목 (flexv2 #09 verbatim 형식) */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 2 }}>
+              {startDate !== endDate
+                ? `${fmtDate(startDate)} – ${fmtDate(endDate)}`
+                : `${fmtDate(startDate)} · ${unitHeaderLabel}`}
             </div>
-          ) : (
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>날짜를 선택해주세요</div>
-          )}
+            {startDate !== endDate ? (
+              <div style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>총 {computedDays}일 · 주말·공휴일 제외</div>
+            ) : leaveType.grantAmount ? (
+              <div style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>
+                {leaveType.grantMethod === "ON_REQUEST" ? `신청 시 ${leaveType.grantAmount}일 부여` : `최대 ${leaveType.grantAmount}일`}
+              </div>
+            ) : null}
+          </div>
 
-          {/* 날짜 입력 (캘린더 대체) */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--fg-muted)", marginBottom: 5 }}>시작일</div>
-              <input type="date" value={startDate}
-                min={today}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  if (e.target.value > endDate) setEndDate(e.target.value);
-                  if (unit !== "full") setEndDate(e.target.value);
-                }}
-                style={{ width: "100%", padding: "9px 11px", border: "1.5px solid var(--border)", borderRadius: 8, fontSize: 13.5, background: "var(--bg-primary)", color: "var(--fg)", outline: "none" }}
-              />
-            </div>
-            {unit === "full" && (
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--fg-muted)", marginBottom: 5 }}>종료일</div>
-                <input type="date" value={endDate} min={startDate}
-                  onChange={(e) => {
-                    setEndDate(e.target.value);
-                    if (e.target.value !== startDate) setUnit("full");
-                  }}
-                  style={{ width: "100%", padding: "9px 11px", border: "1.5px solid var(--border)", borderRadius: 8, fontSize: 13.5, background: "var(--bg-primary)", color: "var(--fg)", outline: "none" }}
-                />
-              </div>
-            )}
+          {/* 듀얼 캘린더 (시작일 클릭 → 종료일 클릭) */}
+          <div style={{ marginBottom: 14 }}>
+            <DualCalendar
+              startDate={startDate}
+              endDate={endDate}
+              holidays={holidays}
+              onChange={(s, e) => {
+                setStartDate(s);
+                setEndDate(e);
+                if (s !== e) setUnit("full"); // 다일은 하루 종일만
+              }}
+            />
           </div>
 
           {/* 일수 미리보기 */}
@@ -419,19 +406,24 @@ function RequestDialog({
             )}
           </div>
 
-          {/* 승인자 안내 — 항상 표시 */}
+          {/* 승인·참조 안내 — flexv2 #14/#97 verbatim 2분기 */}
           {(() => {
-            const name = fixedApproverName ?? (approverCandidates[0]?.name);
-            if (!name) return (
+            const approverName = fixedApproverName ?? (approverCandidates[0]?.name);
+            const ccNames = leaveType.ccNames ?? [];
+            if (!approverName) return (
               <div style={{ fontSize: 12.5, color: "var(--fg-muted)", textAlign: "center" }}>
                 승인 없이 바로 등록돼요.
               </div>
             );
+            // 참조 있으면 "OOO님, OOO님에게 승인 · 참조를 요청해요." / 없으면 "OOO님에게 승인을 요청해요."
+            const allNames = [approverName, ...ccNames];
+            const text = ccNames.length > 0
+              ? `${allNames.join("님, ")}님에게 승인 · 참조를 요청해요.`
+              : `${approverName}님에게 승인을 요청해요.`;
             return (
-              <div style={{ padding: "10px 14px", borderRadius: 8, background: "var(--bg-secondary)", border: "1px solid var(--border)", fontSize: 13 }}>
-                <span style={{ fontSize: 11.5, color: "var(--fg-muted)", display: "block", marginBottom: 2 }}>승인자</span>
-                <span style={{ fontWeight: 600, color: "var(--fg)" }}>{name}</span>
-                <span style={{ color: "var(--fg-muted)" }}>님이 이 휴가 신청을 승인해요.</span>
+              <div style={{ padding: "10px 14px", borderRadius: 8, background: "var(--bg-secondary)", border: "1px solid var(--border)", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontWeight: 500, color: "var(--fg)" }}>{text}</span>
+                <span style={{ marginLeft: "auto", color: "var(--fg-subtle)" }}>›</span>
               </div>
             );
           })()}
