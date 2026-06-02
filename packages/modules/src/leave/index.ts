@@ -11,4 +11,6 @@ export type { LeavePolicyItem, LeavePolicyCreateInput, LeavePolicyUpdateInput, P
 export { getCompanyLeaveSettings, updateCompanyLeaveSettings } from "./company-leave-settings";
 export type { CompanyLeaveSettingsItem, CompanyLeaveSettingsUpdateInput } from "./company-leave-settings";
 export { listCompanyLeavePromotions, cancelLeavePromotion } from "./promotion";
+export { runSmartPromotionForCompany, runSmartPromotionAll } from "./promotion-engine";
+export type { PromotionRunResult } from "./promotion-engine";
 export type { LeavePromotionItem } from "./types";
