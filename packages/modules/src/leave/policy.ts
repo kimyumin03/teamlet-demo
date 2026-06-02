@@ -399,26 +399,46 @@ export async function removeLeavePolicy(
   return ok(undefined);
 }
 
-/** 권한 없이 내 연차 정책의 승인자 정보 조회 (내 휴가 페이지용). */
+/** 권한 없이 내 연차 정책의 승인자 정보 조회 (내 휴가 페이지용).
+ *  직원별 배정 정책 우선, 없으면 회사 기본 정책, 없으면 null. */
 export async function getMyAnnualPolicyApprover(
   employeeId: string,
-): Promise<{ approverId: string | null; approverName: string | null }> {
+): Promise<{ approverId: string | null; approverName: string | null; approveOnRegister: boolean }> {
   const emp = await prisma.employee.findUnique({
     where: { id: employeeId },
     select: { companyId: true },
   });
-  if (!emp) return { approverId: null, approverName: null };
+  if (!emp) return { approverId: null, approverName: null, approveOnRegister: true };
 
-  const policy = await prisma.leavePolicy.findFirst({
-    where: { companyId: emp.companyId, isActive: true, isDefault: true },
-    select: { approverEmployeeId: true, approver: { select: { name: true } } },
-  }) ?? await prisma.leavePolicy.findFirst({
-    where: { companyId: emp.companyId, isActive: true },
-    select: { approverEmployeeId: true, approver: { select: { name: true } } },
+  const SELECT = {
+    approverEmployeeId: true,
+    approveOnRegister: true,
+    approver: { select: { name: true } },
+  } as const;
+
+  // 직원에게 배정된 연차 정책 우선 조회
+  const assignment = await prisma.leavePolicyAssignment.findFirst({
+    where: {
+      employeeId,
+      policy: { companyId: emp.companyId, isActive: true, leaveType: { key: "annual" } },
+    },
+    orderBy: { effectiveDate: "desc" },
+    select: { policy: { select: SELECT } },
   });
+
+  const policy = assignment?.policy ?? (
+    await prisma.leavePolicy.findFirst({
+      where: { companyId: emp.companyId, isActive: true, isDefault: true, leaveType: { key: "annual" } },
+      select: SELECT,
+    }) ?? await prisma.leavePolicy.findFirst({
+      where: { companyId: emp.companyId, isActive: true, leaveType: { key: "annual" } },
+      select: SELECT,
+    })
+  );
 
   return {
     approverId: policy?.approverEmployeeId ?? null,
     approverName: policy?.approver?.name ?? null,
+    approveOnRegister: policy?.approveOnRegister ?? true,
   };
 }

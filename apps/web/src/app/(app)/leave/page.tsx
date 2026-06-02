@@ -63,8 +63,9 @@ export default async function LeavePage({
   const rawLeaveTypes = typesResult.ok ? typesResult.data : [];
 
   // 연차 타입에 정책 승인자 주입 (권한 불필요)
+  // approveOnRegister=false(즉시 등록)이면 승인자 미주입 → 자동승인 처리
   const leaveTypes = rawLeaveTypes.map((t) =>
-    t.key === "annual" && annualPolicyApprover.approverId
+    t.key === "annual" && annualPolicyApprover.approverId && annualPolicyApprover.approveOnRegister
       ? { ...t, approverEmployeeId: annualPolicyApprover.approverId, approverName: annualPolicyApprover.approverName }
       : t
   );

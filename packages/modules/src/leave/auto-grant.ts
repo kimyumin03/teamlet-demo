@@ -151,12 +151,13 @@ export async function runAnnualLeaveGrant(
   }
 
   // 미배정 구성원에게 기본 정책 적용
+  const allActive = await prisma.employee.findMany({
+    where: { companyId: actor.companyId, isActive: true },
+    select: { id: true, name: true, hireDate: true },
+  });
+  const assignedIds = new Set(assignments.map((a) => a.employeeId));
+
   if (defaultPolicy) {
-    const allActive = await prisma.employee.findMany({
-      where: { companyId: actor.companyId, isActive: true },
-      select: { id: true, name: true, hireDate: true },
-    });
-    const assignedIds = new Set(assignments.map((a) => a.employeeId));
     for (const emp of allActive) {
       if (assignedIds.has(emp.id)) continue;
       const key = `${emp.id}:${defaultPolicy.leaveTypeId}`;
@@ -170,6 +171,58 @@ export async function runAnnualLeaveGrant(
         employee: emp,
         policy: defaultPolicy,
       } as (typeof assignments)[number]);
+    }
+  } else {
+    // 정책이 전혀 없는 회사 → annual 타입으로 직접 부여 (법정 기본)
+    const annualType = await prisma.leaveType.findFirst({
+      where: { companyId: actor.companyId, key: "annual", isActive: true },
+      select: { id: true, name: true, grantAmount: true, isActive: true },
+    });
+    if (annualType) {
+      for (const emp of allActive) {
+        const key = `${emp.id}:${annualType.id}`;
+        if (latest.has(key)) continue;
+        latest.set(key, {
+          id: "",
+          employeeId: emp.id,
+          policyId: "",
+          effectiveDate: new Date(),
+          createdAt: new Date(),
+          employee: emp,
+          policy: {
+            id: "",
+            companyId: actor.companyId,
+            name: "법정 기본",
+            leaveTypeId: annualType.id,
+            isActive: true,
+            isDefault: false,
+            decimalRule: "ROUND_UP_DAY" as DecimalRule,
+            grantMode: "FISCAL_YEAR",
+            fiscalStartMonth: 1,
+            monthlyGrantRule: "MONTHLY_ON_ATTENDANCE",
+            annualFirstYearRule: "PRORATED_ON_FIRST_FISCAL",
+            expiryMonths: 12,
+            carryoverMaxDays: null,
+            useUnit: "HALF_DAY",
+            hourUnitMinutes: null,
+            overdraftEnabled: false,
+            overdraftMaxDays: null,
+            monthlyExpiryMode: "HIRE_DATE_1Y",
+            monthlyGraceMonths: null,
+            annualExpiryMode: "GRANT_DATE_1Y",
+            annualGraceMonths: null,
+            approverEmployeeId: null,
+            ccEmployeeIds: [],
+            approveOnRegister: true,
+            approveOnCancel: false,
+            smartPromotionEnabled: false,
+            grantStartDate: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            leaveType: annualType,
+          },
+        } as (typeof assignments)[number]);
+      }
     }
   }
 
