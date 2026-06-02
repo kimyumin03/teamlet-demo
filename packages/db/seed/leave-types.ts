@@ -1,9 +1,7 @@
 /**
- * 법정 휴가 8종 시드 데이터 (docs/01 §7, docs/03 §4 LeaveType).
- * ⚠️ LeaveType 테이블은 Phase 3 — 현재는 타입드 데이터 모듈(상수)로 준비.
- *    is_system=true, is_required=true (필수 — 비활성화만 가능, 삭제 불가).
- *
- * grant_method=on_request (신청 시 부여), 일수는 법정 기준.
+ * 휴가 기본 시드 — 법정 필수(isRequired: true) + 회사 기본 제공(isRequired: false).
+ * Flex 휴가 목록과 이름·부여방식·일수를 동일하게 맞춤.
+ * bootstrapCompanyLeaveTypes에서 신규 회사 생성 시 전체 upsert.
  */
 
 export type GrantMethod =
@@ -23,14 +21,16 @@ export type LeaveTypeSeed = {
   name: string;
   description: string;
   isSystem: true;
-  isRequired: true;
+  isRequired: boolean;
   grantMethod: GrantMethod;
   grantUnit: GrantUnit;
-  grantAmount: number | null; // UNLIMITED 시 null
+  grantAmount: number | null;
   paymentType: PaymentType;
   genderRestriction: GenderRestriction;
   evidenceRequirement: EvidenceRequirement;
 };
+
+// ── 법정 필수 (isRequired: true) ──────────────────────────────────────────────
 
 export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   {
@@ -48,7 +48,7 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   },
   {
     key: "family_care",
-    name: "가족돌봄휴가",
+    name: "가족돌봄",
     description: "가족의 질병·사고·노령 또는 자녀 양육 사유 (연 최대 10일, 무급)",
     isSystem: true,
     isRequired: true,
@@ -61,7 +61,7 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   },
   {
     key: "military_training",
-    name: "군소집훈련휴가",
+    name: "군소집훈련",
     description: "예비군·민방위 등 법정 소집 훈련 (소집 기간, 유급)",
     isSystem: true,
     isRequired: true,
@@ -74,11 +74,11 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   },
   {
     key: "infertility",
-    name: "난임치료휴가",
-    description: "난임 치료 시술 (연 6일, 최초 2일 유급)",
+    name: "난임 치료",
+    description: "난임 치료 시술 (매년 6일 부여, 최초 2일 유급)",
     isSystem: true,
     isRequired: true,
-    grantMethod: "ON_REQUEST",
+    grantMethod: "PERIODIC",
     grantUnit: "DAY",
     grantAmount: 6,
     paymentType: "PARTIAL_PAID",
@@ -87,7 +87,7 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   },
   {
     key: "spouse_childbirth",
-    name: "배우자출산휴가",
+    name: "배우자출산",
     description: "배우자 출산 (20일, 유급)",
     isSystem: true,
     isRequired: true,
@@ -100,11 +100,11 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   },
   {
     key: "menstrual",
-    name: "보건휴가",
-    description: "여성 보건 (월 1일, 무급)",
+    name: "보건",
+    description: "여성 보건 (매월 1일 부여, 무급)",
     isSystem: true,
     isRequired: true,
-    grantMethod: "ON_REQUEST",
+    grantMethod: "PERIODIC",
     grantUnit: "DAY",
     grantAmount: 1,
     paymentType: "UNPAID",
@@ -112,22 +112,9 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
     evidenceRequirement: "NONE",
   },
   {
-    key: "compensatory",
-    name: "보상휴가",
-    description: "연장·야간·휴일 근로에 대한 보상 (근로자 대표 서면 합의)",
-    isSystem: true,
-    isRequired: true,
-    grantMethod: "MANUAL",
-    grantUnit: "HOUR",
-    grantAmount: null,
-    paymentType: "PAID",
-    genderRestriction: "ALL",
-    evidenceRequirement: "NONE",
-  },
-  {
     key: "maternity_self",
-    name: "산전후휴가(본인)",
-    description: "출산 전후 휴가 (90일, 다태아 120일)",
+    name: "산전후 - 본인",
+    description: "출산 전후 휴가 (90일, 유급)",
     isSystem: true,
     isRequired: true,
     grantMethod: "ON_REQUEST",
@@ -139,8 +126,8 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   },
   {
     key: "maternity_premature",
-    name: "산전후휴가(미숙아)",
-    description: "미숙아 출산 시 산전후 휴가 연장 (100일)",
+    name: "산전후 - 미숙아",
+    description: "미숙아 출산 시 산전후 휴가 연장 (100일, 유급)",
     isSystem: true,
     isRequired: true,
     grantMethod: "ON_REQUEST",
@@ -152,8 +139,8 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   },
   {
     key: "maternity_multiple",
-    name: "산전후휴가(다태아)",
-    description: "다태아 출산 전후 휴가 (120일)",
+    name: "산전후 - 본인 (다태아)",
+    description: "다태아 출산 전후 휴가 (120일, 유급)",
     isSystem: true,
     isRequired: true,
     grantMethod: "ON_REQUEST",
@@ -165,7 +152,7 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   },
   {
     key: "miscarriage",
-    name: "유산·사산휴가",
+    name: "유산·사산",
     description: "유산 또는 사산 시 (임신 주수에 따라 5~90일, 유급)",
     isSystem: true,
     isRequired: true,
@@ -178,7 +165,7 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   },
   {
     key: "miscarriage_multiple",
-    name: "유산·사산휴가(다태아)",
+    name: "유산·사산 (다태아)",
     description: "다태아 임신 중 유산 또는 사산 시 (임신 주수+15일, 유급)",
     isSystem: true,
     isRequired: true,
@@ -188,5 +175,125 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
     paymentType: "PAID",
     genderRestriction: "FEMALE",
     evidenceRequirement: "BEFORE",
+  },
+
+  // ── 회사 기본 제공 (isRequired: false — 비활성화 및 삭제 가능) ────────────────
+
+  {
+    key: "compensatory",
+    name: "보상",
+    description: "연장·야간·휴일 근로에 대한 보상 휴가 (관리자가 직접 부여)",
+    isSystem: true,
+    isRequired: false,
+    grantMethod: "MANUAL",
+    grantUnit: "HOUR",
+    grantAmount: null,
+    paymentType: "PAID",
+    genderRestriction: "ALL",
+    evidenceRequirement: "NONE",
+  },
+  {
+    key: "marriage_self",
+    name: "결혼 - 본인",
+    description: "본인 결혼 경조사 (5일, 유급)",
+    isSystem: true,
+    isRequired: false,
+    grantMethod: "ON_REQUEST",
+    grantUnit: "DAY",
+    grantAmount: 5,
+    paymentType: "PAID",
+    genderRestriction: "ALL",
+    evidenceRequirement: "AFTER",
+  },
+  {
+    key: "marriage_child",
+    name: "결혼 - 자녀",
+    description: "자녀 결혼 경조사 (1일, 유급)",
+    isSystem: true,
+    isRequired: false,
+    grantMethod: "ON_REQUEST",
+    grantUnit: "DAY",
+    grantAmount: 1,
+    paymentType: "PAID",
+    genderRestriction: "ALL",
+    evidenceRequirement: "AFTER",
+  },
+  {
+    key: "refresh",
+    name: "리프레시",
+    description: "장기 근속 리프레시 휴가 (근속 시 30일 부여, 유급)",
+    isSystem: true,
+    isRequired: false,
+    grantMethod: "ON_TENURE",
+    grantUnit: "DAY",
+    grantAmount: 30,
+    paymentType: "PAID",
+    genderRestriction: "ALL",
+    evidenceRequirement: "NONE",
+  },
+  {
+    key: "sick_leave",
+    name: "병가",
+    description: "질병·부상 치료 (연차 소진 후 최대 60일 부여, 유급)",
+    isSystem: true,
+    isRequired: false,
+    grantMethod: "ON_OTHER_EXHAUSTED",
+    grantUnit: "DAY",
+    grantAmount: 60,
+    paymentType: "PAID",
+    genderRestriction: "ALL",
+    evidenceRequirement: "AFTER",
+  },
+  {
+    key: "emergency",
+    name: "비상",
+    description: "긴급 개인 사유 (1일, 유급)",
+    isSystem: true,
+    isRequired: false,
+    grantMethod: "ON_REQUEST",
+    grantUnit: "DAY",
+    grantAmount: 1,
+    paymentType: "PAID",
+    genderRestriction: "ALL",
+    evidenceRequirement: "NONE",
+  },
+  {
+    key: "bereavement_close",
+    name: "조의 - 부모/배우자/자녀",
+    description: "부모·배우자·자녀 사망 경조사 (5일, 유급)",
+    isSystem: true,
+    isRequired: false,
+    grantMethod: "ON_REQUEST",
+    grantUnit: "DAY",
+    grantAmount: 5,
+    paymentType: "PAID",
+    genderRestriction: "ALL",
+    evidenceRequirement: "AFTER",
+  },
+  {
+    key: "bereavement_extended",
+    name: "조의 - 조부모/형제/자매",
+    description: "조부모·형제·자매 사망 경조사 (3일, 유급)",
+    isSystem: true,
+    isRequired: false,
+    grantMethod: "ON_REQUEST",
+    grantUnit: "DAY",
+    grantAmount: 3,
+    paymentType: "PAID",
+    genderRestriction: "ALL",
+    evidenceRequirement: "AFTER",
+  },
+  {
+    key: "award",
+    name: "포상",
+    description: "포상 휴가 (관리자가 직접 부여)",
+    isSystem: true,
+    isRequired: false,
+    grantMethod: "MANUAL",
+    grantUnit: "DAY",
+    grantAmount: null,
+    paymentType: "PAID",
+    genderRestriction: "ALL",
+    evidenceRequirement: "NONE",
   },
 ];
