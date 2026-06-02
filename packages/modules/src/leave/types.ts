@@ -1,4 +1,4 @@
-import type { LeaveTxCategory, LeaveTxType, LeaveRequestStatus } from "@teamlet/db";
+import type { LeaveTxCategory, LeaveTxType, LeaveRequestStatus, LeavePromotionType, LeavePromotionStatus } from "@teamlet/db";
 
 export type LeaveBalanceSummary = {
   leaveTypeId: string;
@@ -126,5 +126,24 @@ export type CompanyLeaveRequestItem = {
   reason: string;
   status: LeaveRequestStatus;
   createdAt: Date;
+  formDocumentId: string | null;
+};
+
+export type LeavePromotionItem = {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string | null;
+  departmentName: string | null;
+  employmentStatus: string;
+  year: number;
+  promotionType: LeavePromotionType;
+  targetDays: number;
+  expiryDate: Date;
+  status: LeavePromotionStatus;
+  requestedAt: Date;
+  submittedAt: Date | null;
+  approvedAt: Date | null;
+  planDates: Date[];
   formDocumentId: string | null;
 };

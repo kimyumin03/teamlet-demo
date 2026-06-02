@@ -10,3 +10,5 @@ export type { LeaveBalanceSummary, GrantLeaveInput, RequestLeaveInput, LeaveType
 export type { LeavePolicyItem, LeavePolicyCreateInput, LeavePolicyUpdateInput, PolicyAssignmentItem } from "./policy";
 export { getCompanyLeaveSettings, updateCompanyLeaveSettings } from "./company-leave-settings";
 export type { CompanyLeaveSettingsItem, CompanyLeaveSettingsUpdateInput } from "./company-leave-settings";
+export { listCompanyLeavePromotions, cancelLeavePromotion } from "./promotion";
+export type { LeavePromotionItem } from "./types";
