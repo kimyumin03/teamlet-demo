@@ -225,8 +225,7 @@
 ### ⏭️ 휴가 완성 로드맵 (docs/_transcribe SSOT 기준 — verbatim 그대로)
 > 모든 문구·선택지는 `docs/_transcribe/{flexv2,teamlet}.md` 해당 화면 verbatim 복제. 의역 금지.
 1. ✅ **공통 승인·참조자 피커** (`RecipientPicker`) — `451b032`·`c3cdde0`. `components/common/recipient-picker{,-types}.tsx`. 칩(요청자별승인/변경허용)·참조+알림드롭다운(3종)·N단계승인·대상피커(검색/구성원목록/부서그룹/하위조직함께선택). **3개 소비처 연결**(맞춤휴가·연차정책·촉진설정). 저장은 toLegacy로 기존 approverEmployeeId+ccEmployeeIds 호환. web 타입클린 + 라우트 컴파일 307. ⚠️ 브라우저 상호작용 미검증 / 1~5차 조직장·다단계 저장은 후속(스키마)
-2. **촉진 응답 플로우** — §5-5 구성원 연차사용계획 작성(희망일 N개 선택→제출→FormDocument결재) + §6-5 관리자 사용계획 상세패널(teamlet[28]: 계획대상연차·희망일목록·활동로그·댓글·승인참조). 방금 만든 엔진의 나머지 절반
-   - ⚠️ 진행상태 **8종**으로 보정: 현 enum 7종에 **`작성 기간 전`(PENDING_PERIOD)** 누락 (teamlet[27]·[30])
+2. ✅ **촉진 응답 플로우** — `81e1cd7`. FormDocumentKind+=LEAVE_PLAN(db push). 모듈 `getMyLeavePromotions`/`submitLeavePlan`/`getLeavePromotionDetail`/`finalizeLeavePlanFromDocument` + 워크플로우 approve/reject 연동. 구성원 `/leave` "연차 사용 계획" 탭(빈상태 verbatim + 희망일 선택→제출), 관리자 촉진탭 [보기]→상세패널(teamlet[28] verbatim). web+modules 타입클린 + 라우트 컴파일 307. ⚠️ 브라우저 미검증 / 진행상태 "작성 기간 전"은 우리 엔진(촉진시점 도달 시 생성)상 불필요 → 7종 유지 / 댓글 입력은 후속
 3. **신청 모달 보강** — flexv2 §D/N: 듀얼캘린더 단계별 제목 · **상세 일정 편집 서브모달**(날짜별 단위 행, #10~13) · 확인화면 결재자 문구 2분기(`OOO님,OOO님에게 승인·참조를 요청해요`/`OOO님에게 승인을 요청해요`)
 4. **연차 정책 모달 보강** — flexv2 §F/I: 당겨쓰기(자유롭게/사용량제한+최대N일+안내+툴팁) · 자동소멸 미리보기테이블(법정/실제×월차/연차)+툴팁2종+소멸시점·유예기간 드롭다운 · 이탈확인 `정말 그만할까요?` · 시간단위 드롭다운(1분~2시간,30분추천)
 5. **맞춤 휴가 동적폼 보강** — flexv2 §M: 반복부여(매년/매월 시점 옵션)·근속시부여 시점 · 시간차단위(제한없음~) · 일부유급 % 입력 · 이탈확인 `변경사항을 저장하지 않고 나가시겠어요?`
