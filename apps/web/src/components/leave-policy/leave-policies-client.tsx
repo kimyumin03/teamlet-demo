@@ -10,6 +10,8 @@ import {
   updateLeavePolicyAction,
   deleteLeavePolicyAction,
 } from "@/lib/actions/leave-policy";
+import { RecipientPickerRow, type PickerEmployee, type PickerDepartment } from "@/components/common/recipient-picker";
+import { fromLegacy, toLegacy } from "@/components/common/recipient-picker-types";
 import { bootstrapLeaveTypesAction } from "@/lib/actions/leave-type";
 import type {
   LeavePolicyGrantMode,
@@ -55,12 +57,13 @@ const GRACE_MONTH_OPTIONS = [
 const SELECT_CLS = "h-9 w-full rounded-lg border border-border bg-background-primary px-3 text-sm text-foreground outline-none focus:border-foreground-subtle";
 const INPUT_CLS = "h-9 w-full rounded-lg border border-border bg-background-primary px-3 text-sm text-foreground outline-none focus:border-foreground-subtle";
 
-type Employee = { id: string; name: string };
+type Employee = PickerEmployee;
 
 type Props = {
   initialPolicies: LeavePolicyItem[];
   annualTypeId: string;
   employees: Employee[];
+  departments: PickerDepartment[];
 };
 
 type FormState = {
@@ -183,15 +186,14 @@ function SectionHeader({ title, open, onToggle }: { title: string; open: boolean
 }
 
 /* ── 정책 편집 폼 ───────────────────────── */
-function PolicyForm({ form, set, employees }: {
+function PolicyForm({ form, set, employees, departments }: {
   form: FormState;
   set: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
   employees: Employee[];
+  departments: PickerDepartment[];
 }) {
   const [grantOpen, setGrantOpen] = useState(true);
   const [expiryOpen, setExpiryOpen] = useState(false);
-
-  const approverName = employees.find((e) => e.id === form.approverEmployeeId)?.name;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -206,52 +208,18 @@ function PolicyForm({ form, set, employees }: {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--fg-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>기본 설정</div>
 
-        {/* 승인·참조자 */}
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--fg-muted)", marginBottom: 5 }}>승인자</div>
-          <select className={SELECT_CLS} value={form.approverEmployeeId}
-            onChange={(e) => set("approverEmployeeId", e.target.value)}>
-            <option value="">승인 없음 (즉시 등록)</option>
-            {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-          </select>
-          {form.approverEmployeeId && (
-            <p style={{ fontSize: 11.5, color: "var(--fg-muted)", marginTop: 4 }}>
-              {approverName}님이 모든 연차 신청을 승인해요.
-            </p>
-          )}
-        </div>
-
-        {/* 참조자 */}
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--fg-muted)", marginBottom: 5 }}>참조자</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 5 }}>
-            {form.ccEmployeeIds.map((id) => {
-              const name = employees.find((e) => e.id === id)?.name ?? id;
-              return (
-                <span key={id} style={{
-                  display: "inline-flex", alignItems: "center", gap: 4,
-                  padding: "3px 8px", borderRadius: 999, fontSize: 12,
-                  border: "1.5px solid var(--border)", background: "var(--bg-secondary)",
-                }}>
-                  {name}
-                  <button type="button"
-                    onClick={() => set("ccEmployeeIds", form.ccEmployeeIds.filter((x) => x !== id))}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-muted)", lineHeight: 1, padding: 0 }}>×</button>
-                </span>
-              );
-            })}
-          </div>
-          <select className={SELECT_CLS} value=""
-            onChange={(e) => {
-              const id = e.target.value;
-              if (id && !form.ccEmployeeIds.includes(id)) set("ccEmployeeIds", [...form.ccEmployeeIds, id]);
-            }}>
-            <option value="">참조자 추가…</option>
-            {employees.filter((e) => !form.ccEmployeeIds.includes(e.id)).map((e) => (
-              <option key={e.id} value={e.id}>{e.name}</option>
-            ))}
-          </select>
-        </div>
+        {/* 승인·참조자 선택 — 공통 피커(RecipientPicker) */}
+        <RecipientPickerRow
+          value={fromLegacy(form.approverEmployeeId || null, form.ccEmployeeIds)}
+          onChange={(v) => {
+            const l = toLegacy(v);
+            set("approverEmployeeId", l.approverEmployeeId ?? "");
+            set("ccEmployeeIds", l.ccEmployeeIds);
+          }}
+          employees={employees}
+          departments={departments}
+          description="승인 참조 대상을 선택해 주세요."
+        />
 
         {/* 승인 요청 시점 */}
         <div>
@@ -455,7 +423,7 @@ function PolicyForm({ form, set, employees }: {
 }
 
 /* ── 메인 컴포넌트 ───────────────────────── */
-export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees }: Props) {
+export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees, departments }: Props) {
   const router = useRouter();
   const [policies, setPolicies] = useState(initialPolicies);
   useEffect(() => { setPolicies(initialPolicies); }, [initialPolicies]);
@@ -647,7 +615,7 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees }
           <DialogHeader>
             <DialogTitle>연차 정책 추가</DialogTitle>
           </DialogHeader>
-          <PolicyForm form={form} set={set} employees={employees} />
+          <PolicyForm form={form} set={set} employees={employees} departments={departments} />
           {error && (
             <p style={{ fontSize: 12.5, color: "#dc2626", borderRadius: 8, border: "1px solid #fca5a5", background: "#fef2f2", padding: "8px 12px" }}>{error}</p>
           )}
@@ -668,7 +636,7 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees }
           <DialogHeader>
             <DialogTitle>{editTarget?.name} 수정</DialogTitle>
           </DialogHeader>
-          <PolicyForm form={form} set={set} employees={employees} />
+          <PolicyForm form={form} set={set} employees={employees} departments={departments} />
           {error && (
             <p style={{ fontSize: 12.5, color: "#dc2626", borderRadius: 8, border: "1px solid #fca5a5", background: "#fef2f2", padding: "8px 12px" }}>{error}</p>
           )}

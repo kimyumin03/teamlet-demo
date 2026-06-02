@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { listLeavePolicies, listLeaveTypes, getCompanyLeaveSettings } from "@teamlet/modules/leave";
 import { listEmployees } from "@teamlet/modules/employee";
+import { listDepartments } from "@teamlet/modules/department";
 import { prisma } from "@teamlet/db";
 import { LeavePoliciesClient } from "@/components/leave-policy/leave-policies-client";
 import { AutoGrantButton } from "@/components/leave-policy/auto-grant-button";
@@ -40,18 +41,24 @@ export default async function LeavePoliciesPage() {
     });
   }
 
-  const [policiesResult, typesResult, employeesResult, settingsResult] = await Promise.all([
+  const [policiesResult, typesResult, employeesResult, settingsResult, departmentsResult] = await Promise.all([
     listLeavePolicies(employeeId),
     listLeaveTypes(employeeId),
     listEmployees(employeeId),
     getCompanyLeaveSettings(employeeId),
+    listDepartments(employeeId),
   ]);
 
   const policies = policiesResult.ok ? policiesResult.data : [];
   // 연차 정책용 — key가 "annual"인 타입만
   const annualType = typesResult.ok ? typesResult.data.find((t) => t.key === "annual") : undefined;
   const employees = employeesResult.ok
-    ? employeesResult.data.filter((e) => e.isActive).map((e) => ({ id: e.id, name: e.name }))
+    ? employeesResult.data
+        .filter((e) => e.isActive)
+        .map((e) => ({ id: e.id, name: e.name, departmentId: e.departmentId, departmentName: e.departmentName }))
+    : [];
+  const departments = departmentsResult.ok
+    ? departmentsResult.data.map((d) => ({ id: d.id, name: d.name, parentId: d.parentId }))
     : [];
   const leaveSettings = settingsResult.ok ? settingsResult.data : null;
 
@@ -80,7 +87,7 @@ export default async function LeavePoliciesPage() {
       <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
         <h3 className="mb-1.5 text-[15px] font-bold text-foreground">연차 정책</h3>
         <p className="mb-5 text-[12.5px] text-foreground-muted">연차 부여·소멸·사용 단위·승인선을 정의하고 구성원에게 배정해요.</p>
-        <LeavePoliciesClient initialPolicies={policies} annualTypeId={annualType?.id ?? ""} employees={employees} />
+        <LeavePoliciesClient initialPolicies={policies} annualTypeId={annualType?.id ?? ""} employees={employees} departments={departments} />
       </div>
 
       {/* 연차 설정 (퇴직자 조정 + 촉진 설정) */}
@@ -88,7 +95,7 @@ export default async function LeavePoliciesPage() {
         <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
           <h3 className="mb-1.5 text-[15px] font-bold text-foreground">연차 설정</h3>
           <p className="mb-4 text-[12.5px] text-foreground-muted">퇴직자 기준 및 연차 촉진을 설정해요.</p>
-          <CompanyLeaveSettingsSection initial={leaveSettings} employees={employees} />
+          <CompanyLeaveSettingsSection initial={leaveSettings} employees={employees} departments={departments} />
         </div>
       )}
     </div>

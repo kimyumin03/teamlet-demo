@@ -6,8 +6,10 @@ import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 import { updateCompanyLeaveSettingsAction } from "@/lib/actions/company-leave-settings";
 import type { CompanyLeaveSettingsItem } from "@teamlet/modules/leave";
 import type { RetirementAdjustMode } from "@teamlet/db";
+import { RecipientPickerRow, type PickerEmployee, type PickerDepartment } from "@/components/common/recipient-picker";
+import { fromLegacy, toLegacy } from "@/components/common/recipient-picker-types";
 
-type Employee = { id: string; name: string };
+type Employee = PickerEmployee;
 
 const PLAN_NOTICE_OPTIONS = [1, 3, 5, 7, 10];
 const PROMOTION_OFFSET_OPTIONS = [
@@ -158,10 +160,12 @@ function RetirementModal({
 function PromotionModal({
   initial,
   employees,
+  departments,
   onClose,
 }: {
   initial: CompanyLeaveSettingsItem;
   employees: Employee[];
+  departments: PickerDepartment[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -197,48 +201,22 @@ function PromotionModal({
     });
   }
 
-  const approverName = employees.find((e) => e.id === form.promotionApproverEmployeeId)?.name;
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* 승인·참조 대상 */}
+      {/* 승인·참조 대상 — 공통 피커. "구성원이 작성한 연차 사용 계획의 승인·참조 대상" */}
       <div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--fg-muted)", marginBottom: 5 }}>승인 담당자</div>
-        <select className={SELECT_CLS} value={form.promotionApproverEmployeeId}
-          onChange={(e) => set("promotionApproverEmployeeId", e.target.value)}>
-          <option value="">담당자 없음</option>
-          {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-        </select>
-        {form.promotionApproverEmployeeId && (
-          <p style={{ fontSize: 11.5, color: "var(--fg-muted)", marginTop: 4 }}>{approverName}님이 촉진 문서를 승인해요.</p>
-        )}
-      </div>
-
-      <div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--fg-muted)", marginBottom: 5 }}>참조자</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 5 }}>
-          {form.promotionCcEmployeeIds.map((id) => {
-            const name = employees.find((e) => e.id === id)?.name ?? id;
-            return (
-              <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 999, fontSize: 12, border: "1.5px solid var(--border)", background: "var(--bg-secondary)" }}>
-                {name}
-                <button type="button"
-                  onClick={() => set("promotionCcEmployeeIds", form.promotionCcEmployeeIds.filter((x) => x !== id))}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-muted)", lineHeight: 1, padding: 0 }}>×</button>
-              </span>
-            );
-          })}
-        </div>
-        <select className={SELECT_CLS} value=""
-          onChange={(e) => {
-            const id = e.target.value;
-            if (id && !form.promotionCcEmployeeIds.includes(id)) set("promotionCcEmployeeIds", [...form.promotionCcEmployeeIds, id]);
-          }}>
-          <option value="">참조자 추가…</option>
-          {employees.filter((e) => !form.promotionCcEmployeeIds.includes(e.id)).map((e) => (
-            <option key={e.id} value={e.id}>{e.name}</option>
-          ))}
-        </select>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--fg-muted)", marginBottom: 5 }}>승인 · 참조 대상</div>
+        <RecipientPickerRow
+          value={fromLegacy(form.promotionApproverEmployeeId || null, form.promotionCcEmployeeIds)}
+          onChange={(v) => {
+            const l = toLegacy(v);
+            set("promotionApproverEmployeeId", l.approverEmployeeId ?? "");
+            set("promotionCcEmployeeIds", l.ccEmployeeIds);
+          }}
+          employees={employees}
+          departments={departments}
+          description="구성원이 작성한 연차 사용 계획의 승인 · 참조 대상을 설정할 수 있어요."
+        />
       </div>
 
       {/* 리마인드 */}
@@ -351,9 +329,11 @@ function PromotionModal({
 export function CompanyLeaveSettingsSection({
   initial,
   employees,
+  departments,
 }: {
   initial: CompanyLeaveSettingsItem;
   employees: Employee[];
+  departments: PickerDepartment[];
 }) {
   const [retirementOpen, setRetirementOpen] = useState(false);
   const [promotionOpen, setPromotionOpen] = useState(false);
@@ -409,7 +389,7 @@ export function CompanyLeaveSettingsSection({
           <DialogHeader>
             <DialogTitle>연차 촉진 설정</DialogTitle>
           </DialogHeader>
-          <PromotionModal initial={initial} employees={employees} onClose={() => setPromotionOpen(false)} />
+          <PromotionModal initial={initial} employees={employees} departments={departments} onClose={() => setPromotionOpen(false)} />
         </DialogContent>
       </Dialog>
     </>
