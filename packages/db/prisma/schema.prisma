@@ -841,6 +841,10 @@ model LeaveRequest {
   unitType    String             @default("FULL")
   startTime   String?            // 시간차/반차 시작 (HH:mm)
   endTime     String?            // 시간차/반차 종료 (HH:mm)
+  // 날짜별 상세 일정 (flexv2 #10~13) — 다일 휴가에서 날짜마다 단위 개별 지정.
+  // [{ date:"YYYY-MM-DD", unit:"FULL|AM_HALF|PM_HALF|HOURLY", startTime?, endTime?, days:number }]
+  // 비어있으면 unitType/startTime/endTime(대표값)으로 균일 적용.
+  schedule    Json               @default("[]")
   evidenceFileUrl String?        // 증명 자료 업로드 URL
   status      LeaveRequestStatus @default(PENDING)
   reviewNote  String?

@@ -4,7 +4,12 @@ import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
 import { getEffectivePermissions } from "../permission/effective";
 import { createNotification } from "../notification/index";
-import type { RequestLeaveInput, LeaveRequestItem, PendingLeaveRequestItem, CompanyLeaveRequestItem } from "./types";
+import type { RequestLeaveInput, LeaveRequestItem, PendingLeaveRequestItem, CompanyLeaveRequestItem, LeaveScheduleEntry } from "./types";
+
+/** Prisma Json → LeaveScheduleEntry[] 안전 캐스팅 */
+function parseSchedule(raw: unknown): LeaveScheduleEntry[] {
+  return Array.isArray(raw) ? (raw as LeaveScheduleEntry[]) : [];
+}
 
 const BALANCE_READ = "leave.balance.read";
 const BALANCE_MANAGE = "leave.balance.manage";
@@ -75,6 +80,8 @@ export async function listMyLeaveRequests(
       status: r.status,
       reviewNote: r.reviewNote,
       createdAt: r.createdAt,
+      unitType: r.unitType,
+      schedule: parseSchedule(r.schedule),
     })),
   );
 }
@@ -124,6 +131,8 @@ export async function listEmployeeLeaveHistory(
       status: r.status,
       reviewNote: r.reviewNote,
       createdAt: r.createdAt,
+      unitType: r.unitType,
+      schedule: parseSchedule(r.schedule),
     })),
   );
 }
@@ -131,8 +140,19 @@ export async function listEmployeeLeaveHistory(
 export async function requestLeave(
   input: RequestLeaveInput,
 ): Promise<Result<{ id: string }>> {
-  const { employeeId, leaveTypeId, approverId, startDate, endDate, days, reason, evidenceFileUrl } =
+  const { employeeId, leaveTypeId, approverId, startDate, endDate, reason, evidenceFileUrl, schedule } =
     input;
+
+  // schedule(날짜별 상세 일정)이 있으면 일수는 합산값을 신뢰 — UI days와 정합성 확보
+  const days = schedule && schedule.length > 0
+    ? Math.round(schedule.reduce((s, e) => s + e.days, 0) * 100) / 100
+    : input.days;
+  // 대표 단위 — 단일 schedule이면 그 단위, 혼합이면 MIXED, 없으면 FULL
+  const repUnit = schedule && schedule.length > 0
+    ? (schedule.every((e) => e.unit === schedule[0]!.unit) ? schedule[0]!.unit : "MIXED")
+    : "FULL";
+  const repStart = schedule && schedule.length === 1 ? schedule[0]!.startTime : undefined;
+  const repEnd = schedule && schedule.length === 1 ? schedule[0]!.endTime : undefined;
 
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
@@ -233,6 +253,10 @@ export async function requestLeave(
         reason: reason ?? "",
         status: leaveStatus,
         formDocumentId: doc.id,
+        unitType: repUnit,
+        ...(repStart && { startTime: repStart }),
+        ...(repEnd && { endTime: repEnd }),
+        ...(schedule && schedule.length > 0 && { schedule }),
         ...(evidenceFileUrl && { evidenceFileUrl }),
       },
       select: { id: true },
@@ -498,6 +522,8 @@ export async function listCompanyLeaveRequests(
       status: r.status,
       createdAt: r.createdAt,
       formDocumentId: r.formDocumentId ?? null,
+      unitType: r.unitType,
+      schedule: parseSchedule(r.schedule),
     })),
   );
 }

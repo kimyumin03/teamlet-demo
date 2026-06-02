@@ -19,6 +19,15 @@ export type GrantLeaveInput = {
   note?: string;
 };
 
+/** 날짜별 상세 일정 1줄 (flexv2 #10~13 — 다일 휴가 날짜마다 단위 개별 지정) */
+export type LeaveScheduleEntry = {
+  date: string; // YYYY-MM-DD
+  unit: "FULL" | "AM_HALF" | "PM_HALF" | "HOURLY";
+  startTime?: string; // HH:mm (반차/시간차)
+  endTime?: string;
+  days: number; // 이 날의 차감 일수 (종일 1 · 반차 0.5 · 시간차 시간/8)
+};
+
 export type RequestLeaveInput = {
   employeeId: string;
   leaveTypeId: string;
@@ -29,6 +38,8 @@ export type RequestLeaveInput = {
   days: number;
   reason?: string;
   evidenceFileUrl?: string;
+  /** 날짜별 상세 일정 (비면 종일 균일). 있으면 days는 schedule 합산으로 검증. */
+  schedule?: LeaveScheduleEntry[];
 };
 
 export type LeaveTypeItem = {
@@ -67,6 +78,8 @@ export type LeaveRequestItem = {
   status: LeaveRequestStatus;
   reviewNote: string | null;
   createdAt: Date;
+  unitType: string;
+  schedule: LeaveScheduleEntry[];
 };
 
 /** 연차 상세 — 월별 원장 한 행 (자동부여/소멸/사용/조정 + 누적 잔여). */
@@ -129,6 +142,8 @@ export type CompanyLeaveRequestItem = {
   status: LeaveRequestStatus;
   createdAt: Date;
   formDocumentId: string | null;
+  unitType: string;
+  schedule: LeaveScheduleEntry[];
 };
 
 export type LeavePromotionItem = {

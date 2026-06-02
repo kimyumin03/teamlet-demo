@@ -7,6 +7,8 @@ import type { LeaveTypeItem, LeaveBalanceSummary } from "@teamlet/modules/leave"
 import { requestLeaveAction, getHolidayDatesAction } from "@/lib/actions/leave";
 import { uploadFile } from "@/lib/upload-client";
 import { DualCalendar } from "./dual-calendar";
+import { ScheduleEditor, businessDays } from "./schedule-editor";
+import type { LeaveScheduleEntry } from "@teamlet/modules/leave";
 
 /* ── 부여 방식 레이블 ─────────────────────── */
 function grantLabel(t: LeaveTypeItem, balance?: LeaveBalanceSummary): string {
@@ -112,17 +114,28 @@ function RequestDialog({
   const [evidenceFileUrl, setEvidenceFileUrl] = useState<string | null>(null);
   const [evidenceFileName, setEvidenceFileName] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  // 상세 일정 편집 (다일 날짜별 단위) — null이면 미편집(균일)
+  const [detailSchedule, setDetailSchedule] = useState<LeaveScheduleEntry[] | null>(null);
+  const [showScheduleEditor, setShowScheduleEditor] = useState(false);
 
   useEffect(() => {
     getHolidayDatesAction(parseInt(startDate.slice(0, 4))).then((d) => setHolidays(new Set(d)));
   }, [startDate]);
 
+  // 범위 변경 시 상세 일정 무효화
+  useEffect(() => { setDetailSchedule(null); }, [startDate, endDate]);
+
+  const isMultiDay = startDate !== endDate;
   const bizDays = calcBusinessDays(startDate, unit !== "full" ? startDate : endDate, holidays);
   const hourMins = minutesBetween(hourStart, hourEnd);
-  const computedDays =
+  const uniformDays =
     unit === "full" ? bizDays :
     unit === "morning" || unit === "afternoon" ? (bizDays > 0 ? 0.5 : 0) :
     bizDays > 0 && hourMins > 0 ? Math.round(hourMins / 60 * 10) / 10 : 0;
+  // 상세 일정이 있으면 합산값 우선
+  const computedDays = detailSchedule
+    ? Math.round(detailSchedule.reduce((s, e) => s + e.days, 0) * 100) / 100
+    : uniformDays;
 
   const restIncluded = unit === "morning" || (unit === "hourly" && hourMins >= 120);
 
@@ -135,11 +148,23 @@ function RequestDialog({
     if (computedDays > 0) setStep("confirm");
   }
 
+  // 날짜별 상세 일정 구성 — 상세편집 우선, 없으면 균일(단일 단위 / 다일 종일)
+  function buildSchedule(): LeaveScheduleEntry[] {
+    if (detailSchedule) return detailSchedule;
+    if (isMultiDay) {
+      return businessDays(startDate, endDate, holidays).map((d) => ({ date: d, unit: "FULL" as const, days: 1 }));
+    }
+    const u = unit === "full" ? "FULL" : unit === "morning" ? "AM_HALF" : unit === "afternoon" ? "PM_HALF" : "HOURLY";
+    const st = unit === "morning" ? MORNING_S : unit === "afternoon" ? AFTERNOON_S : unit === "hourly" ? hourStart : undefined;
+    const et = unit === "morning" ? MORNING_E : unit === "afternoon" ? AFTERNOON_E : unit === "hourly" ? hourEnd : undefined;
+    return [{ date: startDate, unit: u, startTime: st, endTime: et, days: computedDays }];
+  }
+
   function handleSubmit() {
     setError(null);
     if (computedDays <= 0) { setError("사용 일수가 0이에요. 날짜와 사용 단위를 확인해 주세요."); return; }
     startTransition(async () => {
-      const effEnd = unit !== "full" ? startDate : endDate;
+      const effEnd = isMultiDay ? endDate : startDate;
       const res = await requestLeaveAction({
         leaveTypeId: leaveType.id,
         approverId: approverId || undefined,
@@ -148,6 +173,7 @@ function RequestDialog({
         days: computedDays,
         reason: reason || undefined,
         evidenceFileUrl: evidenceFileUrl || undefined,
+        schedule: buildSchedule(),
       });
       if (!res.ok) { setError(res.error.message); return; }
       onClose(); router.refresh();
@@ -220,6 +246,21 @@ function RequestDialog({
                 ? <><span style={{ fontWeight: 700, color: "var(--primary)", fontFamily: "var(--font-mono)" }}>{computedDays}일</span><span style={{ color: "var(--fg-muted)" }}>사용 예정 · 주말·공휴일 제외</span></>
                 : <span style={{ color: "#dc2626" }}>선택 기간에 사용 가능한 날이 없어요</span>
               }
+            </div>
+          )}
+
+          {/* 상세 일정 편집 (다일) — flexv2 #09/#10 */}
+          {isMultiDay && (
+            <div style={{ marginBottom: 16 }}>
+              <button type="button" onClick={() => setShowScheduleEditor(true)}
+                style={{ fontSize: 13, color: "var(--primary)", fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                상세 일정 편집이 필요한가요? ›
+              </button>
+              {detailSchedule && (
+                <div style={{ fontSize: 12, color: "var(--fg-muted)", marginTop: 4 }}>
+                  날짜별 일정이 적용됐어요 · 총 {computedDays}일
+                </div>
+              )}
             </div>
           )}
 
@@ -440,6 +481,16 @@ function RequestDialog({
             {isPending ? "신청 중…" : "승인 요청하기"}
           </button>
         </div>
+      )}
+
+      {/* 상세 일정 편집 서브모달 */}
+      {showScheduleEditor && (
+        <ScheduleEditor
+          dates={businessDays(startDate, endDate, holidays)}
+          initial={detailSchedule ?? []}
+          onSave={(s) => { setDetailSchedule(s); setShowScheduleEditor(false); }}
+          onClose={() => setShowScheduleEditor(false)}
+        />
       )}
     </div>
   );

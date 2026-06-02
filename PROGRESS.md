@@ -226,10 +226,20 @@
 > 모든 문구·선택지는 `docs/_transcribe/{flexv2,teamlet}.md` 해당 화면 verbatim 복제. 의역 금지.
 1. ✅ **공통 승인·참조자 피커** (`RecipientPicker`) — `451b032`·`c3cdde0`. `components/common/recipient-picker{,-types}.tsx`. 칩(요청자별승인/변경허용)·참조+알림드롭다운(3종)·N단계승인·대상피커(검색/구성원목록/부서그룹/하위조직함께선택). **3개 소비처 연결**(맞춤휴가·연차정책·촉진설정). 저장은 toLegacy로 기존 approverEmployeeId+ccEmployeeIds 호환. web 타입클린 + 라우트 컴파일 307. ⚠️ 브라우저 상호작용 미검증 / 1~5차 조직장·다단계 저장은 후속(스키마)
 2. ✅ **촉진 응답 플로우** — `81e1cd7`. FormDocumentKind+=LEAVE_PLAN(db push). 모듈 `getMyLeavePromotions`/`submitLeavePlan`/`getLeavePromotionDetail`/`finalizeLeavePlanFromDocument` + 워크플로우 approve/reject 연동. 구성원 `/leave` "연차 사용 계획" 탭(빈상태 verbatim + 희망일 선택→제출), 관리자 촉진탭 [보기]→상세패널(teamlet[28] verbatim). web+modules 타입클린 + 라우트 컴파일 307. ⚠️ 브라우저 미검증 / 진행상태 "작성 기간 전"은 우리 엔진(촉진시점 도달 시 생성)상 불필요 → 7종 유지 / 댓글 입력은 후속
-3. **신청 모달 보강** — flexv2 §D/N: 듀얼캘린더 단계별 제목 · **상세 일정 편집 서브모달**(날짜별 단위 행, #10~13) · 확인화면 결재자 문구 2분기(`OOO님,OOO님에게 승인·참조를 요청해요`/`OOO님에게 승인을 요청해요`)
+3. ✅ **신청 모달 보강** — `e5e7745`(1/2) + 진행중(2/2):
+   - ✅ 듀얼 캘린더(`dual-calendar.tsx`): 이번달·다음달, 시작→종료 클릭, 주말·공휴일 색. date input 교체
+   - ✅ 확인화면 결재자 문구 2분기(#14/#97): 참조 유무 분기. `LeaveTypeItem.ccNames` + listLeaveTypes 참조자 이름 조회
+   - ✅ **상세 일정 편집 서브모달**(B안 완전): `LeaveRequest.schedule` Json 추가(db push) + `LeaveScheduleEntry` 타입 + `RequestLeaveInput.schedule`/requestLeave 저장(days 합산·대표 unitType 도출) + 조회 반영(listMy/listCompany) + `schedule-editor.tsx`(날짜별 하루종일/오전반차/오후반차/시간차 + ☕) + RequestDialog 통합("상세 일정 편집이 필요한가요? ›"). **web+modules 타입클린.**
+   - ⏭️ **남은 2/2**: 사용 내역 표시에 schedule 반영(history-tab·hr requests-table에서 날짜별 단위 노출). 현재는 저장·조회까지 완료, 표시 UI 미반영. **런타임 미검증(브라우저).**
+   - 📌 별도: 사용자 요청 — **디자인 어긋남·글씨 세로 출력(깨짐) 점검·수정**(런타임에서 확인 필요)
 4. **연차 정책 모달 보강** — flexv2 §F/I: 당겨쓰기(자유롭게/사용량제한+최대N일+안내+툴팁) · 자동소멸 미리보기테이블(법정/실제×월차/연차)+툴팁2종+소멸시점·유예기간 드롭다운 · 이탈확인 `정말 그만할까요?` · 시간단위 드롭다운(1분~2시간,30분추천)
 5. **맞춤 휴가 동적폼 보강** — flexv2 §M: 반복부여(매년/매월 시점 옵션)·근속시부여 시점 · 시간차단위(제한없음~) · 일부유급 % 입력 · 이탈확인 `변경사항을 저장하지 않고 나가시겠어요?`
 6. **관리자 모달** — teamlet §: 맞춤휴가부여 모달(종류/시간단위/대상/사용기간토글) · 연차조정 5항목 · 부여내역(부여건별/대상자별/일괄변경) · 엑셀다운로드 모달 · 연차사용내역 업로드 모달(+xlsx 양식)
+
+### ⏭️ 다음 세션 착수 지점 (B안 schedule 마무리부터)
+- **#3 2/2**: `history-tab.tsx`(구성원 신청 이력) + `hr/leave/_components/requests-table.tsx`(관리자 사용 내역)에서 `schedule.length>0`이면 날짜별 단위(예: "6/1 오전반차, 6/2 종일") 표시. LeaveRequestItem·CompanyLeaveRequestItem에 `schedule`·`unitType` 이미 포함됨.
+- **디자인 점검**: dev 서버(`localhost:3001`) 데모계정 `hr@teamlet.test`로 휴가 신청 모달·연차설정·촉진 화면 돌며 깨진 글씨(세로 출력)·레이아웃 어긋남 수정.
+- 그 후 **#4 연차 정책 모달 보강** → #5 맞춤휴가 동적폼 → #6 관리자 모달.
 
 ## 현재 위치
 

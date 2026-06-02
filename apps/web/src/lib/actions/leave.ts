@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requestLeave, approveLeave, rejectLeave, cancelLeave, grantLeave, processLeaveExpiry } from "@teamlet/modules/leave";
+import type { LeaveScheduleEntry } from "@teamlet/modules/leave";
 import { listCompanyHolidays } from "@teamlet/modules/tenancy";
 import { createNotification } from "@teamlet/modules/notification";
 import { toApiResponse, type ApiResponse } from "@teamlet/shared";
@@ -23,6 +24,7 @@ export async function requestLeaveAction(input: {
   days: number;
   reason?: string;
   evidenceFileUrl?: string;
+  schedule?: LeaveScheduleEntry[];
 }): Promise<ApiResponse<{ id: string }>> {
   const employeeId = await requireEmployee();
   return toApiResponse(
@@ -35,6 +37,7 @@ export async function requestLeaveAction(input: {
       days: input.days,
       reason: input.reason,
       evidenceFileUrl: input.evidenceFileUrl,
+      schedule: input.schedule,
     }),
   );
 }
