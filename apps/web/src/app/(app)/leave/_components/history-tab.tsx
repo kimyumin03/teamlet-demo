@@ -33,6 +33,32 @@ function fmtDate(d: Date) {
   return new Date(d).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
+function fmtMD(dateStr: string) {
+  const d = new Date(dateStr);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+const UNIT_LABEL: Record<string, string> = {
+  FULL: "종일",
+  AM_HALF: "오전반차",
+  PM_HALF: "오후반차",
+  HOURLY: "시간차",
+};
+
+function ScheduleDetail({ schedule }: { schedule: { date: string; unit: string }[] }) {
+  if (schedule.length === 0) return null;
+  // 3일 이하는 펼쳐 표시, 4일 이상은 첫 2일 + "외 N일"
+  const MAX_SHOW = 3;
+  const shown = schedule.slice(0, MAX_SHOW);
+  const rest = schedule.length - MAX_SHOW;
+  return (
+    <p className="mt-0.5 text-[11.5px] text-foreground-subtle">
+      {shown.map((e) => `${fmtMD(e.date)} ${UNIT_LABEL[e.unit] ?? e.unit}`).join(" · ")}
+      {rest > 0 && ` 외 ${rest}일`}
+    </p>
+  );
+}
+
 export function HistoryTab({ requests }: { requests: LeaveRequestItem[] }) {
   const [filter, setFilter] = useState<FilterId>("all");
 
@@ -97,6 +123,7 @@ export function HistoryTab({ requests }: { requests: LeaveRequestItem[] }) {
                   )}
                   {r.reason && <span className="text-foreground-subtle truncate">· {r.reason}</span>}
                 </div>
+                <ScheduleDetail schedule={r.schedule} />
                 {r.reviewNote && (
                   <p className="mt-1 text-[11.5px] text-foreground-subtle">메모: {r.reviewNote}</p>
                 )}

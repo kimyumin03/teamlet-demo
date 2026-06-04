@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 스펙 문서
+    url: https://github.com/kimyumin03/Teamlet/tree/main/docs
+    about: 구현 명세는 /docs 폴더를 참고하세요.

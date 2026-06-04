@@ -236,10 +236,32 @@
 5. **맞춤 휴가 동적폼 보강** — flexv2 §M: 반복부여(매년/매월 시점 옵션)·근속시부여 시점 · 시간차단위(제한없음~) · 일부유급 % 입력 · 이탈확인 `변경사항을 저장하지 않고 나가시겠어요?`
 6. **관리자 모달** — teamlet §: 맞춤휴가부여 모달(종류/시간단위/대상/사용기간토글) · 연차조정 5항목 · 부여내역(부여건별/대상자별/일괄변경) · 엑셀다운로드 모달 · 연차사용내역 업로드 모달(+xlsx 양식)
 
-### ⏭️ 다음 세션 착수 지점 (B안 schedule 마무리부터)
-- **#3 2/2**: `history-tab.tsx`(구성원 신청 이력) + `hr/leave/_components/requests-table.tsx`(관리자 사용 내역)에서 `schedule.length>0`이면 날짜별 단위(예: "6/1 오전반차, 6/2 종일") 표시. LeaveRequestItem·CompanyLeaveRequestItem에 `schedule`·`unitType` 이미 포함됨.
-- **디자인 점검**: dev 서버(`localhost:3001`) 데모계정 `hr@teamlet.test`로 휴가 신청 모달·연차설정·촉진 화면 돌며 깨진 글씨(세로 출력)·레이아웃 어긋남 수정.
-- 그 후 **#4 연차 정책 모달 보강** → #5 맞춤휴가 동적폼 → #6 관리자 모달.
+## 2026-06-04 세션2 — Flex 347장 전수 전사 + 디자인 재정립 핸드오프 패키지
+
+**Flex 전수 분석 (15배치 병렬 에이전트)**
+- ✅ **flex 347장 전수 전사** → `docs/_transcribe/flex.md` (5,213줄): 전 도메인 verbatim 문구 + 선택창/드롭다운/모달 전 옵션 + 이벤트 동작 + 디자인 참고 + "왜 존재하는가"(법적·실무 근거). 파트별 원본은 `_flex_parts/part-01~15.md` 보존
+- 기법: 1920×1080 캡처는 Read 다운스케일로 글자 흐림 → PIL/.NET 크롭+확대로 정밀 판독
+- 핵심 발견: ① 휴가/근무/구성원정보/워크플로우가 단일 `FormDocument.document_kind`+`ApprovalPolicy.category` 통합(우리 설계와 일치) ② RecipientPicker 전 도메인 재사용 ③ 시점이력(기준일/적용일/발령 전후) UI 전반 ④ 연차 부여방식·소멸·촉진이 법정 근거 동반 정책 테이블화 ⑤ Flex 초록→청록 그라데이션 = 우리 5원칙 위반 → Cool Slate 변주 필요
+- ✅ **디자인 수정방안** → `docs/_handoff/04_디자인_수정방안.md` (317줄): Flex→Teamlet 변주 매핑표 + 도메인별 갭&수정안 + 공통컴포넌트 재정립 + design.css 위반 행번호(`--purple #7c3aed` 30·31행, 아바타 그라데이션 264·776·510행) + P1~P3 로드맵
+
+**핸드오프 패키지 → `C:\Users\PC\Downloads\teamlet-design-handoff[.zip]`**
+- 01_flex_전사_SSOT (flex/flexv2/teamlet/new-folder 4종) + 02_우리_설계(05·09·CLAUDE) + 03_현재_teamlet_디자인(css+ui-components, 압축본 포함) + 04_디자인_수정방안 + README
+- 용도: Claude 디자인으로 디자인·기능 재정립 업그레이드 입력 자료
+
+## 2026-06-04 세션 — schedule 표시 + 디자인 수정 + 하네스 엔지니어링
+
+**완료 (타입클린)**
+- ✅ **#3 2/2**: `history-tab.tsx` + `requests-table.tsx` — `schedule` 날짜별 단위 표시 (`ScheduleDetail`/`ScheduleCell` 컴포넌트)
+- ✅ **디자인 버그 수정 5건**: `var(--warning)→--warn)` / `.hist-row` 4열 정렬 / `.bd-legend .remaining i` / `.st.end` CSS / `.hist-row .desc` 오버플로우
+- ✅ **CommandPalette 이벤트 미리보기**: 열릴 때 생일·기념일·신규합류 카드 (빈 상태 대체)
+- ✅ **RecipientPicker TargetPicker 강화**: 빈 상태 "오늘의 소식" 이벤트 카드 + 컬러 아바타
+- ✅ **하네스 엔지니어링**: `.github/` PR·이슈 템플릿 + `.git/hooks/commit-msg`(Conventional Commits) + `pre-push`(typecheck) + `scripts/track-antipattern.ps1`(3회↑→hook 추가) + `.claude/settings.json`(Anti-Pattern PostToolUse 감지)
+
+### ⏭️ 다음 세션 착수 지점
+- **#4 연차 정책 모달 보강** — flexv2 §F/I: 당겨쓰기·자동소멸 미리보기테이블·시간단위 드롭다운
+- **#5 맞춤 휴가 동적폼** — flexv2 §M: 반복부여·근속시부여·일부유급% 등
+- **#6 관리자 모달** — 맞춤부여·연차조정·부여내역·엑셀다운로드
+- **런타임 검증**: 브라우저에서 RecipientPicker 이벤트 카드·CommandPalette 미리보기 확인 필요
 
 ## 현재 위치
 

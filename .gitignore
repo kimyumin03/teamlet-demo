@@ -42,6 +42,10 @@ test-results/
 .cache/
 tmp/
 .axhub/bootstrap.state.json
+.axhub-state/
 .local/
 *.tmp.*
 teamlet_deisign.zip
+
+# Claude Code 런타임 상태 (settings/hook 설정은 커밋, 로그는 제외)
+.claude/antipattern-log.json

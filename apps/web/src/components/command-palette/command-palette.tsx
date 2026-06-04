@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
-import { searchEmployeesAction, type EmployeeSearchResult } from "@/lib/actions/search";
+import { searchEmployeesAction, getSearchPreviewAction, type EmployeeSearchResult, type HomeEventItem } from "@/lib/actions/search";
 
 const NAV_ITEMS = [
   {
@@ -20,11 +20,28 @@ const NAV_ITEMS = [
   },
 ];
 
+const EVENT_ICON: Record<HomeEventItem["eventType"], string> = {
+  birthday: "🎂",
+  join_anniversary: "🎉",
+  new_join: "👋",
+};
+
+function eventLabel(e: HomeEventItem): string {
+  if (e.eventType === "birthday") return `${e.name}님의 생일이에요!`;
+  if (e.eventType === "join_anniversary") return `${e.name}님 ${e.years}주년을 축하해요!`;
+  return `${e.name}님이 합류한 지 ${e.daysAgo === 0 ? "오늘" : `${e.daysAgo}일`} 됐어요!`;
+}
+
+function initials(name: string) {
+  return name.slice(0, 1);
+}
+
 export function CommandPalette() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [employees, setEmployees] = useState<EmployeeSearchResult[]>([]);
+  const [events, setEvents] = useState<HomeEventItem[]>([]);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -38,9 +55,15 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  // close on Escape
+  // 열릴 때 이벤트 fetch, 닫힐 때 초기화
   useEffect(() => {
-    if (!open) { setQuery(""); setEmployees([]); }
+    if (open) {
+      getSearchPreviewAction().then(setEvents);
+    } else {
+      setQuery("");
+      setEmployees([]);
+      setEvents([]);
+    }
   }, [open]);
 
   const handleQueryChange = useCallback((value: string) => {
@@ -62,9 +85,11 @@ export function CommandPalette() {
 
   if (!open) return null;
 
+  const isEmpty = query.trim().length === 0;
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[18vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-[14vh]"
       onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
     >
       {/* overlay */}
@@ -76,6 +101,7 @@ export function CommandPalette() {
           shouldFilter={employees.length === 0}
           onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
         >
+          {/* 검색 입력 */}
           <div className="flex items-center gap-2 border-b border-border px-4">
             <svg className="size-4 shrink-0 text-foreground-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
@@ -83,7 +109,7 @@ export function CommandPalette() {
             <Command.Input
               value={query}
               onValueChange={handleQueryChange}
-              placeholder="검색하거나 이동할 페이지를 입력하세요…"
+              placeholder="구성원 또는 페이지 검색…"
               className="h-12 flex-1 bg-transparent text-sm text-foreground placeholder:text-foreground-subtle outline-none"
               autoFocus
             />
@@ -102,11 +128,45 @@ export function CommandPalette() {
             </button>
           </div>
 
-          <Command.List className="max-h-80 overflow-y-auto p-2">
+          {/* 빈 상태 — 오늘의 이벤트 */}
+          {isEmpty && events.length > 0 && (
+            <div className="px-3 pt-3 pb-1">
+              <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-widest text-foreground-subtle">오늘의 소식</p>
+              <div className="flex flex-col gap-1">
+                {events.slice(0, 4).map((ev) => (
+                  <button
+                    key={`${ev.employeeId}-${ev.eventType}`}
+                    type="button"
+                    onClick={() => navigate(`/members/${ev.employeeId}`)}
+                    className="flex items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-background-secondary"
+                  >
+                    {/* 이모지 배지 */}
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
+                      style={{ background: "var(--primary-soft)" }}
+                    >
+                      {EVENT_ICON[ev.eventType]}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-semibold text-foreground">{eventLabel(ev)}</p>
+                      {ev.departmentName && (
+                        <p className="text-[11.5px] text-foreground-muted">{ev.departmentName}</p>
+                      )}
+                    </div>
+                    <span className="shrink-0 text-xs text-foreground-subtle">프로필 →</span>
+                  </button>
+                ))}
+              </div>
+              <div className="my-2 h-px bg-border" />
+            </div>
+          )}
+
+          <Command.List className="max-h-72 overflow-y-auto p-2">
             <Command.Empty className="py-8 text-center text-sm text-foreground-muted">
               결과가 없어요
             </Command.Empty>
 
+            {/* 구성원 검색 결과 */}
             {employees.length > 0 && (
               <Command.Group
                 heading="구성원"
@@ -119,8 +179,8 @@ export function CommandPalette() {
                     onSelect={() => navigate(`/members/${emp.id}`)}
                     className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm text-foreground aria-selected:bg-background-secondary"
                   >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background-secondary text-xs font-medium">
-                      {emp.name[0]}
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background-secondary text-xs font-semibold">
+                      {initials(emp.name)}
                     </span>
                     <div className="min-w-0">
                       <p className="font-medium">{emp.name}</p>
@@ -135,6 +195,7 @@ export function CommandPalette() {
               </Command.Group>
             )}
 
+            {/* 페이지 네비게이션 */}
             {NAV_ITEMS.map(({ group, items }) => (
               <Command.Group
                 key={group}
@@ -148,7 +209,7 @@ export function CommandPalette() {
                     onSelect={() => navigate(item.href)}
                     className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm text-foreground aria-selected:bg-background-secondary"
                   >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-background-secondary text-xs text-foreground-muted">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-background-secondary text-xs text-foreground-muted font-medium">
                       {item.href.replace(/^\/settings\//, "⚙ ").replace(/^\//, "").slice(0, 2).toUpperCase()}
                     </span>
                     {item.label}

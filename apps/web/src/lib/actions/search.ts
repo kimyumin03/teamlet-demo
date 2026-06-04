@@ -3,6 +3,10 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@teamlet/db";
 import { auth } from "@/auth";
+import { listHomeEvents } from "@teamlet/modules/employee";
+import type { HomeEventItem } from "@teamlet/modules/employee";
+
+export type { HomeEventItem };
 
 export type EmployeeSearchResult = {
   id: string;
@@ -48,4 +52,11 @@ export async function searchEmployeesAction(query: string): Promise<EmployeeSear
     positionName: e.position?.name ?? null,
     companyEmail: e.companyEmail,
   }));
+}
+
+/** 팔레트 열릴 때 빈 상태에 보여줄 오늘의 이벤트 */
+export async function getSearchPreviewAction(): Promise<HomeEventItem[]> {
+  const session = await auth();
+  if (!session?.user?.employeeId) return [];
+  return listHomeEvents(session.user.employeeId);
 }

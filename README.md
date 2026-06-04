@@ -142,6 +142,25 @@ pnpm dev              # http://localhost:3000
 
 ## 데일리 스크럼
 
+### 6월 4일 목요일
+
+오늘은 휴가 신청의 날짜별 상세 일정(schedule) 표시를 마무리하고, 코드 레벨 디자인 점검으로 토큰 오타·그리드 불일치 등 5건을 수정했습니다. 이어서 Flex 전 도메인을 제대로 재정립하기 위해 **flex 폴더 347장을 15배치 병렬 에이전트로 전수 전사**(verbatim 문구·선택창 옵션·이벤트 동작·디자인·"왜 존재하는가"까지)해 SSOT를 완성했고, 이를 토대로 디자인 수정방안과 재정립 핸드오프 패키지를 만들었습니다. 마지막으로 같은 실수 반복을 막는 하네스(커밋·푸시 훅, PR/이슈 템플릿, Anti-Pattern 감지)를 도입했습니다.
+
+**[HR 웹 기능 개발]**
+☑ 휴가 신청/사용 내역에 날짜별 단위(schedule) 표시 — `history-tab` · `requests-table` (#3 마무리)
+☑ 디자인 버그 5건 수정 — `var(--warning)→--warn` · `.hist-row` 4열 정렬 · `.bd-legend .remaining` · `.st.end` · `.hist-row .desc` 오버플로우
+☑ ⌘K 커맨드 팔레트 + RecipientPicker에 생일·기념일·신규합류 이벤트 카드(빈 상태) 적용
+
+**[Flex 전수 분석 · 재정립]**
+☑ flex 347장 전수 전사 → `docs/_transcribe/flex.md` (5,213줄, 15배치 병렬)
+☑ 디자인 수정방안 → `docs/_handoff/04_디자인_수정방안.md` (Flex→Cool Slate 변주 매핑 + 도메인별 갭 + 토큰 위반 행번호)
+☑ 재정립 핸드오프 패키지 산출 (SSOT 4종 + 우리 설계 + 현재 디자인 + 수정방안)
+
+**[하네스 엔지니어링]**
+☑ `.git/hooks/commit-msg`(Conventional Commits) · `pre-push`(typecheck) · `.github/` PR·이슈 템플릿
+☑ `.claude/settings.json` Anti-Pattern PostToolUse 감지 + `scripts/track-antipattern.ps1`(3회↑→hook 추가)
+☐ 다음: #4 연차 정책 모달 보강 → #5 맞춤휴가 동적폼 → #6 관리자 모달 · 브라우저 런타임 검증
+
 ### 6월 2일 월요일
 
 **[HR 웹 기능 개발]**

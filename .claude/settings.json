@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm *)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add *)",
+      "Bash(git commit*)",
+      "Bash(curl -s -o /dev/null*)",
+      "Bash(chmod +x *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const f=process.env.CLAUDE_TOOL_INPUT_FILE_PATH||''; if(f&&!f.includes('test')&&!f.includes('.md')&&!f.includes('.css')&&!f.includes('.json')) { const fs=require('fs'); try{const c=fs.readFileSync(f,'utf8'); const issues=[]; if(c.includes(': any')) issues.push('any 타입'); if(c.includes('localStorage')) issues.push('localStorage'); if(/UPDATE\\s+employees/i.test(c)) issues.push('UPDATE employees'); if(issues.length) console.log('⚠️  Anti-Pattern 감지: '+issues.join(', ')+' — '+f); }catch(e){} }\""
+          }
+        ]
+      }
+    ]
+  }
+}

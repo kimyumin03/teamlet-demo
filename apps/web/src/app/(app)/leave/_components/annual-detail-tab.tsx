@@ -66,7 +66,7 @@ export function AnnualDetailTab({
       <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
         <SummaryCard label="자동 부여" value={summary.granted} color="var(--success)" />
         <SummaryCard label="소멸" value={summary.expired} color="var(--destructive)" />
-        <SummaryCard label="사용" value={summary.used > 0 ? -summary.used : 0} color="var(--warning)" />
+        <SummaryCard label="사용" value={summary.used > 0 ? -summary.used : 0} color="var(--warn)" />
         <SummaryCard label="조정" value={summary.adjusted} color="var(--primary)" />
       </div>
 

@@ -9,8 +9,9 @@
  *  - 모달: 칩(요청자별 승인/변경 허용) + 참조 섹션(알림 ▾) + N단계 승인 + 대상 피커 드롭다운
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent } from "@teamlet/ui";
+import { getSearchPreviewAction, type HomeEventItem } from "@/lib/actions/search";
 import {
   type RecipientPickerValue,
   type NotifyMode,
@@ -277,6 +278,26 @@ function RecipientPickerDialog({
    대상 피커 (검색 / 부서 그룹 / 구성원 목록 / 하위 조직 함께 선택)
    verbatim: flexv2 #23~24, #34
 ───────────────────────────────────────── */
+const EVENT_ICON: Record<HomeEventItem["eventType"], string> = {
+  birthday: "🎂",
+  join_anniversary: "🎉",
+  new_join: "👋",
+};
+function eventLabel(e: HomeEventItem): string {
+  if (e.eventType === "birthday") return `${e.name}님 생일`;
+  if (e.eventType === "join_anniversary") return `${e.name}님 ${e.years}주년`;
+  return `${e.name}님 신규 합류`;
+}
+
+const AVATAR_COLORS = [
+  ["#e0e7ff", "#4f46e5"], ["#fce7f3", "#be185d"], ["#dcfce7", "#166534"],
+  ["#fef9c3", "#854d0e"], ["#ffe4e6", "#9f1239"], ["#e0f2fe", "#075985"],
+];
+function avatarColor(name: string) {
+  const idx = name.charCodeAt(0) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[idx] ?? ["var(--bg-tertiary)", "var(--fg-muted)"];
+}
+
 function TargetPicker({
   employees,
   departments,
@@ -292,6 +313,11 @@ function TargetPicker({
 }) {
   const [q, setQ] = useState("");
   const [includeSubOrg, setIncludeSubOrg] = useState(false);
+  const [events, setEvents] = useState<HomeEventItem[]>([]);
+
+  useEffect(() => {
+    getSearchPreviewAction().then(setEvents);
+  }, []);
 
   // 부서 → 하위 부서 id 집합
   const childMap = useMemo(() => {
@@ -352,6 +378,57 @@ function TargetPicker({
 
           {/* 목록 */}
           <div style={{ overflowY: "auto", padding: "8px 8px 4px" }}>
+
+            {/* 빈 상태 — 오늘의 이벤트 */}
+            {!ql && events.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-muted)", padding: "4px 10px 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>오늘의 소식</div>
+                {events.slice(0, 3).map((ev) => {
+                  const [bg, fg] = avatarColor(ev.name);
+                  const empId = employees.find((e) => e.name === ev.name)?.id;
+                  const sel = empId ? selectedIds.includes(empId) : false;
+                  return (
+                    <button
+                      key={`${ev.employeeId}-${ev.eventType}`}
+                      type="button"
+                      disabled={sel || !empId}
+                      onClick={() => empId && !sel && onPick(empId)}
+                      style={{
+                        ...pickerRowStyle,
+                        opacity: sel ? 0.5 : 1,
+                        cursor: sel || !empId ? "default" : "pointer",
+                        gap: 10,
+                      }}
+                    >
+                      <span style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
+                        {/* 그라디언트 아바타 + 이벤트 뱃지 */}
+                        <span style={{ position: "relative", flexShrink: 0 }}>
+                          <span style={{
+                            width: 32, height: 32, borderRadius: "50%",
+                            background: `linear-gradient(135deg, ${bg}, ${fg}22)`,
+                            border: `1.5px solid ${bg}`,
+                            fontSize: 12, fontWeight: 700, display: "inline-flex",
+                            alignItems: "center", justifyContent: "center",
+                            color: fg,
+                          }}>{ev.name.slice(0, 1)}</span>
+                          <span style={{
+                            position: "absolute", bottom: -2, right: -4,
+                            fontSize: 13, lineHeight: 1,
+                          }}>{EVENT_ICON[ev.eventType]}</span>
+                        </span>
+                        <span>
+                          <span style={{ display: "block", fontWeight: 600, fontSize: 13 }}>{eventLabel(ev)}</span>
+                          {ev.departmentName && <span style={{ fontSize: 11, color: "var(--fg-muted)" }}>{ev.departmentName}</span>}
+                        </span>
+                      </span>
+                      <span style={{ fontSize: 11, color: "var(--fg-subtle)", flexShrink: 0 }}>{sel ? "✓" : "선택"}</span>
+                    </button>
+                  );
+                })}
+                <div style={{ height: 1, background: "var(--border)", margin: "6px 10px 8px" }} />
+              </div>
+            )}
+
             {/* 조직(부서) */}
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-muted)", padding: "6px 10px 4px" }}>조직</div>
             {departments.map((d) => {
@@ -361,7 +438,10 @@ function TargetPicker({
                 <button key={d.id} type="button"
                   onClick={() => members.forEach((m) => { if (!selectedIds.includes(m.id)) onPick(m.id); })}
                   style={pickerRowStyle}>
-                  <span>{d.name}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ width: 26, height: 26, borderRadius: 6, background: "var(--bg-secondary)", border: "1px solid var(--border)", fontSize: 13, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>🏢</span>
+                    {d.name}
+                  </span>
                   <span style={{ fontSize: 11, color: "var(--fg-subtle)" }}>{members.length}명</span>
                 </button>
               );
@@ -371,13 +451,25 @@ function TargetPicker({
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-muted)", padding: "10px 10px 4px" }}>구성원 목록</div>
             {filtered.map((e) => {
               const sel = selectedIds.includes(e.id);
+              const [bg, fg] = avatarColor(e.name);
               return (
-                <button key={e.id} type="button" disabled={sel} onClick={() => onPick(e.id)} style={{ ...pickerRowStyle, opacity: sel ? 0.5 : 1, cursor: sel ? "default" : "pointer" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--bg-tertiary)", fontSize: 10.5, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--fg-muted)" }}>{e.name.slice(-2)}</span>
-                    {e.name}
+                <button key={e.id} type="button" disabled={sel} onClick={() => onPick(e.id)}
+                  style={{ ...pickerRowStyle, opacity: sel ? 0.5 : 1, cursor: sel ? "default" : "pointer" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{
+                      width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                      background: `linear-gradient(135deg, ${bg}, ${fg}22)`,
+                      border: `1.5px solid ${bg}`,
+                      fontSize: 11, fontWeight: 700, display: "inline-flex",
+                      alignItems: "center", justifyContent: "center",
+                      color: fg,
+                    }}>{e.name.slice(0, 1)}</span>
+                    <span>
+                      <span style={{ display: "block", fontWeight: 600, fontSize: 13 }}>{e.name}</span>
+                      {e.departmentName && <span style={{ fontSize: 11, color: "var(--fg-muted)" }}>{e.departmentName}</span>}
+                    </span>
                   </span>
-                  <span style={{ fontSize: 11, color: "var(--fg-subtle)" }}>{sel ? "✓" : e.departmentName ?? ""}</span>
+                  <span style={{ fontSize: 11, color: "var(--fg-subtle)" }}>{sel ? "✓" : ""}</span>
                 </button>
               );
             })}

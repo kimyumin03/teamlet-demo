@@ -234,6 +234,7 @@
 .st.wait::before { background: var(--warn); border-radius: 1px; transform: rotate(45deg); width: 6px; height: 6px; }
 .st.run::before  { background: var(--primary); border-radius: 1px; }
 .st.rej::before  { background: var(--destructive); }
+.st.end::before  { background: var(--fg-subtle); }
 
 /* ─── 테이블 ─────────────────────────────────────────── */
 .tbl {
@@ -714,6 +715,7 @@
 .bd-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--bg-tertiary); border: 1px solid var(--border-strong); }
 .bd-legend .used i { background: var(--primary); border-color: var(--primary); }
 .bd-legend .scheduled i { background: var(--primary-soft); border-color: var(--primary); }
+.bd-legend .remaining i { background: var(--bg-secondary); border-color: var(--border-strong); }
 .bd-legend b { color: var(--fg); font-weight: 600; }
 .types-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .type { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
@@ -746,7 +748,7 @@
 .estimate .ev { color: var(--primary); font-weight: 600; }
 .apply-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
 .hist-row {
-  display: grid; grid-template-columns: 90px 1fr 90px 70px 110px;
+  display: grid; grid-template-columns: 90px 1fr 56px auto;
   gap: 12px; align-items: center;
   padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px;
   background: var(--bg-primary); margin-bottom: 6px;
@@ -755,8 +757,9 @@
 .hist-row:hover { border-color: var(--border-strong); }
 .hist-row .date { font-family: var(--font-mono); font-size: 12px; color: var(--fg-muted); }
 .hist-row .date b { color: var(--fg); font-weight: 700; display: block; font-size: 13px; }
-.hist-row .desc .t { font-size: 13.5px; font-weight: 600; }
-.hist-row .desc .s { font-size: 12px; color: var(--fg-muted); margin-top: 2px; }
+.hist-row .desc { min-width: 0; overflow: hidden; }
+.hist-row .desc .t { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-row .desc .s { font-size: 12px; color: var(--fg-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hist-row .kind { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: var(--bg-tertiary); color: var(--fg-muted); font-weight: 600; width: fit-content; }
 .hist-row .dur { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fg); text-align: right; }
 

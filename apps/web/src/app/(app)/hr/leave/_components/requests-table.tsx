@@ -34,6 +34,31 @@ function fmtDate(d: Date) {
   return new Date(d).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" });
 }
 
+function fmtMD(dateStr: string) {
+  const d = new Date(dateStr);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+const UNIT_LABEL: Record<string, string> = {
+  FULL: "종일",
+  AM_HALF: "오전반차",
+  PM_HALF: "오후반차",
+  HOURLY: "시간차",
+};
+
+function ScheduleCell({ schedule }: { schedule: { date: string; unit: string }[] }) {
+  if (schedule.length === 0) return null;
+  const MAX_SHOW = 2;
+  const shown = schedule.slice(0, MAX_SHOW);
+  const rest = schedule.length - MAX_SHOW;
+  return (
+    <p className="mt-0.5 text-[11px] text-foreground-subtle whitespace-nowrap">
+      {shown.map((e) => `${fmtMD(e.date)} ${UNIT_LABEL[e.unit] ?? e.unit}`).join(" · ")}
+      {rest > 0 && ` 외 ${rest}일`}
+    </p>
+  );
+}
+
 function ActionCell({ request }: { request: CompanyLeaveRequestItem }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -143,7 +168,8 @@ export function RequestsTable({ requests }: { requests: CompanyLeaveRequestItem[
                   <td className="px-4 py-3 text-foreground-muted whitespace-nowrap">{r.departmentName ?? "—"}</td>
                   <td className="px-4 py-3 text-foreground-muted whitespace-nowrap">{r.leaveTypeName}</td>
                   <td className="px-4 py-3 text-foreground-muted whitespace-nowrap tabular-nums">
-                    {fmtDate(r.startDate)}{r.startDate.toString() !== r.endDate.toString() && ` – ${fmtDate(r.endDate)}`}
+                    <span>{fmtDate(r.startDate)}{r.startDate.toString() !== r.endDate.toString() && ` – ${fmtDate(r.endDate)}`}</span>
+                    <ScheduleCell schedule={r.schedule} />
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-foreground">{r.days}일</td>
                   <td className="px-4 py-3 text-foreground-muted max-w-[180px] truncate">{r.reason || "—"}</td>
