@@ -154,7 +154,7 @@ export default async function HrLeavePage({
       {/* KPI 카드 */}
       <div className="kpis">
         <div className="kpi">
-          <span className="lbl">전사 평균 잔여</span>
+          <span className="lbl">전체 평균 잔여</span>
           <span className="val num">{avgRemaining}<small>일</small></span>
           <span className="delta">{exhaustedCount > 0 ? `소진 ${exhaustedCount}명 포함` : "연차 기준"}</span>
         </div>

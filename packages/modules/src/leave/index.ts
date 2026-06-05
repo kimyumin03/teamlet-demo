@@ -4,7 +4,7 @@ export { listLeaveTypes, getLeaveBalances, grantLeave, adjustLeave, listCompanyL
 export type { LeaveGrantHistoryRow } from "./balance";
 export { listPendingLeaveRequests, listMyLeaveRequests, listEmployeeLeaveHistory, requestLeave, approveLeave, rejectLeave, cancelLeave, finalizeLeaveFromApprovedDocument, finalizeLeaveFromRejectedDocument, listCompanyLeaveRequests } from "./request";
 export { listLeavePolicies, createLeavePolicy, updateLeavePolicy, deleteLeavePolicy, listPolicyAssignments, assignLeavePolicy, removeLeavePolicy, getMyAnnualPolicyApprover } from "./policy";
-export { runAnnualLeaveGrant, type AutoGrantResult } from "./auto-grant";
+export { runAnnualLeaveGrant, completedMonthsSinceHire, type AutoGrantResult } from "./auto-grant";
 export { listLeaveTypesFull, createLeaveType, updateLeaveType, deleteLeaveType } from "./leave-type";
 export type { LeaveTypeFullItem, LeaveTypeCreateInput, LeaveTypeUpdateInput } from "./leave-type";
 export type { LeaveBalanceSummary, GrantLeaveInput, RequestLeaveInput, LeaveTypeItem, LeaveRequestItem, PendingLeaveRequestItem, CompanyLeaveBalanceRow, CompanyLeaveRequestItem, AnnualLeaveLedger, AnnualLeaveLedgerRow, MonthlyAnnualUsageRow, LeaveScheduleEntry } from "./types";

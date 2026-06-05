@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { CompanyLeaveBalanceRow, LeaveTypeItem } from "@teamlet/modules/leave";
+import { completedMonthsSinceHire } from "@teamlet/modules/leave";
 import { GrantLeaveButton } from "@/components/hr/grant-leave-button";
 import { AdjustLeaveButton } from "@/components/hr/adjust-leave-button";
 
@@ -19,6 +20,19 @@ function avatarColor(name: string) {
 
 function annualOf(row: CompanyLeaveBalanceRow) {
   return row.balances.find((b) => b.leaveTypeKey === "annual") ?? null;
+}
+
+/** 입사일로부터 현재까지 근속 — 개월(<12) 또는 "N년 M개월".
+ *  연차 엔진과 동일한 completedMonthsSinceHire(민법 §160) 사용 → 부여 기준과 정확히 일치. */
+function formatTenure(hire: Date | null): string {
+  if (!hire) return "—";
+  const h = new Date(hire);
+  if (new Date() < h) return "입사 예정";
+  const months = completedMonthsSinceHire(h, new Date());
+  if (months < 12) return `${months}개월`;
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  return m === 0 ? `${y}년` : `${y}년 ${m}개월`;
 }
 
 function usageStatus(remaining: number, granted: number) {
@@ -115,13 +129,14 @@ export function LeaveStatusView({
           <span className="font-mono text-[11.5px] text-foreground-subtle">{filtered.length}명 표시</span>
         </div>
 
-        {/* 테이블 */}
-        <div className="flex-1 overflow-auto">
+        {/* 테이블 — 약 8명까지 보이고 그 이상은 스크롤 */}
+        <div className="flex-1 overflow-auto" style={{ maxHeight: 464 }}>
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
               <tr className="border-b border-border bg-background-primary text-left">
                 <th className="px-5 py-2.5 text-[11.5px] font-medium text-foreground-subtle">이름</th>
                 <th className="px-3 py-2.5 text-[11.5px] font-medium text-foreground-subtle">사번</th>
+                <th className="px-3 py-2.5 text-[11.5px] font-medium text-foreground-subtle">근속</th>
                 <th className="px-3 py-2.5 text-right text-[11.5px] font-medium text-foreground-subtle">연차 잔여/부여</th>
                 <th className="px-3 py-2.5 text-right text-[11.5px] font-medium text-foreground-subtle">사용</th>
                 <th className="px-3 py-2.5 text-[11.5px] font-medium text-foreground-subtle">기타 휴가</th>
@@ -164,6 +179,9 @@ export function LeaveStatusView({
                     </td>
                     <td className="px-3 py-3 font-mono text-[12px] text-foreground-muted">
                       {row.employeeNumber ?? "—"}
+                    </td>
+                    <td className="px-3 py-3 text-[12px] text-foreground-muted whitespace-nowrap">
+                      {formatTenure(row.hireDate)}
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-2">
@@ -258,7 +276,7 @@ export function LeaveStatusView({
             <p className="mb-2 text-[11.5px] font-semibold uppercase tracking-wider text-foreground-muted">
               휴가 종류별 잔여
             </p>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5" style={{ maxHeight: 320, overflowY: "auto", paddingRight: 2 }}>
               {selectedAnnual && (
                 <div className="flex items-center justify-between rounded-[8px] border border-border bg-background-primary px-3 py-2.5">
                   <div>

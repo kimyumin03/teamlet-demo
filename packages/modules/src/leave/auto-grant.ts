@@ -39,18 +39,21 @@ function roundByRule(v: number, rule: DecimalRule): number {
 }
 
 /**
- * 입사일로부터 asOf 시점까지 만(완성) 근속 개월 수.
- * 예) 2026-06-01 입사 → 2026-06-05 = 0개월 (입사 직후)
- *     2026-06-01 입사 → 2026-07-01 = 1개월 (1개월 만근)
- *     2026-06-01 입사 → 2026-12-31 = 6개월
- *     2025-01-01 입사 → 2026-06-05 = 17개월 (만 1년 경과)
+ * 입사일로부터 asOf 시점까지 만(완성) 근속 개월 수. 민법 §160(역에 의한 기간 계산) 기준.
+ * - 응당일(입사 일자)에 도달해야 그 달이 1개월로 완성.
+ * - 응당일이 해당 월에 없으면(예: 1/31 입사 → 2월) 그 월의 말일을 응당일로 간주.
+ * 예) 2026-06-01 입사 → 2026-06-05 = 0개월 / 2026-07-01 = 1개월 / 2026-12-31 = 6개월
+ *     2025-01-31 입사 → 2025-02-28 = 1개월(말일 응당) / 2025-03-30 = 1개월
+ *     2025-06-01 입사 → 2026-06-01 = 12개월(만 1년)
  */
-function completedMonthsSinceHire(hireDate: Date, asOf: Date): number {
+export function completedMonthsSinceHire(hireDate: Date, asOf: Date): number {
   let months =
     (asOf.getUTCFullYear() - hireDate.getUTCFullYear()) * 12 +
     (asOf.getUTCMonth() - hireDate.getUTCMonth());
-  // asOf 일자가 입사 일자보다 이르면 해당 월 미완성 → 1 차감
-  if (asOf.getUTCDate() < hireDate.getUTCDate()) months -= 1;
+  // asOf 월의 말일 (응당일 보정용)
+  const lastDayOfAsOfMonth = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() + 1, 0)).getUTCDate();
+  const anniversaryDay = Math.min(hireDate.getUTCDate(), lastDayOfAsOfMonth);
+  if (asOf.getUTCDate() < anniversaryDay) months -= 1;
   return Math.max(0, months);
 }
 
