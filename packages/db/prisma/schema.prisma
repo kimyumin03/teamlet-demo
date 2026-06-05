@@ -362,6 +362,7 @@ model Company {
   notifications     Notification[]
   leavePolicies     LeavePolicy[]
   leaveSettings     CompanyLeaveSettings?
+  recognitions      Recognition[]
   appointments      Appointment[]
   announcements     Announcement[]
   approvalPolicies  ApprovalPolicy[]
@@ -510,6 +511,8 @@ model Employee {
   syncLockedFields String[]         @default([])
   bulkImportRowId  String?
   isActive         Boolean          @default(true)
+  // 공지사항 마지막 확인 시각 — 이후 생성된 공지 수 = 읽지 않은 공지
+  lastAnnouncementReadAt DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -543,6 +546,8 @@ model Employee {
   leaveTypesAsApprover    LeaveType[]      @relation("LeaveTypeApprover")
   leavePoliciesAsApprover LeavePolicy[]    @relation("LeavePolicyApprover")
   leavePromotions         LeavePromotion[] @relation("EmployeeLeavePromotions")
+  recognitionsSent        Recognition[]    @relation("RecognitionSender")
+  recognitionsReceived    Recognition[]    @relation("RecognitionRecipient")
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
@@ -778,6 +783,8 @@ model LeaveType {
   evidenceRequirement  LeaveEvidenceRequirement @default(NONE)
   // 사용 단위 (한번에 모두 / 나눠서: 일·반차·시간)
   useUnit              LeaveUseUnit            @default(DAY)
+  // 시간차 사용 최소 단위(분) — useUnit = HOUR 일 때. null = 제한 없음
+  hourUnitMinutes      Int?
   // 일부 유급 % (paymentType = PARTIAL_PAID 일 때)
   partialPayPercent    Int?
   // 휴가 기간에 휴일이 포함된 경우 휴일도 차감하는지
@@ -883,6 +890,30 @@ model CompanyHoliday {
   @@unique([companyId, date])
   @@index([companyId])
   @@map("company_holidays")
+}
+
+/// 인정·피드백 — 개인 간 메시지(공용 아님). 수신자 본인만 확인.
+enum RecognitionKind {
+  RECOGNITION // 인정
+  FEEDBACK    // 피드백
+}
+
+model Recognition {
+  id          String          @id @default(cuid())
+  companyId   String
+  senderId    String          // 보낸 사람 (Employee)
+  recipientId String          // 받는 사람 (Employee) — 본인만 확인
+  kind        RecognitionKind @default(RECOGNITION)
+  message     String
+  isRead      Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sender    Employee @relation("RecognitionSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient Employee @relation("RecognitionRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, recipientId, createdAt])
+  @@map("recognitions")
 }
 
 /// 휴가 변동 이력 — 불변 원장. 부여/소멸/사용/조정 모두 기록.
