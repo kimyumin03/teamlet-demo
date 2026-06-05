@@ -112,7 +112,7 @@ export function ProfileShell({
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* ── 히어로 ── */}
       <div className="profile-hero">
-        <div className="profile-av" style={{ background: `linear-gradient(135deg, ${avatarBg(emp.name)}22, ${avatarBg(emp.name)}44)`, color: avatarBg(emp.name) }}>
+        <div className="profile-av" style={{ background: `${avatarBg(emp.name)}22`, color: avatarBg(emp.name) }}>
           {emp.name.slice(-2)}
         </div>
         <div className="profile-meta">

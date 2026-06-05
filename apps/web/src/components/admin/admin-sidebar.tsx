@@ -61,15 +61,15 @@ export function AdminSidebar({
     exact ? pathname === href : pathname.startsWith(href);
 
   return (
-    <aside className="flex w-56 flex-col bg-zinc-900 text-zinc-100">
+    <aside className="flex w-56 flex-col bg-slate-900 text-slate-100">
       {/* 브랜드 */}
-      <div className="flex h-14 items-center gap-2.5 border-b border-zinc-800 px-5">
-        <div className="flex h-6 w-6 items-center justify-center rounded bg-indigo-500 text-[10px] font-bold text-white">
+      <div className="flex h-14 items-center gap-2.5 border-b border-slate-800 px-5">
+        <div className="flex h-6 w-6 items-center justify-center rounded bg-accent text-[10px] font-bold text-white">
           T
         </div>
         <div className="leading-tight">
           <p className="text-xs font-semibold text-white">Teamlet</p>
-          <p className="text-[10px] text-zinc-400">운영 콘솔</p>
+          <p className="text-[10px] text-slate-400">운영 콘솔</p>
         </div>
       </div>
 
@@ -83,8 +83,8 @@ export function AdminSidebar({
               href={item.href}
               className={`flex items-center justify-between gap-2.5 rounded-md px-3 py-2 text-sm transition-colors ${
                 active
-                  ? "bg-zinc-700 text-white"
-                  : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+                  ? "bg-slate-700 text-white"
+                  : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
               }`}
             >
               <span className="flex items-center gap-2.5">
@@ -92,7 +92,7 @@ export function AdminSidebar({
                 {item.label}
               </span>
               {item.href === "/admin/applications" && pendingCount > 0 && (
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white">
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-warning-500 px-1 text-[10px] font-semibold text-white">
                   {pendingCount}
                 </span>
               )}
@@ -102,19 +102,19 @@ export function AdminSidebar({
       </nav>
 
       {/* 하단: 관리자 정보 + 앱 이동 */}
-      <div className="border-t border-zinc-800 p-3">
+      <div className="border-t border-slate-800 p-3">
         <div className="mb-2 flex items-center gap-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-semibold text-white">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-white">
             {adminName.charAt(0)}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-xs font-medium text-zinc-100">{adminName}</p>
-            <p className="truncate text-[10px] text-zinc-500">{adminEmail}</p>
+            <p className="truncate text-xs font-medium text-slate-100">{adminName}</p>
+            <p className="truncate text-[10px] text-slate-500">{adminEmail}</p>
           </div>
         </div>
         <Link
           href="/home"
-          className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+          className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300"
         >
           <svg viewBox="0 0 16 16" fill="currentColor" className="size-3">
             <path fillRule="evenodd" d="M14 8a.75.75 0 0 1-.75.75H4.56l3.22 3.22a.75.75 0 1 1-1.06 1.06l-4.5-4.5a.75.75 0 0 1 0-1.06l4.5-4.5a.75.75 0 0 1 1.06 1.06L4.56 7.25h8.69A.75.75 0 0 1 14 8Z" clipRule="evenodd" />

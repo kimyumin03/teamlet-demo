@@ -1,0 +1,166 @@
+/* settings.css — 설정 셸 + 연차 정책 빌더 + 부여방식 서브모달 */
+
+/* 설정 셸 (메인 사이드바 안쪽 2-col) */
+.set-wrap { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-width: 0; overflow: hidden; }
+.set-wrap .snav-s { height: calc(100vh - 49px); position: sticky; top: 0; }
+.set-main { padding: 28px 32px 40px; overflow-y: auto; min-width: 0; }
+
+/* 정책 카드 (4컬럼 요약) */
+.policy-card { border: 1px solid var(--border); border-radius: 14px; background: var(--bg-primary); padding: 18px 20px; cursor: pointer; transition: border-color 120ms, box-shadow 120ms; }
+.policy-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+.policy-card-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.policy-card-t { font-size: 15px; font-weight: 700; white-space: nowrap; }
+.btn.btn-sm { padding: 6px 12px; font-size: 12px; }
+.policy-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.policy-col { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.pc-l { font-size: 11px; color: var(--fg-subtle); font-weight: 500; white-space: nowrap; }
+.pc-v { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.pc-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); flex-shrink: 0; }
+.pc-dot.on { background: var(--success); }
+.policy-card-f { display: flex; align-items: center; gap: 8px; padding-top: 12px; font-size: 12px; color: var(--fg-muted); }
+.policy-card-f span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+/* 퇴직자 기준 라디오 */
+.retire-opts { display: flex; flex-direction: column; gap: 8px; }
+
+/* 정책 빌더 모달 */
+.pb-title { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.pb-title-in { font-size: 16px; font-weight: 700; border: 1px solid transparent; border-radius: 6px; padding: 4px 8px; background: transparent; color: var(--fg); font-family: inherit; max-width: 280px; }
+.pb-title-in:hover { background: var(--bg-secondary); }
+.pb-title-in:focus { outline: none; border-color: var(--primary); background: var(--bg-primary); }
+.pb-line { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; }
+.pb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pb-toggle { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; cursor: pointer; padding: 4px 0; white-space: nowrap; }
+.pb-sub { margin-top: 8px; }
+.pb-rowbtn { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-primary); cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--fg); transition: border-color 120ms; }
+.pb-rowbtn:hover { border-color: var(--border-strong); }
+.pb-rowbtn svg { color: var(--fg-subtle); }
+.pb-hint { font-size: 11.5px; color: var(--fg-muted); margin-top: 8px; line-height: 1.5; }
+
+/* set-field 컨트롤 정렬(빌더 내부 여러 컨트롤 세로배치) */
+.modal .set-field { padding: 16px 0; }
+.modal .set-ctl { gap: 0; }
+
+/* 배지 [추천]/[95%] — accent/중립 (초록 금지) */
+.pbadge { font-size: 10px; font-weight: 600; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.pbadge.rec { background: var(--accent-50); color: var(--accent); }
+.pbadge.stat { background: var(--bg-tertiary); color: var(--fg-muted); font-family: var(--font-mono); }
+
+/* 부여방식 서브모달 */
+.gm-tabs { display: inline-flex; padding: 3px; background: var(--bg-secondary); border-radius: 9px; gap: 2px; }
+.gm-tabs button { padding: 8px 18px; font-size: 13px; font-weight: 500; color: var(--fg-muted); background: none; border: none; border-radius: 7px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.gm-tabs button.on { background: var(--bg-primary); color: var(--fg); font-weight: 600; box-shadow: var(--shadow-sm); }
+.gm-note { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--fg-muted); background: var(--warn-50); border-radius: 8px; padding: 11px 13px; line-height: 1.55; }
+.gm-opt { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; }
+.gm-opt-l { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.gm-opt-r { display: flex; align-items: center; gap: 8px; font-size: 13px; white-space: nowrap; }
+.gm-group { display: flex; flex-direction: column; gap: 6px; }
+.gm-group-l { font-size: 12px; font-weight: 600; color: var(--fg-muted); }
+.gm-radio { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 9px; cursor: pointer; transition: all 120ms; }
+.gm-radio:hover { border-color: var(--border-strong); }
+.gm-radio.on { border-color: var(--primary); background: var(--primary-soft); }
+.gm-dot { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--border-strong); flex-shrink: 0; position: relative; }
+.gm-radio.on .gm-dot { border-color: var(--primary); }
+.gm-radio.on .gm-dot::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--primary); }
+.gm-radio-l { font-size: 13px; font-weight: 500; flex: 1; }
+.gm-radio-l small { display: block; font-size: 11px; color: var(--fg-muted); font-weight: 400; margin-top: 2px; }
+.gm-warn { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--warn); margin-top: 2px; }
+
+/* 자동 부여 미리보기 테이블 */
+.gm-preview { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.gm-preview-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; background: var(--bg-secondary); font-size: 12.5px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.gm-preview-h span { font-size: 11px; font-weight: 500; color: var(--fg-muted); }
+.gm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.gm-table th { text-align: left; font-size: 10.5px; font-weight: 600; color: var(--fg-subtle); text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; background: var(--bg-muted); }
+.gm-table th.num, .gm-table td.num { text-align: right; font-family: var(--font-mono); }
+.gm-table td { padding: 9px 14px; border-top: 1px solid var(--border); }
+.gm-table td.b { font-weight: 700; color: var(--fg); }
+.gm-table td.b small { font-size: 11px; color: var(--fg-muted); font-weight: 400; margin-left: 2px; }
+.gm-table tr.hl td { background: var(--accent-50); }
+.gm-rownote { font-size: 10.5px; color: var(--accent); margin-left: 8px; }
+.gm-table .sn { font-family: var(--font-mono); color: var(--fg-muted); font-size: 12px; }
+
+.set-wrap .snav-s a { white-space: nowrap; }
+
+/* 관리자 그룹 라벨 (인사 관리자 권한 표시) */
+.nav-label.admin { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.nav-admin-tag { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--accent); background: var(--accent-50); border-radius: 999px; padding: 2px 7px; }
+
+/* ─── 설정 서브페이지 공통 ─────────────────────────────── */
+.set-count { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--fg-subtle); background: var(--bg-tertiary); border-radius: 999px; padding: 1px 8px; margin-left: 4px; }
+.set-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.set-grid2 .set-field { padding: 0; }
+.set-time { display: flex; align-items: center; gap: 10px; }
+.set-time .ti { width: 90px; text-align: center; }
+
+/* 회사 정보 */
+.set-company { display: grid; grid-template-columns: 140px 1fr; gap: 28px; align-items: start; }
+.set-logo-slot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.set-logo { width: 96px; height: 96px; border-radius: 20px; background: var(--color-slate-900); color: #fff; font-size: 44px; font-weight: 800; display: grid; place-items: center; }
+.set-form { display: flex; flex-direction: column; gap: 14px; }
+.set-form-row { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: 16px; }
+.set-form-row label { font-size: 12.5px; font-weight: 600; color: var(--fg-muted); }
+
+/* 쉬는 날 */
+.hol-list { display: flex; flex-direction: column; gap: 2px; }
+.hol-row { display: flex; align-items: center; gap: 14px; padding: 10px 12px; border-radius: 8px; }
+.hol-row:hover { background: var(--bg-secondary); }
+.hol-date { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--fg); width: 84px; flex-shrink: 0; }
+.hol-name { flex: 1; font-size: 13px; }
+.hol-tag { font-size: 10.5px; font-weight: 600; border-radius: 999px; padding: 2px 9px; }
+.hol-tag.legal { background: var(--destructive-50); color: var(--destructive-700); }
+.hol-tag.company { background: var(--accent-50); color: var(--accent); }
+.hol-del { background: none; border: none; cursor: pointer; color: var(--fg-subtle); padding: 3px; border-radius: 5px; display: grid; place-items: center; }
+.hol-del:hover { color: var(--destructive); background: var(--destructive-50); }
+
+/* 휴가 종류 테이블 */
+.lt-tbl { width: 100%; }
+.lt-tbl tbody tr.off-row { opacity: 0.5; }
+.lt-name { font-size: 13.5px; font-weight: 600; }
+.lt-yes { font-size: 11.5px; font-weight: 600; color: var(--success-700); background: var(--success-50); border-radius: 6px; padding: 2px 9px; }
+.lt-no { font-size: 11.5px; font-weight: 500; color: var(--fg-muted); background: var(--bg-secondary); border-radius: 6px; padding: 2px 9px; }
+
+/* 작은 토글 (테이블 셀) — 기본 .tog 동작 사용, 셀에서 인라인블록으로 크기 확보 */
+.tog-sm { display: inline-block; vertical-align: middle; }
+
+/* 인사 체계 */
+.rank-list { display: flex; flex-direction: column; gap: 6px; }
+.rank-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-primary); }
+.rank-handle { color: var(--fg-subtle); cursor: grab; display: grid; place-items: center; }
+.rank-level { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-50); border-radius: 6px; padding: 2px 8px; }
+.rank-name { flex: 1; font-size: 13.5px; font-weight: 600; }
+.rank-members { font-size: 12px; color: var(--fg-muted); font-family: var(--font-mono); }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.set-chip { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; font-size: 12.5px; font-weight: 500; background: var(--bg-primary); }
+.set-chip.add { color: var(--fg-muted); cursor: pointer; border-style: dashed; font-family: inherit; }
+.set-chip.add:hover { border-color: var(--primary); color: var(--fg); }
+
+/* 권한 매트릭스 */
+.perm-scroll { overflow-x: auto; }
+.perm-tbl { width: 100%; border-collapse: collapse; }
+.perm-tbl th, .perm-tbl td { border-bottom: 1px solid var(--border); }
+.perm-tbl thead th { background: var(--bg-muted); padding: 12px 10px; vertical-align: bottom; }
+.perm-feat-h { text-align: left; font-size: 11px; font-weight: 600; color: var(--fg-subtle); text-transform: uppercase; letter-spacing: 0.04em; min-width: 130px; }
+.perm-role { text-align: center; min-width: 110px; }
+.perm-role-n { font-size: 12.5px; font-weight: 700; }
+.perm-role-s { font-size: 10.5px; color: var(--fg-muted); margin-top: 2px; }
+.perm-role-m { font-size: 10px; color: var(--fg-subtle); font-family: var(--font-mono); margin-top: 3px; }
+.perm-feat { font-size: 13px; font-weight: 500; padding: 12px 10px; }
+.perm-cell { text-align: center; padding: 10px; }
+.perm-c { display: inline-grid; place-items: center; min-width: 24px; height: 22px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+.perm-c.full { background: var(--success); color: #fff; width: 22px; }
+.perm-c.part { background: var(--accent-50); color: var(--accent); padding: 0 8px; }
+.perm-c.none { color: var(--fg-subtle); }
+.perm-legend { display: flex; gap: 18px; margin-top: 14px; padding: 0 4px; font-size: 12px; color: var(--fg-muted); }
+.perm-legend span { display: inline-flex; align-items: center; gap: 7px; }
+
+/* 알림 테이블 */
+.notif-tbl { width: 100%; }
+.notif-ch { text-align: center; width: 90px; }
+.notif-ev { font-size: 13px; font-weight: 500; }
+.notif-cell { text-align: center; }
+
+/* 보안 */
+.sec-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.sec-item-copy .t { font-size: 13.5px; font-weight: 600; }
+.sec-item-copy .s { font-size: 12px; color: var(--fg-muted); margin-top: 3px; line-height: 1.5; }

@@ -1,0 +1,109 @@
+/* leave.css — 휴가 도메인 전용 (듀얼 캘린더·상세 편집·결재선·히어로 바) */
+
+/* 신청 모달 2-pane */
+.lv-apply { display: grid; grid-template-columns: minmax(0, 1fr) 340px; flex: 1; min-height: 0; overflow: hidden; }
+.lv-apply-main { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+.lv-apply-side { overflow-y: auto; border-left: 1px solid var(--border); background: var(--bg-muted); padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+
+/* 듀얼 캘린더 */
+.dual-cal { display: flex; gap: 20px; }
+.rcal { flex: 1; min-width: 0; }
+.rcal-month { font-size: 13px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+.rcal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.rcal-dow { font-size: 10px; font-weight: 600; color: var(--fg-subtle); text-align: center; padding: 2px 0 5px; }
+.rcal-dow.sun { color: var(--destructive); }
+.rcal-d {
+  aspect-ratio: 1; border: none; background: none; cursor: pointer; font-family: inherit;
+  font-size: 12.5px; color: var(--fg); border-radius: 7px; padding: 0;
+  display: grid; place-items: center; transition: background 100ms;
+}
+.rcal-d:hover { background: var(--bg-secondary); }
+.rcal-d.out { visibility: hidden; cursor: default; }
+.rcal-d.sun { color: var(--destructive-600); }
+.rcal-d.today { box-shadow: inset 0 0 0 1.5px var(--border-strong); font-weight: 700; }
+.rcal-d.in { background: var(--primary-soft); border-radius: 0; color: var(--fg); }
+.rcal-d.start, .rcal-d.end { background: var(--primary); color: var(--primary-on); font-weight: 700; }
+.rcal-d.start { border-radius: 7px 0 0 7px; }
+.rcal-d.end { border-radius: 0 7px 7px 0; }
+.rcal-d.start.end { border-radius: 7px; }
+
+.range-summary { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding: 9px 12px; background: var(--bg-secondary); border-radius: 8px; font-size: 13px; font-weight: 600; }
+.range-summary > span { display: inline-flex; align-items: center; gap: 7px; }
+.range-edit { display: inline-flex; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--accent); font-family: inherit; }
+.range-edit svg { transition: transform 120ms; }
+
+/* 상세 일정 편집 */
+.day-edit { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-muted); }
+.day-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.day-label { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.day-label small { color: var(--fg-muted); font-weight: 500; }
+.day-seg { display: inline-flex; padding: 2px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; gap: 2px; }
+.day-seg button { padding: 5px 11px; font-size: 11.5px; font-weight: 500; color: var(--fg-muted); background: none; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.day-seg button.on { background: var(--primary); color: var(--primary-on); font-weight: 600; }
+.day-note { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--fg-muted); margin-top: 2px; }
+
+/* 우측 요약 */
+.lv-sum { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 9px; }
+.lv-sum-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--fg-muted); }
+.lv-sum-row b { color: var(--fg); font-size: 15px; }
+.lv-sum-row.hl { border-top: 1px dashed var(--border); padding-top: 9px; color: var(--fg); font-weight: 600; }
+.lv-sum-row.hl b { color: var(--primary); font-size: 17px; }
+
+/* 결재선 패널 */
+.lv-line { display: flex; flex-direction: column; gap: 12px; }
+.lv-line-h { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; font-weight: 700; }
+.lv-line-grp { display: flex; flex-direction: column; gap: 6px; }
+.lv-line-l { font-size: 10.5px; font-weight: 600; color: var(--fg-subtle); text-transform: uppercase; letter-spacing: 0.05em; }
+.lv-line-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 10px; }
+.lv-line-badge { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; color: var(--fg-muted); background: var(--bg-secondary); border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
+.lv-line-badge.ref { color: var(--accent); background: var(--accent-50); }
+
+/* 히어로 사용 바 (다크 슬레이트 위) */
+.lv-hero-bar-wrap { display: flex; flex-direction: column; gap: 10px; min-width: 240px; }
+.lv-hero-bar { height: 12px; border-radius: 6px; background: rgba(255,255,255,0.16); display: flex; overflow: hidden; }
+.lv-hero-bar i { height: 100%; display: block; }
+.lv-hero-bar i.used { background: #fff; }
+.lv-hero-bar i.sch { background: rgba(255,255,255,0.5); }
+.lv-hero-legend { display: flex; gap: 14px; font-size: 11.5px; color: rgba(255,255,255,0.8); flex-wrap: wrap; }
+.lv-hero-legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.lv-hero-legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.lv-hero-legend .u { background: #fff; }
+.lv-hero-legend .s { background: rgba(255,255,255,0.5); }
+.lv-hero-legend .r { background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.4); }
+
+.app.dense .lv-apply-main { gap: 12px; padding: 16px; }
+
+/* nowrap 보정 */
+.lv-sum-row span, .lv-sum-row b, .range-summary > span, .range-edit, .lv-line-h, .lv-line-badge { white-space: nowrap; }
+
+/* ─── 관리자 휴가 관리 ─────────────────────────────────── */
+.lv-switch { padding: 4px; }
+.lv-switch .v { padding: 7px 16px; font-size: 14px; font-weight: 600; }
+.lv-switch .v.active { color: var(--fg); }
+
+.sht-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 16px; }
+.sht-actions .btn { flex: 1; justify-content: center; }
+
+.mini-ledger { width: 100%; border-collapse: collapse; font-size: 12px; }
+.mini-ledger th { text-align: right; font-size: 10px; font-weight: 600; color: var(--fg-subtle); text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 6px; border-bottom: 1px solid var(--border); }
+.mini-ledger th:first-child { text-align: left; }
+.mini-ledger td { padding: 7px 6px; border-bottom: 1px solid var(--border); text-align: right; font-family: var(--font-mono); color: var(--fg-muted); }
+.mini-ledger td:first-child { text-align: left; font-family: var(--font-sans); color: var(--fg); font-weight: 500; }
+.mini-ledger td.b { color: var(--fg); font-weight: 700; }
+.mini-ledger tbody tr:last-child td { border-bottom: none; }
+.ldg-badge { font-size: 9px; font-weight: 600; color: var(--accent); background: var(--accent-50); border-radius: 4px; padding: 1px 5px; margin-left: 6px; font-family: var(--font-sans); }
+
+.ledger-full td, .ledger-full th { font-size: 13px; }
+.ledger-foot { font-size: 11.5px; color: var(--fg-subtle); padding: 12px 4px; }
+
+.adjust-ctl { display: flex; align-items: center; gap: 12px; }
+.stepper { display: inline-flex; align-items: center; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.stepper button { width: 34px; height: 34px; border: none; background: var(--bg-primary); cursor: pointer; font-size: 16px; color: var(--fg); font-family: inherit; }
+.stepper button:hover { background: var(--bg-secondary); }
+.stepper .num { min-width: 56px; text-align: center; font-size: 14px; font-weight: 600; border-left: 1px solid var(--border); border-right: 1px solid var(--border); padding: 7px 0; }
+.audit-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-muted); background: var(--bg-secondary); border-radius: 8px; padding: 10px 12px; line-height: 1.5; }
+.audit-note b { color: var(--fg); font-weight: 600; }
+
+.adj-delta { font-family: var(--font-mono); font-size: 14px; font-weight: 700; text-align: center; }
+.adj-delta.up { color: var(--success-700); }
+.adj-delta.down { color: var(--destructive); }

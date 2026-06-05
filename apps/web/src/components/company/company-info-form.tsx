@@ -105,7 +105,7 @@ export function CompanyInfoForm({ initialInfo }: { initialInfo: CompanyInfo }) {
           ) : (
             <div
               className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-[14px] text-[22px] font-bold"
-              style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-hover))", color: "var(--primary-on)" }}
+              style={{ background: "var(--primary)", color: "var(--primary-on)" }}
             >
               {companyInitial}
             </div>

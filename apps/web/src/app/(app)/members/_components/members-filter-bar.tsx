@@ -3,8 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-type DeptOption = { id: string; name: string };
-
 function FilterDropdown({
   value,
   onChange,
@@ -95,10 +93,8 @@ function FilterDropdown({
 }
 
 export function MembersFilterBar({
-  departments,
   initialQ,
 }: {
-  departments: DeptOption[];
   initialQ: string;
 }) {
   const params = useSearchParams();
@@ -116,10 +112,6 @@ export function MembersFilterBar({
   const status = params.get("status") ?? "";
   const empType = params.get("empType") ?? "";
 
-  const deptOptions = [
-    { value: "", label: "조직 · 전체" },
-    ...departments.map((d) => ({ value: d.id, label: d.name })),
-  ];
   const statusOptions = [
     { value: "", label: "재직 상태 · 전체" },
     { value: "ACTIVE", label: "재직" },
@@ -140,12 +132,6 @@ export function MembersFilterBar({
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-      <FilterDropdown
-        value={dept}
-        onChange={(v) => navigate({ department: v, status, empType })}
-        options={deptOptions}
-        placeholder="조직"
-      />
       <FilterDropdown
         value={status}
         onChange={(v) => navigate({ department: dept, status: v, empType })}

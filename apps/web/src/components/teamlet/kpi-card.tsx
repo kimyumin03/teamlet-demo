@@ -29,7 +29,7 @@ export function KpiCard({
       : "bg-[var(--bg-primary)] border-[var(--border)] hover:border-[var(--border-strong)] hover:-translate-y-px hover:shadow-md"
   );
   const style = cta
-    ? { background: "linear-gradient(140deg, var(--primary), var(--primary-hover))" }
+    ? { background: "var(--primary)" }
     : undefined;
 
   const inner = (

@@ -26,7 +26,7 @@ export default async function SettingsLayout({ children }: { children: React.Rea
     : [false, false, false];
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg)]">
+    <div className="flex h-screen overflow-hidden bg-[var(--bg)]">
       {/* 설정 사이드 네비 */}
       <nav className="sticky top-0 h-screen w-[220px] shrink-0 bg-[var(--bg-primary)] border-r border-[var(--border)] p-3 pt-4 overflow-y-auto">
         <div className="flex items-center gap-2 px-2.5 mb-5 pb-4 border-b border-[var(--border)]">

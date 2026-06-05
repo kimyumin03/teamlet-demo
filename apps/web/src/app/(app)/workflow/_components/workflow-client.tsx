@@ -130,30 +130,16 @@ export function WorkflowClient({
         ))}
       </div>
 
-      {/* 서브탭 (진행중/완료/전체) — 언더라인 */}
-      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--border)", marginBottom: 0 }}>
+      {/* 서브탭 (진행중/완료/전체) — 디자인 .wf-tabs */}
+      <div className="wf-tabs">
         {SUB_TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setStatus(t.id)}
-            style={{
-              padding: "10px 14px", fontSize: 13.5, fontWeight: status === t.id ? 600 : 400,
-              color: status === t.id ? "var(--fg)" : "var(--fg-muted)",
-              background: "none", border: "none", cursor: "pointer",
-              borderBottom: `2px solid ${status === t.id ? "var(--fg)" : "transparent"}`,
-              marginBottom: -1, fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6,
-              transition: "color 120ms",
-            }}
+            className={`wf-tab${status === t.id ? " active" : ""}`}
           >
             {t.label}
-            {t.count > 0 && (
-              <span style={{
-                fontFamily: "var(--font-mono)", fontSize: 10.5, fontWeight: 700,
-                padding: "1px 6px", borderRadius: 999,
-                background: status === t.id ? "var(--primary)" : "var(--bg-tertiary)",
-                color: status === t.id ? "var(--primary-on)" : "var(--fg-muted)",
-              }}>{t.count}</span>
-            )}
+            {t.count > 0 && <span className="count">{t.count}</span>}
           </button>
         ))}
       </div>

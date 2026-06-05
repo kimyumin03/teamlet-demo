@@ -8,6 +8,7 @@
   --bg-primary: var(--color-background-primary);
   --bg-secondary: var(--color-background-secondary);
   --bg-tertiary: var(--color-slate-200);
+  --bg-muted: var(--color-background-muted);
   --fg: var(--color-foreground);
   --fg-muted: var(--color-foreground-muted);
   --fg-subtle: var(--color-foreground-subtle);
@@ -19,16 +20,18 @@
   --primary-on: var(--color-primary-foreground);
   --destructive: var(--color-destructive-600);
   --destructive-50: var(--color-destructive-50);
+  --destructive-500: var(--color-destructive-500);
   --destructive-600: var(--color-destructive-600);
   --destructive-700: var(--color-destructive-700);
   --success: var(--color-success-500);
   --success-50: var(--color-success-50);
+  --success-700: var(--color-success-700);
   --warn: var(--color-warning-700);
   --warn-50: var(--color-warning-50);
   --info: var(--color-info-500);
   --info-50: var(--color-info-50);
-  --purple: #7c3aed;
-  --purple-50: #faf5ff;
+  --accent: var(--color-accent);
+  --accent-50: var(--color-blue-50);
   --kbd-bg: var(--color-background-secondary);
 }
 
@@ -37,7 +40,7 @@
 .num  { font-variant-numeric: tabular-nums; }
 
 /* ─── 앱 셸 레이아웃 ────────────────────────────────── */
-.app  { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; background: var(--bg); }
+.app  { display: grid; grid-template-columns: 248px 1fr; height: 100vh; overflow: hidden; background: var(--bg); }
 .main { display: grid; grid-template-rows: auto 1fr; min-width: 0; overflow: hidden; }
 
 /* ─── 사이드바 ──────────────────────────────────────── */
@@ -260,7 +263,7 @@
 .ppl { display: flex; align-items: center; gap: 10px; }
 .av {
   width: 32px; height: 32px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+  background: var(--bg-secondary);
   display: grid; place-items: center;
   font-weight: 600; font-size: 11px; color: var(--fg-muted);
   border: 1px solid var(--border); flex-shrink: 0;
@@ -284,7 +287,7 @@
 .tag.late     { background: var(--warn-50); color: var(--warn); }
 .tag.ok       { background: var(--success-50); color: var(--success); }
 .tag.warn     { background: var(--warn-50); color: var(--warn); }
-.tag.purple   { background: var(--purple-50); color: var(--purple); }
+.tag.purple   { background: var(--accent-50); color: var(--accent); }
 .tag.adm      { background: var(--fg); color: var(--bg-primary); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0; }
 
 /* 인라인 kind 배지 (tasks-tab 등) */
@@ -292,7 +295,7 @@
 .tag-green  { background: var(--success-50); color: var(--success); }
 .tag-blue   { background: var(--info-50); color: var(--info); }
 .tag-amber  { background: var(--warn-50); color: var(--warn); }
-.tag-purple { background: var(--purple-50); color: var(--purple); }
+.tag-purple { background: var(--accent-50); color: var(--accent); }
 
 /* ─── due 배지 (워크플로우) ──────────────────────────── */
 .due {
@@ -507,7 +510,7 @@
 }
 .doc-kind .k.leave    { background: var(--success-50); color: var(--success); }
 .doc-kind .k.expense  { background: var(--warn-50); color: var(--warn); }
-.doc-kind .k.training { background: var(--purple-50); color: var(--purple); }
+.doc-kind .k.training { background: var(--accent-50); color: var(--accent); }
 .doc-kind .k.wfh      { background: var(--info-50); color: var(--info); }
 .doc-kind .k.hr       { background: var(--destructive-50); color: var(--destructive); }
 .doc-kind .d { font-family: var(--font-mono); font-size: 11px; color: var(--fg-subtle); }
@@ -773,7 +776,7 @@
   width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
   display: grid; place-items: center;
   font-weight: 700; font-size: 18px; letter-spacing: -0.01em;
-  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+  background: var(--bg-secondary);
   color: var(--fg-muted); border: 1px solid var(--border);
 }
 .profile-meta { flex: 1; min-width: 0; }

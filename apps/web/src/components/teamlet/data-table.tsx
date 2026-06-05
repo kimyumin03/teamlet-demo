@@ -83,7 +83,7 @@ export function Tag({
     late: "bg-[var(--warn-50)] text-[var(--warn)]",
     ok: "bg-[var(--success-50)] text-[var(--success)]",
     warn: "bg-[var(--warn-50)] text-[var(--warn)]",
-    purple: "bg-[var(--purple-50)] text-[var(--purple)]",
+    purple: "bg-[var(--accent-50)] text-[var(--accent)]",
     info: "bg-[var(--info-50)] text-[var(--info)]",
   };
   return (

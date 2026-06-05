@@ -1,0 +1,50 @@
+/* documents.css — 문서·증명서: 빠른 발급 그리드 · 발급 이력 · 발급 모달(문서 미리보기) */
+
+/* 빠른 발급 그리드 */
+.cert-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.cert-card { display: flex; align-items: center; gap: 13px; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-primary); cursor: pointer; font-family: inherit; text-align: left; transition: border-color 120ms, box-shadow 120ms, transform 80ms; }
+.cert-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.cert-ic { width: 40px; height: 40px; border-radius: 10px; background: var(--bg-secondary); color: var(--fg-muted); display: grid; place-items: center; flex-shrink: 0; }
+.cert-card:hover .cert-ic { color: var(--fg); }
+.cert-copy { flex: 1; min-width: 0; }
+.cert-n { font-size: 14px; font-weight: 700; }
+.cert-s { font-size: 12px; color: var(--fg-muted); margin-top: 2px; }
+.cert-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; border-radius: 999px; padding: 3px 9px; white-space: nowrap; flex-shrink: 0; background: var(--bg-tertiary); color: var(--fg-muted); }
+.cert-tag.auto { background: var(--success-50); color: var(--success-700); }
+
+/* 발급 이력 테이블 */
+.cert-tablewrap { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--bg-primary); }
+.cert-tbl { width: 100%; }
+.cert-doc { display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 600; }
+.cert-doc-ic { width: 28px; height: 28px; border-radius: 7px; background: var(--bg-secondary); color: var(--fg-muted); display: grid; place-items: center; flex-shrink: 0; }
+.sn-fg { font-size: 13px; color: var(--fg); }
+.lang-tag { font-size: 11px; font-weight: 500; color: var(--fg-muted); background: var(--bg-secondary); border-radius: 6px; padding: 3px 9px; white-space: nowrap; }
+.cert-dl { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--fg-muted); cursor: pointer; display: grid; place-items: center; }
+.cert-dl:hover { border-color: var(--primary); color: var(--fg); }
+
+/* 발급 모달 */
+.cert-issue { display: grid; grid-template-columns: minmax(0, 1fr) 360px; flex: 1; min-height: 0; overflow: hidden; }
+.cert-opts { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+.cert-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--warn); background: var(--warn-50); border-radius: 8px; padding: 11px 13px; line-height: 1.5; }
+.cert-note svg { flex-shrink: 0; }
+
+/* 문서 미리보기 (종이 느낌) */
+.cert-preview { border-left: 1px solid var(--border); background: var(--bg-muted); padding: 18px; overflow-y: auto; }
+.cert-preview-h { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--fg-subtle); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+.cert-paper { background: #fff; border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-md); padding: 24px 22px; font-size: 11.5px; color: var(--color-slate-800); position: relative; }
+.cert-paper-title { font-size: 15px; font-weight: 800; text-align: center; letter-spacing: 0.02em; color: var(--color-slate-900); padding: 0 12px 6px; text-wrap: balance; }
+.cert-paper-org { text-align: center; font-size: 11px; color: var(--color-slate-500); padding-bottom: 18px; border-bottom: 2px solid var(--color-slate-900); margin-bottom: 16px; }
+.cert-paper-rows { display: flex; flex-direction: column; gap: 0; margin-bottom: 16px; }
+.cert-paper-row { display: flex; border: 1px solid var(--color-slate-200); border-bottom: none; }
+.cert-paper-row:last-child { border-bottom: 1px solid var(--color-slate-200); }
+.cert-paper-row .k { width: 96px; flex-shrink: 0; background: var(--color-slate-50); padding: 7px 10px; font-weight: 600; color: var(--color-slate-600); border-right: 1px solid var(--color-slate-200); }
+.cert-paper-row .v { padding: 7px 10px; font-family: var(--font-mono); font-size: 11px; }
+.cert-paper-body { line-height: 1.7; text-align: center; padding: 14px 0; font-size: 12px; }
+.cert-paper-use { font-size: 11px; color: var(--color-slate-500); margin-top: 6px; }
+.cert-paper-foot { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 12px; }
+.cert-paper-date { font-family: var(--font-mono); font-size: 11px; color: var(--color-slate-600); }
+.cert-paper-seal { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: var(--color-slate-900); }
+.cert-paper-stamp { width: 34px; height: 34px; border: 2px solid var(--destructive-500); border-radius: 50%; color: var(--destructive-500); display: grid; place-items: center; font-size: 11px; font-weight: 700; transform: rotate(-8deg); opacity: 0.75; }
+.cert-paper-copies { position: absolute; top: 14px; right: 14px; font-size: 10px; font-weight: 600; color: var(--accent); background: var(--accent-50); border-radius: 999px; padding: 2px 9px; }
+
+.app.dense .cert-opts { gap: 12px; padding: 16px; }

@@ -10,6 +10,7 @@ import { AddDepartmentButton } from "@/components/members/add-department-button"
 import { AddMemberButton } from "@/components/members/add-member-button";
 import { PendingJoinPanel } from "@/components/members/pending-join-panel";
 import { AddPositionButton } from "@/components/members/add-position-button";
+import { DepartmentSidebar } from "@/components/members/department-sidebar";
 import { OrgTree } from "./org-chart/_components/org-tree";
 import { MembersFilterBar } from "./_components/members-filter-bar";
 
@@ -139,8 +140,19 @@ export default async function MembersPage({
   const listHref = makeViewHref(params, "list");
   const orgHref = makeViewHref(params, "org");
 
+  const unassignedCount = allEmployees.filter((e) => !e.departmentId).length;
+
   return (
-    <div className="page-body">
+    <div className="mbr-wrap">
+      {/* 좌측 조직 트리 (디자인·Flex 패턴) */}
+      <DepartmentSidebar
+        departments={departments}
+        selected={selected}
+        totalCount={allEmployees.length}
+        unassignedCount={unassignedCount}
+      />
+
+      <div className="mbr-main">
       {pendingMembers.length > 0 && <PendingJoinPanel items={pendingMembers} />}
 
       {/* 헤더 */}
@@ -209,10 +221,7 @@ export default async function MembersPage({
       {/* 필터 바 */}
       <div className="filters" style={{ marginBottom: "14px" }}>
         <Suspense>
-          <MembersFilterBar
-            departments={departments.map((d) => ({ id: d.id, name: d.name }))}
-            initialQ={query}
-          />
+          <MembersFilterBar initialQ={query} />
         </Suspense>
       </div>
 
@@ -298,6 +307,7 @@ export default async function MembersPage({
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }

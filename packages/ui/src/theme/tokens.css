@@ -75,6 +75,11 @@
   --color-accent-foreground: #ffffff;
   --color-accent-hover: var(--color-blue-700);
 
+  /* 시맨틱 별칭 — text-destructive / bg-destructive / border-destructive 유틸 생성용
+   * (스케일 -50/-500/-600/-700 외에 bare 클래스도 동작하도록) */
+  --color-destructive: var(--color-destructive-600);
+  --color-destructive-foreground: #ffffff;
+
   --color-sensitive-bg: var(--color-slate-100);
   --color-sensitive-border: var(--color-slate-300);
 

@@ -1,10 +1,9 @@
 import Link from "next/link";
 import type { DepartmentNode } from "@teamlet/modules/department";
-import { cn } from "@teamlet/ui";
 
 /**
- * 구성원 디렉토리 사이드바 — SSR, 트리 DFS 정렬 + depth 들여쓰기.
- * URL ?department=<id|__none__> 으로 필터링. Link 만 사용해 클라이언트 컴포넌트 불필요.
+ * 구성원 디렉토리 좌측 조직 트리 — SSR, 트리 DFS 정렬 + depth 들여쓰기.
+ * URL ?department=<id|__none__> 으로 필터링. 디자인 .mbr-tree 클래스 사용.
  */
 
 const UNASSIGNED = "__none__";
@@ -19,9 +18,7 @@ function buildSortedTree(nodes: DepartmentNode[]): SortedNode[] {
     else childrenOf.set(n.parentId, [n]);
   }
   for (const list of childrenOf.values()) {
-    list.sort(
-      (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
-    );
+    list.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
   }
 
   const out: SortedNode[] = [];
@@ -34,36 +31,6 @@ function buildSortedTree(nodes: DepartmentNode[]): SortedNode[] {
   }
   dfs(null, 0);
   return out;
-}
-
-function ItemLink({
-  href,
-  active,
-  label,
-  count,
-  depth = 0,
-}: {
-  href: string;
-  active: boolean;
-  label: string;
-  count: number;
-  depth?: number;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
-        active
-          ? "bg-background-secondary text-foreground"
-          : "text-foreground-muted hover:bg-background-secondary hover:text-foreground",
-      )}
-      style={depth > 0 ? { paddingLeft: `${0.5 + depth * 0.75}rem` } : undefined}
-    >
-      <span className="truncate">{label}</span>
-      <span className="ml-2 text-xs text-foreground-subtle">{count}</span>
-    </Link>
-  );
 }
 
 export function DepartmentSidebar({
@@ -79,34 +46,47 @@ export function DepartmentSidebar({
   unassignedCount: number;
 }) {
   const tree = buildSortedTree(departments);
+  const hasChild = new Set(
+    departments.map((d) => d.parentId).filter(Boolean) as string[],
+  );
 
   return (
-    <nav aria-label="부서" className="flex flex-col gap-0.5">
-      <ItemLink
+    <aside className="mbr-tree">
+      <div className="mbr-tree-h">조직</div>
+
+      <Link
         href="/members"
-        active={selected === null}
-        label="전체"
-        count={totalCount}
-      />
-      <ItemLink
-        href={`/members?department=${UNASSIGNED}`}
-        active={selected === UNASSIGNED}
-        label="미배정"
-        count={unassignedCount}
-      />
-      {tree.length > 0 && (
-        <div className="my-2 border-t border-border" />
+        className={`mbr-tree-item all${selected === null ? " active" : ""}`}
+      >
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <rect width="16" height="20" x="4" y="2" rx="2" />
+          <path d="M9 22v-4h6v4M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01" />
+        </svg>
+        전체 구성원
+        <span className="ct">{totalCount}</span>
+      </Link>
+
+      {unassignedCount > 0 && (
+        <Link
+          href={`/members?department=${UNASSIGNED}`}
+          className={`mbr-tree-item${selected === UNASSIGNED ? " active" : ""}`}
+        >
+          미배정
+          <span className="ct">{unassignedCount}</span>
+        </Link>
       )}
+
       {tree.map((d) => (
-        <ItemLink
+        <Link
           key={d.id}
           href={`/members?department=${d.id}`}
-          active={selected === d.id}
-          label={d.name}
-          count={d.memberCount}
-          depth={d.depth}
-        />
+          className={`mbr-tree-item${d.depth > 0 ? " child" : hasChild.has(d.id) ? " parent" : ""}${selected === d.id ? " active" : ""}`}
+          style={d.depth > 1 ? { paddingLeft: `${28 + (d.depth - 1) * 16}px` } : undefined}
+        >
+          {d.name}
+          <span className="ct">{d.memberCount}</span>
+        </Link>
       ))}
-    </nav>
+    </aside>
   );
 }

@@ -6,6 +6,14 @@
 @import "@teamlet/ui/theme/globals.css";
 @import "./design.css";
 
+/* 페이지별 디자인 CSS (프로토타입 styles/* 로드 순서 유지) */
+@import "./styles/home.css";
+@import "./styles/leave.css";
+@import "./styles/settings.css";
+@import "./styles/members.css";
+@import "./styles/workflow.css";
+@import "./styles/documents.css";
+
 @source "../../";
 @source "../../../../packages/ui/src";
 
