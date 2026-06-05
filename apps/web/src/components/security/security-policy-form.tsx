@@ -69,7 +69,7 @@ export function SecurityPolicyForm({ initialPolicy }: { initialPolicy: SecurityP
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-foreground">전사 2FA 강제 적용</p>
+              <p className="text-sm font-medium text-foreground">전체 2FA 강제 적용</p>
               <p className="text-xs text-foreground-muted">활성화 시 모든 구성원이 로그인할 때 2FA 인증을 요구해요</p>
             </div>
             <button
