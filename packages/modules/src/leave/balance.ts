@@ -199,12 +199,16 @@ export async function processLeaveExpiry(
       year,
     },
     include: {
+      leaveType: { select: { key: true } },
       employee: {
         select: {
           id: true,
           hireDate: true,
           leavePolicyAssignments: {
-            include: { policy: { select: { leaveTypeId: true, expiryMonths: true, carryoverMaxDays: true, grantMode: true, fiscalStartMonth: true } } },
+            include: { policy: { select: {
+              leaveTypeId: true, expiryMonths: true, carryoverMaxDays: true, grantMode: true, fiscalStartMonth: true,
+              annualExpiryMode: true, annualGraceMonths: true, monthlyExpiryMode: true, monthlyGraceMonths: true,
+            } } },
             orderBy: { effectiveDate: "desc" },
           },
         },
@@ -231,7 +235,19 @@ export async function processLeaveExpiry(
     );
     if (!assignment) continue;
 
-    const { expiryMonths, carryoverMaxDays, grantMode, fiscalStartMonth } = assignment.policy;
+    const p = assignment.policy;
+    const { carryoverMaxDays, grantMode, fiscalStartMonth } = p;
+
+    // 휴가유형에 맞는 소멸 모드/유예 선택 (연차 vs 월차)
+    const isAnnual = bal.leaveType.key === "annual";
+    const expiryMode = isAnnual ? p.annualExpiryMode : p.monthlyExpiryMode;
+    const graceMonths = isAnnual ? p.annualGraceMonths : p.monthlyGraceMonths;
+
+    // 정책이 "소멸 안 함"이면 소멸/이월 모두 건너뜀
+    if (expiryMode === "NONE") continue;
+
+    // 유효 소멸 개월수: 유예 설정 있으면 그 개월수, 없으면 부여/입사 1년 후(12)
+    const effectiveMonths = graceMonths ?? p.expiryMonths ?? 12;
 
     // 소멸 기준일 계산
     let expiryDate: Date;
@@ -239,10 +255,10 @@ export async function processLeaveExpiry(
       const hd = new Date(bal.employee.hireDate);
       expiryDate = new Date(hd);
       expiryDate.setFullYear(year);
-      expiryDate.setMonth(expiryDate.getMonth() + expiryMonths);
+      expiryDate.setMonth(expiryDate.getMonth() + effectiveMonths);
     } else {
-      // FISCAL_YEAR: 회계연도 시작월 + expiryMonths
-      expiryDate = new Date(year, fiscalStartMonth - 1 + expiryMonths, 1);
+      // FISCAL_YEAR: 회계연도 시작월 + effectiveMonths
+      expiryDate = new Date(year, fiscalStartMonth - 1 + effectiveMonths, 1);
     }
 
     if (now < expiryDate) continue;

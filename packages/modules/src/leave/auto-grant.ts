@@ -39,18 +39,19 @@ function roundByRule(v: number, rule: DecimalRule): number {
 }
 
 /**
- * 부여 연도 1월 1일 기준 만 근속 개월 수.
- * 입사일 day-of-month > 1이면 해당 월은 미완성으로 처리.
- * 예) 2025-12-31 입사 → 2026-01-01 기준 0개월 (하루)
- *     2025-01-01 입사 → 2026-01-01 기준 12개월 (만 1년)
- *     2025-01-15 입사 → 2026-01-01 기준 11개월 (1일이 15일 미만)
+ * 입사일로부터 asOf 시점까지 만(완성) 근속 개월 수.
+ * 예) 2026-06-01 입사 → 2026-06-05 = 0개월 (입사 직후)
+ *     2026-06-01 입사 → 2026-07-01 = 1개월 (1개월 만근)
+ *     2026-06-01 입사 → 2026-12-31 = 6개월
+ *     2025-01-01 입사 → 2026-06-05 = 17개월 (만 1년 경과)
  */
-function completedMonthsAsOf(hireDate: Date, grantYear: number): number {
-  const hireTotalMonths = hireDate.getUTCFullYear() * 12 + hireDate.getUTCMonth();
-  const jan1TotalMonths = grantYear * 12; // 1월 = 0
-  const delta = jan1TotalMonths - hireTotalMonths;
-  // 입사일이 1일 초과면 해당 월 미완성 → 1 차감
-  return Math.max(0, hireDate.getUTCDate() > 1 ? delta - 1 : delta);
+function completedMonthsSinceHire(hireDate: Date, asOf: Date): number {
+  let months =
+    (asOf.getUTCFullYear() - hireDate.getUTCFullYear()) * 12 +
+    (asOf.getUTCMonth() - hireDate.getUTCMonth());
+  // asOf 일자가 입사 일자보다 이르면 해당 월 미완성 → 1 차감
+  if (asOf.getUTCDate() < hireDate.getUTCDate()) months -= 1;
+  return Math.max(0, months);
 }
 
 /**
@@ -250,6 +251,7 @@ export async function runAnnualLeaveGrant(
   let grantedDays = 0;
   let alreadyGrantedCount = 0;
   let skippedNoAmountCount = 0;
+  const now = new Date();
 
   for (const [key, a] of latest) {
     const { policy } = a;
@@ -258,36 +260,54 @@ export async function runAnnualLeaveGrant(
       continue;
     }
 
-    if (grantedSet.has(key)) {
-      alreadyGrantedCount += 1;
-      continue;
-    }
+    const hire = a.employee.hireDate;
+    let days = 0;
+    let grantNote = `${year}년 정기 부여`;
 
-    // grantAmount가 null이면 한국 법정 기준으로 만 근속 연수 기반 계산
-    let base: number;
     if (policy.leaveType.grantAmount != null) {
-      base = Number(policy.leaveType.grantAmount);
-    } else if (a.employee.hireDate) {
-      const months = completedMonthsAsOf(a.employee.hireDate, year);
-      const tenureYears = Math.floor(months / 12);
-      base = legalAnnualDays(tenureYears);
+      // 고정 부여 휴가 유형(연차 외) — 입사 연도 비례. 연 1회 멱등.
+      if (grantedSet.has(key)) { alreadyGrantedCount += 1; continue; }
+      days = entitledDays(Number(policy.leaveType.grantAmount), hire, year, policy.decimalRule);
+    } else if (!hire) {
+      // 입사일 미상 — 법정 기본 15일, 연 1회
+      if (grantedSet.has(key)) { alreadyGrantedCount += 1; continue; }
+      days = roundByRule(15, policy.decimalRule);
     } else {
-      base = 15; // 입사일 미상 — 기본 15일
+      // 연차 — 입사일 기준 만 근속으로 몇 년차인지 판단해 부여
+      const totalMonths = completedMonthsSinceHire(hire, now);
+      if (totalMonths < 12) {
+        // 1년 미만
+        if (policy.monthlyGrantRule === "LUMP_SUM_ON_HIRE_11") {
+          // 입사 시 11일 선부여 (연 1회)
+          if (grantedSet.has(key)) { alreadyGrantedCount += 1; continue; }
+          days = roundByRule(11, policy.decimalRule);
+        } else if (policy.monthlyGrantRule === "LUMP_SUM_UNTIL_FISCAL") {
+          // 입사일~회계일까지 월차 선부여 (비례, 연 1회)
+          if (grantedSet.has(key)) { alreadyGrantedCount += 1; continue; }
+          days = entitledDays(11, hire, year, policy.decimalRule);
+        } else {
+          // MONTHLY_ON_ATTENDANCE(기본) — 1개월 개근 시 +1, 최대 11. 누적 차액만.
+          grantNote = "월 비례 부여";
+          const target = Math.min(11, totalMonths);
+          const prior = await prisma.leaveTransaction.aggregate({
+            where: {
+              employeeId: a.employeeId, leaveTypeId: policy.leaveTypeId,
+              category: "ANNUAL", txType: "GRANT", note: { contains: "월 비례" },
+            },
+            _sum: { days: true },
+          });
+          const already = Number(prior._sum.days ?? 0);
+          days = Math.max(0, target - already);
+        }
+      } else {
+        // 1년 이상 — 근속 연수별 법정 일수(15·3년+2년마다+1·최대25), 연 1회
+        if (grantedSet.has(key)) { alreadyGrantedCount += 1; continue; }
+        days = roundByRule(legalAnnualDays(Math.floor(totalMonths / 12)), policy.decimalRule);
+      }
     }
 
-    if (base <= 0) {
-      skippedNoAmountCount += 1;
-      continue;
-    }
-
-    const days = entitledDays(
-      base,
-      a.employee.hireDate,
-      year,
-      policy.decimalRule,
-    );
     if (days <= 0) {
-      // 아직 입사 전 — 부여 대상 아님
+      // 부여 대상 아님(입사 전·이번 달 추가분 없음)
       continue;
     }
 
@@ -300,7 +320,7 @@ export async function runAnnualLeaveGrant(
           txType: "GRANT",
           days,
           reason: "연차 자동부여",
-          note: `${year}년 정기 부여`,
+          note: grantNote,
           actorId: actorEmployeeId,
         },
       }),

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { listCompanyHolidaysAction } from "@/lib/actions/company";
 
 const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -32,10 +33,25 @@ export function MiniCalendar({
   const firstDay = getFirstDayOfWeek(viewYear, viewMonth);
   const daysInPrev = getDaysInMonth(viewYear, viewMonth === 0 ? 11 : viewMonth - 1);
 
-  // 빠른 조회용 Map (날짜 → 공휴일명)
-  const holidayMap = new Map<string, string>(
-    holidays.map((h) => { const d = new Date(h.date); return [`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`, h.name ?? "공휴일"]; })
-  );
+  // 연도 이동 시 해당 연도 공휴일 fetch (홈은 props 로 현재 연도만 받음)
+  const [fetchedMap, setFetchedMap] = useState<Map<string, string>>(new Map());
+  const fetchedYears = useRef(new Set<number>([now.getFullYear()]));
+  useEffect(() => {
+    if (fetchedYears.current.has(viewYear)) return;
+    fetchedYears.current.add(viewYear);
+    listCompanyHolidaysAction(viewYear).then((res) => {
+      if (!res.ok) return;
+      setFetchedMap((prev) => {
+        const m = new Map(prev);
+        for (const h of res.data) { const d = new Date(h.date); m.set(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`, h.name); }
+        return m;
+      });
+    });
+  }, [viewYear]);
+
+  // 빠른 조회용 Map (날짜 → 공휴일명) — props(현재 연도) + fetch(다른 연도) 병합
+  const holidayMap = new Map<string, string>(fetchedMap);
+  for (const h of holidays) { const d = new Date(h.date); holidayMap.set(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`, h.name ?? "공휴일"); }
   const eventSet = new Set(
     eventDates.map((d) => { const dt = new Date(d); return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`; })
   );
