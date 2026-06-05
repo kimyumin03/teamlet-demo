@@ -1,8 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requestLeave, approveLeave, rejectLeave, cancelLeave, grantLeave, processLeaveExpiry } from "@teamlet/modules/leave";
-import type { LeaveScheduleEntry } from "@teamlet/modules/leave";
+import { requestLeave, approveLeave, rejectLeave, cancelLeave, grantLeave, adjustLeave, processLeaveExpiry, listLeaveGrantHistory } from "@teamlet/modules/leave";
+import type { LeaveScheduleEntry, LeaveGrantHistoryRow } from "@teamlet/modules/leave";
 import { listCompanyHolidays } from "@teamlet/modules/tenancy";
 import { createNotification } from "@teamlet/modules/notification";
 import { toApiResponse, type ApiResponse } from "@teamlet/shared";
@@ -112,6 +112,32 @@ export async function grantLeaveAction(input: {
       reason: input.reason,
     }),
   );
+}
+
+export async function adjustLeaveAction(input: {
+  employeeId: string;
+  leaveTypeId: string;
+  days: number; // 부호: 양수=부여, 음수=차감
+  reason?: string;
+}): Promise<ApiResponse<void>> {
+  const actorId = await requireEmployee();
+  return toApiResponse(
+    await adjustLeave(actorId, {
+      employeeId: input.employeeId,
+      leaveTypeId: input.leaveTypeId,
+      days: input.days,
+      reason: input.reason,
+    }),
+  );
+}
+
+export async function listLeaveGrantHistoryAction(filters?: {
+  employeeId?: string;
+  leaveTypeId?: string;
+  year?: number;
+}): Promise<ApiResponse<LeaveGrantHistoryRow[]>> {
+  const actorId = await requireEmployee();
+  return toApiResponse(await listLeaveGrantHistory(actorId, filters));
 }
 
 export async function processLeaveExpiryAction(

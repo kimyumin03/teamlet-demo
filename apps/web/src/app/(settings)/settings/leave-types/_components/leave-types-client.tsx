@@ -80,6 +80,14 @@ const PERIODIC_CYCLE_OPTS = [
   { value: "annually_from_3rd", label: "3년 차부터 매년" },
 ];
 
+// 시간차 사용 단위 (useUnit = HOUR). "" = 제한 없음
+const HOUR_UNIT_OPTS = [
+  { value: "", label: "제한 없음" },
+  { value: "5", label: "5분" }, { value: "10", label: "10분" }, { value: "15", label: "15분" },
+  { value: "20", label: "20분" }, { value: "30", label: "30분" },
+  { value: "60", label: "1시간" }, { value: "120", label: "2시간" },
+];
+
 const SELECT_CLS = "rounded-lg border border-border bg-background-primary px-2 py-2 text-sm text-foreground outline-none focus:border-foreground-subtle";
 const INPUT_CLS = "w-full rounded-lg border border-border bg-background-primary px-3 py-2 text-sm text-foreground outline-none focus:border-foreground-subtle";
 
@@ -95,6 +103,7 @@ type FormState = {
   paymentType: LeavePaymentType;
   partialPayPercent: string;
   useUnit: LeaveUseUnit;
+  hourUnitMinutes: string;
   genderRestriction: LeaveGenderRestriction;
   evidenceRequirement: LeaveEvidenceRequirement;
   deductOnHoliday: boolean;
@@ -116,6 +125,7 @@ function defaultForm(): FormState {
     paymentType: "PAID",
     partialPayPercent: "",
     useUnit: "DAY",
+    hourUnitMinutes: "",
     genderRestriction: "ALL",
     evidenceRequirement: "NONE",
     deductOnHoliday: false,
@@ -138,6 +148,7 @@ function typeToForm(t: LeaveTypeFullItem): FormState {
     paymentType: t.paymentType,
     partialPayPercent: t.partialPayPercent != null ? String(t.partialPayPercent) : "",
     useUnit: t.useUnit,
+    hourUnitMinutes: t.hourUnitMinutes != null ? String(t.hourUnitMinutes) : "",
     genderRestriction: t.genderRestriction,
     evidenceRequirement: t.evidenceRequirement,
     deductOnHoliday: t.deductOnHoliday,
@@ -193,7 +204,7 @@ function LeaveTypeDialog({
   }
 
   function handleClose() {
-    if (isDirty && !isEdit) { setShowExitConfirm(true); return; }
+    if (isDirty) { setShowExitConfirm(true); return; }
     onClose();
   }
 
@@ -218,6 +229,8 @@ function LeaveTypeDialog({
     const amount = hideGrantAmount ? null : form.grantAmount ? parseFloat(form.grantAmount) : null;
     const partialPay = form.paymentType === "PARTIAL_PAID" && form.partialPayPercent
       ? parseInt(form.partialPayPercent, 10) : null;
+    const hourUnit = form.useUnit === "HOUR" && form.hourUnitMinutes
+      ? parseInt(form.hourUnitMinutes, 10) : null;
 
     startTransition(async () => {
       const res = isEdit
@@ -229,6 +242,7 @@ function LeaveTypeDialog({
             genderRestriction: form.genderRestriction,
             evidenceRequirement: form.evidenceRequirement,
             useUnit: form.useUnit,
+            hourUnitMinutes: hourUnit,
             deductOnHoliday: form.deductOnHoliday,
             periodicCycle: showPeriodicCycle ? form.periodicCycle : null,
             tenureYears: showTenureYears ? parseInt(form.tenureYears, 10) : null,
@@ -245,6 +259,7 @@ function LeaveTypeDialog({
             genderRestriction: form.genderRestriction,
             evidenceRequirement: form.evidenceRequirement,
             useUnit: form.useUnit,
+            hourUnitMinutes: hourUnit,
             deductOnHoliday: form.deductOnHoliday,
             periodicCycle: showPeriodicCycle ? form.periodicCycle : null,
             tenureYears: showTenureYears ? parseInt(form.tenureYears, 10) : null,
@@ -385,9 +400,19 @@ function LeaveTypeDialog({
                 ))}
               </select>
               {form.useUnit === "HOUR" && (
-                <p style={{ fontSize: 11.5, color: "var(--fg-muted)", marginTop: 4 }}>
-                  시간차 신청 시 최소 30분 단위로 사용할 수 있어요.
-                </p>
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ fontSize: 11.5, color: "var(--fg-muted)", marginBottom: 4 }}>시간차 사용 단위</div>
+                  <select className={SELECT_CLS} style={{ width: "100%" }}
+                    value={form.hourUnitMinutes}
+                    onChange={(e) => set("hourUnitMinutes", e.target.value)}>
+                    {HOUR_UNIT_OPTS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  <p style={{ fontSize: 11, color: "var(--fg-subtle)", marginTop: 4 }}>
+                    시간차로 신청할 때 선택할 수 있는 최소 단위예요.
+                  </p>
+                </div>
               )}
             </Field>
 

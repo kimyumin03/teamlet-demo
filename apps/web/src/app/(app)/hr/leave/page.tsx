@@ -10,6 +10,8 @@ import {
 } from "@teamlet/modules/leave";
 import { listEmployees } from "@teamlet/modules/employee";
 import { GrantLeaveButton } from "@/components/hr/grant-leave-button";
+import { AdjustLeaveButton } from "@/components/hr/adjust-leave-button";
+import { GrantHistoryButton } from "@/components/hr/grant-history-button";
 import { ExpiryButton } from "@/components/hr/expiry-button";
 import { LeaveStatusView } from "./_components/leave-status-view";
 import { RequestsTable } from "./_components/requests-table";
@@ -138,6 +140,8 @@ export default async function HrLeavePage({
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <ExpiryButton year={year} />
+          <GrantHistoryButton year={year} />
+          <AdjustLeaveButton employees={employees} leaveTypes={leaveTypes} />
           <GrantLeaveButton employees={employees} leaveTypes={leaveTypes} />
         </div>
       </div>

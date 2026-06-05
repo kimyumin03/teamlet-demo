@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import type { CompanyLeaveBalanceRow, LeaveTypeItem } from "@teamlet/modules/leave";
 import { GrantLeaveButton } from "@/components/hr/grant-leave-button";
+import { AdjustLeaveButton } from "@/components/hr/adjust-leave-button";
 
 const AVATAR_COLORS = [
   "bg-blue-100 text-blue-700",
@@ -74,7 +75,7 @@ export function LeaveStatusView({
   const selectedOther = selected ? selected.balances.filter((b) => b.leaveTypeKey !== "annual") : [];
 
   const chipClass =
-    "h-7 rounded-full border border-border bg-background-primary pl-2.5 pr-6 text-[12px] text-foreground-muted hover:border-border-strong transition-colors cursor-pointer focus-visible:outline-none";
+    "h-7 appearance-none rounded-full border border-border bg-background-primary pl-2.5 pr-6 text-[12px] text-foreground-muted hover:border-border-strong transition-colors cursor-pointer focus-visible:outline-none";
 
   return (
     <div className="grid grid-cols-[1fr_360px] flex-1 overflow-hidden">
@@ -287,6 +288,11 @@ export function LeaveStatusView({
             <GrantLeaveButton
               employees={[{ id: selected.employeeId, name: selected.employeeName, departmentName: selected.departmentName }]}
               leaveTypes={leaveTypes}
+            />
+            <AdjustLeaveButton
+              employees={[{ id: selected.employeeId, name: selected.employeeName, departmentName: selected.departmentName }]}
+              leaveTypes={leaveTypes}
+              presetEmployeeId={selected.employeeId}
             />
           </div>
         </div>

@@ -16,6 +16,7 @@ export async function bootstrapCompanyLeaveTypes(companyId: string) {
           grantMethod: lt.grantMethod,
           grantUnit: lt.grantUnit,
           grantAmount: lt.grantAmount ?? null,
+          periodicCycle: lt.periodicCycle ?? null,
           paymentType: lt.paymentType,
           genderRestriction: lt.genderRestriction,
           evidenceRequirement: lt.evidenceRequirement,

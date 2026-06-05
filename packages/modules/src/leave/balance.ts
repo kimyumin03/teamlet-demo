@@ -345,6 +345,65 @@ export async function adjustLeave(
   return ok(undefined);
 }
 
+export type LeaveGrantHistoryRow = {
+  id: string;
+  occurredAt: Date;
+  employeeId: string;
+  employeeName: string;
+  leaveTypeName: string;
+  txType: string; // GRANT | ADJUST
+  category: string;
+  days: number;
+  reason: string;
+  actorName: string | null;
+};
+
+/** 부여·조정 내역 — LeaveTransaction(GRANT/ADJUST)을 회사 단위로 최근순 조회(최대 300건). */
+export async function listLeaveGrantHistory(
+  actorEmployeeId: string,
+  filters?: { employeeId?: string; leaveTypeId?: string; year?: number },
+): Promise<Result<LeaveGrantHistoryRow[]>> {
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+  const perms = await getEffectivePermissions(actorEmployeeId);
+  if (!perms.has(BALANCE_MANAGE)) return err(errors.forbidden("부여 내역을 볼 권한이 없어요"));
+
+  const year = filters?.year;
+  const txs = await prisma.leaveTransaction.findMany({
+    where: {
+      employee: { companyId: actor.companyId },
+      txType: { in: ["GRANT", "ADJUST"] },
+      ...(filters?.employeeId ? { employeeId: filters.employeeId } : {}),
+      ...(filters?.leaveTypeId ? { leaveTypeId: filters.leaveTypeId } : {}),
+      ...(year
+        ? { occurredAt: { gte: new Date(`${year}-01-01`), lt: new Date(`${year + 1}-01-01`) } }
+        : {}),
+    },
+    include: {
+      employee: { select: { name: true } },
+      leaveType: { select: { name: true } },
+      actor: { select: { name: true } },
+    },
+    orderBy: { occurredAt: "desc" },
+    take: 300,
+  });
+
+  return ok(
+    txs.map((t) => ({
+      id: t.id,
+      occurredAt: t.occurredAt,
+      employeeId: t.employeeId,
+      employeeName: t.employee.name,
+      leaveTypeName: t.leaveType.name,
+      txType: t.txType,
+      category: t.category,
+      days: Number(t.days),
+      reason: t.reason,
+      actorName: t.actor?.name ?? null,
+    })),
+  );
+}
+
 /** 연차 상세 탭 — 연도별 월별 원장 집계.
  *  LeaveTransaction(key="annual")을 월별로 그룹핑해 GRANT/EXPIRE/USE/ADJUST 분류 + 누적 잔여.
  */

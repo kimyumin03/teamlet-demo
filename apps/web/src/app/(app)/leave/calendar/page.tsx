@@ -2,19 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { listTeamLeaveCalendar, type CalendarLeaveItem } from "@teamlet/modules/leave";
+import { listCompanyHolidays } from "@teamlet/modules/tenancy";
 
 export const dynamic = "force-dynamic";
 
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-
-const LEAVE_COLORS = [
-  "bg-blue-100 text-blue-800",
-  "bg-emerald-100 text-emerald-800",
-  "bg-amber-100 text-amber-800",
-  "bg-purple-100 text-purple-800",
-  "bg-pink-100 text-pink-800",
-  "bg-teal-100 text-teal-800",
-];
 
 function buildMonthNav(year: number, month: number, delta: number) {
   let m = month + delta;
@@ -50,18 +42,25 @@ export default async function LeaveCalendarPage({
   const year = parseInt(params.year ?? String(now.getFullYear()), 10);
   const month = parseInt(params.month ?? String(now.getMonth() + 1), 10);
 
-  const result = await listTeamLeaveCalendar(session.user.employeeId, year, month);
-  const items: CalendarLeaveItem[] = result.ok ? result.data : [];
+  const [result, holidayResult] = await Promise.all([
+    listTeamLeaveCalendar(session.user.employeeId, year, month),
+    listCompanyHolidays(session.user.employeeId, year),
+  ]);
+  // 내 휴가만 표시 (팀원 휴가 제외)
+  const items: CalendarLeaveItem[] = (result.ok ? result.data : []).filter(
+    (i) => i.employeeId === session.user.employeeId,
+  );
+  const holidays = holidayResult.ok ? holidayResult.data : [];
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDow = getFirstDowOfMonth(year, month);
 
-  const employeeColorMap = new Map<string, string>();
-  let colorIdx = 0;
-  for (const item of items) {
-    if (!employeeColorMap.has(item.employeeId)) {
-      employeeColorMap.set(item.employeeId, LEAVE_COLORS[colorIdx % LEAVE_COLORS.length]!);
-      colorIdx++;
+  // 이번 달 공휴일 (일 → 이름)
+  const holidayMap = new Map<number, string>();
+  for (const h of holidays) {
+    const d = new Date(h.date);
+    if (d.getFullYear() === year && d.getMonth() + 1 === month) {
+      holidayMap.set(d.getDate(), h.name);
     }
   }
 
@@ -88,8 +87,8 @@ export default async function LeaveCalendarPage({
       <div className="shrink-0 border-b border-border bg-background-primary px-6 py-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-[22px] font-bold leading-tight tracking-tight">팀 휴가 캘린더</h1>
-            <p className="mt-0.5 text-[13px] text-foreground-muted">승인된 휴가를 월별로 확인해요</p>
+            <h1 className="text-[22px] font-bold leading-tight tracking-tight">휴가 캘린더</h1>
+            <p className="mt-0.5 text-[13px] text-foreground-muted">내 휴가와 공휴일을 월별로 확인해요</p>
           </div>
           <Link
             href="/leave"
@@ -130,8 +129,13 @@ export default async function LeaveCalendarPage({
           {/* 캘린더 그리드 */}
           <div className="overflow-hidden rounded-[14px] border border-border">
             <div className="grid grid-cols-7 border-b border-border bg-background-secondary">
-              {DOW.map((d) => (
-                <div key={d} className="py-2 text-center text-[11px] font-medium text-foreground-muted">
+              {DOW.map((d, i) => (
+                <div
+                  key={d}
+                  className={`py-2 text-center text-[11px] font-semibold ${
+                    i === 0 || i === 6 ? "text-destructive-600" : "text-foreground-muted"
+                  }`}
+                >
                   {d}
                 </div>
               ))}
@@ -142,38 +146,58 @@ export default async function LeaveCalendarPage({
                 const isToday = isCurrentMonth && day === now.getDate();
                 const dayItems = day ? (dayMap.get(day) ?? []) : [];
                 const isWeekend = idx % 7 === 0 || idx % 7 === 6;
+                const holidayName = day ? holidayMap.get(day) : undefined;
+                const isRed = !!day && (isWeekend || holidayName != null);
 
                 return (
                   <div
                     key={idx}
                     className={`min-h-[90px] border-b border-r border-border p-1.5 ${
-                      !day ? "bg-background-secondary/40" : ""
-                    } ${isWeekend && day ? "bg-background-secondary/20" : ""}`}
+                      !day
+                        ? "bg-background-secondary/40"
+                        : holidayName
+                          ? "bg-destructive-100"
+                          : isWeekend
+                            ? "bg-destructive-50"
+                            : ""
+                    }`}
                   >
                     {day && (
                       <>
-                        <span
-                          className={`mb-1 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-medium ${
-                            isToday
-                              ? "bg-foreground text-background"
-                              : "text-foreground-muted"
-                          }`}
-                        >
-                          {day}
-                        </span>
+                        <div className="mb-1 flex items-center gap-1">
+                          <span
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] ${
+                              isToday
+                                ? "bg-foreground font-medium text-background"
+                                : isRed
+                                  ? "font-bold text-destructive-600"
+                                  : "font-medium text-foreground-muted"
+                            }`}
+                          >
+                            {day}
+                          </span>
+                          {holidayName && (
+                            <span
+                              className="truncate text-[10px] font-semibold text-destructive-600"
+                              title={holidayName}
+                            >
+                              {holidayName}
+                            </span>
+                          )}
+                        </div>
                         <div className="flex flex-col gap-0.5">
                           {dayItems.slice(0, 3).map((item) => (
                             <span
                               key={item.id + day}
-                              className={`truncate rounded px-1 py-0.5 text-[10px] leading-tight ${employeeColorMap.get(item.employeeId)}`}
-                              title={`${item.employeeName} — ${item.leaveTypeName}`}
+                              className="truncate rounded bg-blue-100 px-1 py-0.5 text-[10px] leading-tight text-blue-800"
+                              title={item.leaveTypeName}
                             >
-                              {item.employeeName}
+                              {item.leaveTypeName}
                             </span>
                           ))}
                           {dayItems.length > 3 && (
                             <span className="px-1 text-[10px] text-foreground-subtle">
-                              +{dayItems.length - 3}명
+                              +{dayItems.length - 3}
                             </span>
                           )}
                         </div>
@@ -186,26 +210,18 @@ export default async function LeaveCalendarPage({
           </div>
 
           {/* 범례 */}
-          {items.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {Array.from(employeeColorMap.entries()).map(([empId, color]) => {
-                const item = items.find((i) => i.employeeId === empId);
-                if (!item) return null;
-                return (
-                  <span key={empId} className={`rounded-[5px] px-2 py-0.5 text-[11px] font-medium ${color}`}>
-                    {item.employeeName}
-                    {item.departmentName && (
-                      <span className="ml-1 opacity-70">· {item.departmentName}</span>
-                    )}
-                  </span>
-                );
-              })}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-3 text-[11px] text-foreground-muted">
+            <span className="flex items-center gap-1.5">
+              <i className="inline-block h-2.5 w-2.5 rounded-[3px] bg-blue-100" />내 휴가
+            </span>
+            <span className="flex items-center gap-1.5">
+              <i className="inline-block h-2.5 w-2.5 rounded-[3px] bg-destructive-50 ring-1 ring-destructive-600" />공휴일·주말
+            </span>
+          </div>
 
           {items.length === 0 && (
             <p className="text-center text-[13px] text-foreground-muted">
-              이 달에 승인된 휴가가 없어요.
+              이 달에 등록된 내 휴가가 없어요.
             </p>
           )}
         </div>

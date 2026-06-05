@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getLeaveBalances, listLeaveTypes, listMyLeaveRequests, getAnnualLeaveLedger, getMyAnnualPolicyApprover, getMyLeavePromotions } from "@teamlet/modules/leave";
 import { listApproverCandidates } from "@teamlet/modules/workflow";
@@ -92,27 +93,41 @@ export default async function LeavePage({
       <div className="page-h">
         <div>
           <h1 className="h-title">내 휴가</h1>
-          <div className="h-sub">{year}년 · 총 {totalGranted}일 부여 · 사용 {totalUsed}일 · 잔여 {totalRemaining}일</div>
+          <div className="h-sub">{year} 회계연도 · 1월 1일 ~ 12월 31일</div>
         </div>
-        <div />
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link href="/leave?tab=history" className="btn btn-outline">사용 내역</Link>
+          <Link href="/leave/requests" className="btn btn-primary">
+            <Plus size={14} strokeWidth={2.4} /> 휴가 신청
+          </Link>
+        </div>
       </div>
 
-      {/* 히어로 카드 */}
+      {/* 히어로 카드 — 진행바 내장 (디자인 lv-hero) */}
       {annualBalance && (
         <div className="lv-hero">
           <div>
-            <div className="l">연차 잔여 — {year}년</div>
+            <div className="l">잔여 연차 — {year}년</div>
             <div className="v num">
               {annualBalance.remainingDays}
               <small>/ {annualTotal}일</small>
             </div>
             <div className="d">
-              사용 <b>{annualBalance.usedDays}일</b>
+              올해 부여 <b>{annualTotal}일</b> · 사용 <b>{annualBalance.usedDays}일</b>
               {pendingCount > 0 && <> · 대기 중 <b>{pendingCount}건</b></>}
-              {annualBalance.remainingDays <= 0 ? " · 소진 완료" : annualBalance.remainingDays <= 3 ? " · ⚠ 소진 임박" : " · 소멸 임박 없음 ✓"}
             </div>
           </div>
-          <div className="actions" />
+          <div className="lv-hero-bar-wrap">
+            <div className="lv-hero-bar">
+              <i className="used" style={{ width: `${usedPct}%` }} />
+              <i className="sch" style={{ width: `${scheduledPct}%` }} />
+            </div>
+            <div className="lv-hero-legend">
+              <span><i className="u" />사용 {annualBalance.usedDays}</span>
+              {pendingCount > 0 && <span><i className="s" />대기 {pendingCount}</span>}
+              <span><i className="r" />잔여 {annualBalance.remainingDays}</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -122,21 +137,6 @@ export default async function LeavePage({
       {/* 개요 탭 */}
       {activeTab === "overview" && (
         <>
-          {/* 연간 사용 현황 바 */}
-          {annualBalance && (
-            <div className="breakdown">
-              <h3>연간 사용 현황 <span className="sub">{year}. 1. 1 — {year}. 12. 31</span></h3>
-              <div className="bd-bar">
-                <div className="seg used" style={{ width: `${usedPct}%` }} />
-                <div className="seg scheduled" style={{ width: `${scheduledPct}%` }} />
-              </div>
-              <div className="bd-legend">
-                <span className="used"><i />사용 <b>{annualBalance.usedDays}일</b></span>
-                {pendingCount > 0 && <span className="scheduled"><i />대기 중 <b>{pendingCount}건</b></span>}
-                <span className="remaining"><i />잔여 <b>{annualBalance.remainingDays}일</b></span>
-              </div>
-            </div>
-          )}
 
           {/* 휴가 종류 카드 그리드 (클릭 → 신청 모달) */}
           <LeaveTypeCards

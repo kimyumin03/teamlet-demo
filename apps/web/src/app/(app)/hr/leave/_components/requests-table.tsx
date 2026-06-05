@@ -15,8 +15,8 @@ const STATUS_LABEL: Record<CompanyLeaveRequestItem["status"], string> = {
 };
 const STATUS_CLASS: Record<CompanyLeaveRequestItem["status"], string> = {
   DRAFT: "bg-background-secondary text-foreground-subtle",
-  PENDING: "bg-amber-50 text-amber-700",
-  APPROVED: "bg-green-50 text-green-700",
+  PENDING: "bg-warning-50 text-warning-700",
+  APPROVED: "bg-success-50 text-success-700",
   REJECTED: "bg-destructive-50 text-destructive-700",
   CANCELLED: "bg-background-secondary text-foreground-subtle",
 };
@@ -97,15 +97,13 @@ function ActionCell({ request }: { request: CompanyLeaveRequestItem }) {
   }
 
   return (
-    <div style={{ display: "flex", gap: 4 }}>
+    <div className="flex gap-1">
       <button onClick={handleApprove} disabled={isPending}
-        style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
-          background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" }}>
+        className="rounded-md border border-success-100 bg-success-50 px-2.5 py-[3px] text-xs font-semibold text-success-700 disabled:opacity-50">
         승인
       </button>
       <button onClick={handleReject} disabled={isPending}
-        style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
-          background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
+        className="rounded-md border border-destructive-100 bg-destructive-50 px-2.5 py-[3px] text-xs font-semibold text-destructive-600 disabled:opacity-50">
         반려
       </button>
     </div>
@@ -122,10 +120,7 @@ export function RequestsTable({ requests }: { requests: CompanyLeaveRequestItem[
   return (
     <div>
       {pendingCount > 0 && (
-        <div style={{
-          padding: "10px 14px", marginBottom: 14, borderRadius: 10,
-          background: "#fffbeb", border: "1px solid #fde68a", fontSize: 13,
-        }}>
+        <div className="mb-3.5 rounded-[10px] border border-warning-200 bg-warning-50 px-3.5 py-2.5 text-[13px] text-foreground">
           승인 대기 <strong>{pendingCount}건</strong> — 결재함 경유 신청은 "결재함 →" 버튼으로 이동해 처리해 주세요.
         </div>
       )}
@@ -163,7 +158,7 @@ export function RequestsTable({ requests }: { requests: CompanyLeaveRequestItem[
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.map((r) => (
-                <tr key={r.id} className={`hover:bg-background-secondary/50 transition-colors ${r.status === "PENDING" ? "bg-amber-50/30" : ""}`}>
+                <tr key={r.id} className={`hover:bg-background-secondary/50 transition-colors ${r.status === "PENDING" ? "bg-warning-50/40" : ""}`}>
                   <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{r.employeeName}</td>
                   <td className="px-4 py-3 text-foreground-muted whitespace-nowrap">{r.departmentName ?? "—"}</td>
                   <td className="px-4 py-3 text-foreground-muted whitespace-nowrap">{r.leaveTypeName}</td>

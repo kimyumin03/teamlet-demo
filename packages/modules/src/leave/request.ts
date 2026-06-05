@@ -14,6 +14,28 @@ function parseSchedule(raw: unknown): LeaveScheduleEntry[] {
 const BALANCE_READ = "leave.balance.read";
 const BALANCE_MANAGE = "leave.balance.manage";
 
+/**
+ * 사전 부여(잔여를 미리 보유) 휴가 여부.
+ *  - 연차: 연차 정책 엔진이 회계일/입사일에 사전 부여
+ *  - 입사 시 부여(ON_HIRE) · 근속 시 부여(ON_TENURE) · 관리자 직접 부여(MANUAL): 시점에 사전 부여됨
+ * 그 외(ON_REQUEST·ON_OTHER_EXHAUSTED·비연차 PERIODIC 보건/난임)는 "신청 시 부여" —
+ * 잔여 부족으로 차단하지 않고 grantAmount 가 있으면 월/연 한도로만 제한한다.
+ */
+function isPreGranted(key: string, method: string): boolean {
+  if (key === "annual") return true;
+  return method === "ON_HIRE" || method === "ON_TENURE" || method === "MANUAL";
+}
+
+/** 한도 집계 주기가 월 단위인지 — periodicCycle 이 monthly 계열이면 월 한도(보건=월 1일) */
+function isMonthlyCap(periodicCycle: string | null): boolean {
+  return !!periodicCycle && periodicCycle.startsWith("monthly");
+}
+
+/** 트랜잭션 분류 — 연차만 ANNUAL, 그 외(법정·자율 휴가)는 EXTRA_GRANT */
+function leaveTxCategory(key: string): "ANNUAL" | "EXTRA_GRANT" {
+  return key === "annual" ? "ANNUAL" : "EXTRA_GRANT";
+}
+
 export async function listPendingLeaveRequests(
   actorEmployeeId: string,
 ): Promise<Result<PendingLeaveRequestItem[]>> {
@@ -162,11 +184,13 @@ export async function requestLeave(
 
   const leaveType = await prisma.leaveType.findUnique({
     where: { id: leaveTypeId },
-    select: { isActive: true, name: true, companyId: true },
+    select: { isActive: true, name: true, companyId: true, key: true, grantMethod: true, grantAmount: true, periodicCycle: true },
   });
   if (!leaveType?.isActive || leaveType.companyId !== employee.companyId) {
     return err(errors.validation("비활성 휴가 종류예요"));
   }
+  const grantsOnRequest = !isPreGranted(leaveType.key, leaveType.grantMethod);
+  const txCategory = leaveTxCategory(leaveType.key);
 
   const needsApproval = !!approverId;
   if (needsApproval) {
@@ -207,8 +231,29 @@ export async function requestLeave(
     ? Number(balance.grantedDays) - Number(balance.usedDays) - pendingDays + Number(balance.adjustedDays)
     : -pendingDays;
 
-  if (remaining < days)
+  if (grantsOnRequest) {
+    // 신청 시 부여 휴가 — 잔여 차단 대신 한도(grantAmount) 검사. 한도 없으면(null) 무제한.
+    // 보건(월 1일) 같은 월 단위 휴가는 해당 월, 그 외(난임 연 6일 등)는 해당 연도 기준으로 집계.
+    if (leaveType.grantAmount != null) {
+      const cap = Number(leaveType.grantAmount);
+      const monthly = isMonthlyCap(leaveType.periodicCycle);
+      const winStart = monthly
+        ? new Date(startDate.getFullYear(), startDate.getMonth(), 1)
+        : new Date(`${year}-01-01`);
+      const winEnd = monthly
+        ? new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1)
+        : new Date(`${year + 1}-01-01`);
+      const usedAgg = await prisma.leaveRequest.aggregate({
+        where: { employeeId, leaveTypeId, status: { in: ["PENDING", "APPROVED"] }, startDate: { gte: winStart, lt: winEnd } },
+        _sum: { days: true },
+      });
+      const usedInWindow = Number(usedAgg._sum.days ?? 0);
+      if (usedInWindow + days > cap)
+        return err(errors.validation(`${leaveType.name}은(는) ${monthly ? "월" : "연"} ${cap}일까지 사용할 수 있어요 (이미 ${usedInWindow}일 사용·대기 중)`));
+    }
+  } else if (remaining < days) {
     return err(errors.validation(`잔여 휴가가 부족해요 (잔여 ${remaining}일, 신청 ${days}일)`));
+  }
 
   const startStr = startDate.toISOString().slice(0, 10);
   const endStr = endDate.toISOString().slice(0, 10);
@@ -261,23 +306,29 @@ export async function requestLeave(
       },
       select: { id: true },
     });
-    // 승인자 없으면 즉시 잔여 차감 + 원장 기록
+    // 승인자 없으면 즉시 부여(신청 시 부여 휴가)·사용 차감 + 원장 기록
     if (!needsApproval) {
       const yr = startDate.getFullYear();
+      // 신청 시 부여 휴가는 사용과 동시에 부여(GRANT +days)
+      if (grantsOnRequest) {
+        await tx.leaveTransaction.create({
+          data: {
+            employeeId, leaveTypeId, category: txCategory, txType: "GRANT",
+            days, reason: `${leaveType.name} 부여 (신청 시 부여)`, actorId: employeeId,
+          },
+        });
+      }
+      // 사용 — USE 는 음수(원장 규약)
       await tx.leaveTransaction.create({
         data: {
-          employeeId, leaveTypeId,
-          category: "ANNUAL",
-          txType: "USE",
-          days,
-          reason: reason ?? "휴가 사용 (자동 승인)",
-          actorId: employeeId,
+          employeeId, leaveTypeId, category: txCategory, txType: "USE",
+          days: -days, reason: reason ?? "휴가 사용 (자동 승인)", actorId: employeeId,
         },
       });
       await tx.leaveBalance.upsert({
         where: { employeeId_leaveTypeId_year: { employeeId, leaveTypeId, year: yr } },
-        create: { employeeId, leaveTypeId, year: yr, grantedDays: 0, usedDays: days },
-        update: { usedDays: { increment: days } },
+        create: { employeeId, leaveTypeId, year: yr, grantedDays: grantsOnRequest ? days : 0, usedDays: days },
+        update: { usedDays: { increment: days }, ...(grantsOnRequest && { grantedDays: { increment: days } }) },
       });
     }
     return { reqId: req.id, docId: doc.id };
@@ -323,23 +374,38 @@ export async function finalizeLeaveFromApprovedDocument(
       days: true,
       status: true,
       startDate: true,
+      leaveType: { select: { name: true, key: true, grantMethod: true } },
     },
   });
   if (!req || req.status !== "PENDING") return;
 
   const year = req.startDate.getFullYear();
+  const days = Number(req.days);
+  const grantsOnRequest = !isPreGranted(req.leaveType.key, req.leaveType.grantMethod);
+  const txCategory = leaveTxCategory(req.leaveType.key);
+
   await prisma.$transaction([
     prisma.leaveRequest.update({
       where: { id: req.id },
       data: { status: "APPROVED", reviewedAt: new Date() },
     }),
+    // 신청 시 부여 휴가는 승인 시 부여(GRANT +days)도 함께 기록
+    ...(grantsOnRequest
+      ? [prisma.leaveTransaction.create({
+          data: {
+            employeeId: req.employeeId, leaveTypeId: req.leaveTypeId,
+            category: txCategory, txType: "GRANT" as const, days,
+            reason: `${req.leaveType.name} 부여 (신청 시 부여)`, leaveRequestId: req.id,
+          },
+        })]
+      : []),
     prisma.leaveTransaction.create({
       data: {
         employeeId: req.employeeId,
         leaveTypeId: req.leaveTypeId,
-        category: "ANNUAL",
+        category: txCategory,
         txType: "USE",
-        days: -Number(req.days),
+        days: -days,
         reason: "휴가 사용",
         leaveRequestId: req.id,
       },
@@ -356,9 +422,10 @@ export async function finalizeLeaveFromApprovedDocument(
         employeeId: req.employeeId,
         leaveTypeId: req.leaveTypeId,
         year,
-        usedDays: Number(req.days),
+        grantedDays: grantsOnRequest ? days : 0,
+        usedDays: days,
       },
-      update: { usedDays: { increment: Number(req.days) } },
+      update: { usedDays: { increment: days }, ...(grantsOnRequest && { grantedDays: { increment: days } }) },
     }),
   ]);
 }
@@ -397,6 +464,7 @@ export async function approveLeave(
       startDate: true,
       formDocumentId: true,
       employee: { select: { departmentId: true } },
+      leaveType: { select: { name: true, key: true, grantMethod: true } },
     },
   });
   if (!req) return err(errors.notFound("휴가 신청을 찾을 수 없어요"));
@@ -414,19 +482,31 @@ export async function approveLeave(
   }
 
   const year = req.startDate.getFullYear();
+  const days = Number(req.days);
+  const grantsOnRequest = !isPreGranted(req.leaveType.key, req.leaveType.grantMethod);
+  const txCategory = leaveTxCategory(req.leaveType.key);
 
   await prisma.$transaction([
     prisma.leaveRequest.update({
       where: { id: requestId },
       data: { status: "APPROVED", reviewedAt: new Date(), reviewedBy: actorId },
     }),
+    ...(grantsOnRequest
+      ? [prisma.leaveTransaction.create({
+          data: {
+            employeeId: req.employeeId, leaveTypeId: req.leaveTypeId,
+            category: txCategory, txType: "GRANT" as const, days,
+            reason: `${req.leaveType.name} 부여 (신청 시 부여)`, actorId, leaveRequestId: requestId,
+          },
+        })]
+      : []),
     prisma.leaveTransaction.create({
       data: {
         employeeId: req.employeeId,
         leaveTypeId: req.leaveTypeId,
-        category: "ANNUAL",
+        category: txCategory,
         txType: "USE",
-        days: -Number(req.days),
+        days: -days,
         reason: "휴가 사용",
         actorId,
         leaveRequestId: requestId,
@@ -434,8 +514,8 @@ export async function approveLeave(
     }),
     prisma.leaveBalance.upsert({
       where: { employeeId_leaveTypeId_year: { employeeId: req.employeeId, leaveTypeId: req.leaveTypeId, year } },
-      create: { employeeId: req.employeeId, leaveTypeId: req.leaveTypeId, year, usedDays: Number(req.days) },
-      update: { usedDays: { increment: Number(req.days) } },
+      create: { employeeId: req.employeeId, leaveTypeId: req.leaveTypeId, year, grantedDays: grantsOnRequest ? days : 0, usedDays: days },
+      update: { usedDays: { increment: days }, ...(grantsOnRequest && { grantedDays: { increment: days } }) },
     }),
   ]);
 
@@ -534,7 +614,10 @@ export async function cancelLeave(
 ): Promise<Result<void>> {
   const req = await prisma.leaveRequest.findUnique({
     where: { id: requestId },
-    select: { employeeId: true, leaveTypeId: true, days: true, status: true, startDate: true, formDocumentId: true },
+    select: {
+      employeeId: true, leaveTypeId: true, days: true, status: true, startDate: true, formDocumentId: true,
+      leaveType: { select: { key: true, grantMethod: true } },
+    },
   });
   if (!req) return err(errors.notFound("휴가 신청을 찾을 수 없어요"));
   if (req.employeeId !== employeeId) return err(errors.forbidden("본인 신청만 취소할 수 있어요"));
@@ -543,6 +626,9 @@ export async function cancelLeave(
 
   const year = req.startDate.getFullYear();
   const wasApproved = req.status === "APPROVED";
+  const days = Number(req.days);
+  const grantsOnRequest = !isPreGranted(req.leaveType.key, req.leaveType.grantMethod);
+  const txCategory = leaveTxCategory(req.leaveType.key);
 
   await prisma.$transaction([
     prisma.leaveRequest.update({
@@ -564,9 +650,9 @@ export async function cancelLeave(
             data: {
               employeeId: req.employeeId,
               leaveTypeId: req.leaveTypeId,
-              category: "ANNUAL",
+              category: txCategory,
               txType: "ADJUST",
-              days: Number(req.days),
+              days,
               reason: "휴가 취소 복원",
               leaveRequestId: requestId,
             },
@@ -579,7 +665,8 @@ export async function cancelLeave(
                 year,
               },
             },
-            data: { usedDays: { decrement: Number(req.days) } },
+            // 사용 복원 + 신청 시 부여였으면 부여분도 함께 회수(취소된 휴가가 잔여로 남지 않도록)
+            data: { usedDays: { decrement: days }, ...(grantsOnRequest && { grantedDays: { decrement: days } }) },
           }),
         ]
       : []),

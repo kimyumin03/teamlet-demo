@@ -28,6 +28,8 @@ export type LeaveTypeSeed = {
   paymentType: PaymentType;
   genderRestriction: GenderRestriction;
   evidenceRequirement: EvidenceRequirement;
+  /** 한도 집계 주기 — "monthly_*" 면 월 한도(보건=월 1일), 그 외/미지정은 연 한도 */
+  periodicCycle?: string | null;
 };
 
 // ── 법정 필수 (isRequired: true) ──────────────────────────────────────────────
@@ -110,6 +112,7 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
     paymentType: "UNPAID",
     genderRestriction: "FEMALE",
     evidenceRequirement: "NONE",
+    periodicCycle: "monthly_from_hire", // 월 1일 한도
   },
   {
     key: "maternity_self",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, Input } from "@teamlet/ui";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -185,6 +185,78 @@ function SectionHeader({ title, open, onToggle }: { title: string; open: boolean
   );
 }
 
+/* ── 인포 툴팁 (? 아이콘 hover) ─────────── */
+function InfoTip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span style={{ position: "relative", display: "inline-flex", marginLeft: 4, verticalAlign: "middle" }}>
+      <span
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        style={{
+          width: 14, height: 14, borderRadius: "50%", cursor: "help",
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          background: "var(--bg-secondary)", color: "var(--fg-muted)",
+          fontSize: 10, fontWeight: 700, border: "1px solid var(--border)",
+        }}
+      >?</span>
+      {open && (
+        <span style={{
+          position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)",
+          width: 220, padding: "8px 10px", borderRadius: 8, zIndex: 50,
+          background: "var(--fg)", color: "var(--bg-primary)", fontSize: 11.5, lineHeight: 1.5,
+          fontWeight: 500, boxShadow: "0 4px 12px rgba(0,0,0,0.18)", whiteSpace: "normal",
+        }}>{text}</span>
+      )}
+    </span>
+  );
+}
+
+/* ── 자동 소멸 미리보기 테이블 (법정/실제 × 월차/연차) ── */
+function expiryActualLabel(mode: string, grace: string, base: string): string {
+  if (mode === "NONE") return "소멸 안 함";
+  const baseLabel = base === "monthly"
+    ? (mode === "HIRE_DATE_1Y_FISCAL" ? "입사 1년 후 첫 회계일" : "입사 1년 후")
+    : "부여 1년 후";
+  return grace ? `${baseLabel} · 유예 ${grace}개월` : baseLabel;
+}
+
+function ExpiryPreviewTable({ form }: { form: FormState }) {
+  const TH: CSSProperties = { fontSize: 11, fontWeight: 700, color: "var(--fg-muted)", padding: "7px 10px", textAlign: "left", background: "var(--bg-secondary)" };
+  const TD: CSSProperties = { fontSize: 11.5, color: "var(--fg)", padding: "7px 10px", borderTop: "1px solid var(--border)" };
+  return (
+    <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th style={{ ...TH, width: "34%" }}>소멸 기준</th>
+            <th style={TH}>월차</th>
+            <th style={TH}>연차</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ ...TD, fontWeight: 600, color: "var(--fg-muted)" }}>
+              법정 소멸일
+              <InfoTip text="근로기준법상 최소한으로 보장해야 하는 소멸 시점이에요. 연차 촉진도 이 기준으로 실행돼요." />
+            </td>
+            <td style={TD}>입사 1년 후</td>
+            <td style={TD}>부여 1년 후</td>
+          </tr>
+          <tr>
+            <td style={{ ...TD, fontWeight: 600, color: "var(--fg-muted)" }}>
+              실제 소멸일
+              <InfoTip text="실제 소멸 시점이에요. 법정 소멸일보다 이르게 설정할 수 없어요." />
+            </td>
+            <td style={TD}>{expiryActualLabel(form.monthlyExpiryMode, form.monthlyGraceMonths, "monthly")}</td>
+            <td style={TD}>{expiryActualLabel(form.annualExpiryMode, form.annualGraceMonths, "annual")}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /* ── 정책 편집 폼 ───────────────────────── */
 function PolicyForm({ form, set, employees, departments }: {
   form: FormState;
@@ -347,6 +419,7 @@ function PolicyForm({ form, set, employees, departments }: {
       <SectionHeader title="자동 소멸 설정" open={expiryOpen} onToggle={() => setExpiryOpen((p) => !p)} />
       {expiryOpen && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <ExpiryPreviewTable form={form} />
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: "var(--fg-muted)", marginBottom: 5 }}>월차 자동 소멸 시점</div>
             <select className={SELECT_CLS} value={form.monthlyExpiryMode}
@@ -433,10 +506,27 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees, 
   const [deleteTarget, setDeleteTarget] = useState<LeavePolicyItem | null>(null);
   const [form, setForm] = useState<FormState>(defaultForm);
   const [error, setError] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [leaveConfirm, setLeaveConfirm] = useState<"create" | "edit" | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function set<K extends keyof FormState>(k: K, v: FormState[K]) {
     setForm((f) => ({ ...f, [k]: v }));
+    setDirty(true);
+  }
+
+  /* 모달 닫기 요청 — 수정 중이면 이탈 확인 */
+  function requestClose(which: "create" | "edit") {
+    if (dirty) { setLeaveConfirm(which); return; }
+    if (which === "create") setCreateOpen(false);
+    else setEditTarget(null);
+  }
+
+  function confirmLeave() {
+    if (leaveConfirm === "create") setCreateOpen(false);
+    else if (leaveConfirm === "edit") setEditTarget(null);
+    setLeaveConfirm(null);
+    setDirty(false);
   }
 
   function buildInput(f: FormState) {
@@ -470,12 +560,14 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees, 
   function openCreate() {
     setForm(defaultForm());
     setError(null);
+    setDirty(false);
     setCreateOpen(true);
   }
 
   function openEdit(p: LeavePolicyItem) {
     setForm(policyToForm(p));
     setError(null);
+    setDirty(false);
     setEditTarget(p);
   }
 
@@ -486,6 +578,7 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees, 
     startTransition(async () => {
       const res = await createLeavePolicyAction(buildInput(form));
       if (!res.ok) { setError(res.error.message); return; }
+      setDirty(false);
       setCreateOpen(false);
       router.refresh();
     });
@@ -498,6 +591,7 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees, 
     startTransition(async () => {
       const res = await updateLeavePolicyAction(editTarget.id, buildInput(form));
       if (!res.ok) { setError(res.error.message); return; }
+      setDirty(false);
       setEditTarget(null);
       router.refresh();
     });
@@ -610,7 +704,7 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees, 
       )}
 
       {/* 추가 다이얼로그 */}
-      <Dialog open={createOpen} onOpenChange={(o) => { if (!isPending) setCreateOpen(o); }}>
+      <Dialog open={createOpen} onOpenChange={(o) => { if (!isPending && !o) requestClose("create"); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>연차 정책 추가</DialogTitle>
@@ -620,9 +714,7 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees, 
             <p style={{ fontSize: 12.5, color: "#dc2626", borderRadius: 8, border: "1px solid #fca5a5", background: "#fef2f2", padding: "8px 12px" }}>{error}</p>
           )}
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="secondary" disabled={isPending}>취소</Button>
-            </DialogClose>
+            <Button type="button" variant="secondary" disabled={isPending} onClick={() => requestClose("create")}>취소</Button>
             <Button onClick={handleCreate} disabled={isPending || !form.name.trim()}>
               {isPending ? "저장 중…" : "저장하기"}
             </Button>
@@ -631,7 +723,7 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees, 
       </Dialog>
 
       {/* 수정 다이얼로그 */}
-      <Dialog open={!!editTarget} onOpenChange={(o) => { if (!isPending && !o) setEditTarget(null); }}>
+      <Dialog open={!!editTarget} onOpenChange={(o) => { if (!isPending && !o) requestClose("edit"); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editTarget?.name} 수정</DialogTitle>
@@ -641,12 +733,26 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees, 
             <p style={{ fontSize: 12.5, color: "#dc2626", borderRadius: 8, border: "1px solid #fca5a5", background: "#fef2f2", padding: "8px 12px" }}>{error}</p>
           )}
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="secondary" disabled={isPending}>취소</Button>
-            </DialogClose>
+            <Button type="button" variant="secondary" disabled={isPending} onClick={() => requestClose("edit")}>취소</Button>
             <Button onClick={handleEdit} disabled={isPending || !form.name.trim()}>
               {isPending ? "저장 중…" : "저장하기"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 이탈 확인 */}
+      <Dialog open={!!leaveConfirm} onOpenChange={(o) => { if (!o) setLeaveConfirm(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>정말 그만할까요?</DialogTitle>
+          </DialogHeader>
+          <p style={{ fontSize: 13.5, color: "var(--fg-muted)", lineHeight: 1.6 }}>
+            지금 종료하면 수정 중인 연차 정책이 저장되지 않아요.
+          </p>
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={() => setLeaveConfirm(null)}>취소</Button>
+            <Button variant="destructive" onClick={confirmLeave}>그만하기</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

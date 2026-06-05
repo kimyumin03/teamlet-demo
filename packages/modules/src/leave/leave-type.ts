@@ -29,6 +29,7 @@ export type LeaveTypeFullItem = {
   genderRestriction: LeaveGenderRestriction;
   evidenceRequirement: LeaveEvidenceRequirement;
   useUnit: LeaveUseUnit;
+  hourUnitMinutes: number | null;
   deductOnHoliday: boolean;
   periodicCycle: string | null;
   tenureYears: number | null;
@@ -52,6 +53,7 @@ export type LeaveTypeCreateInput = {
   genderRestriction?: LeaveGenderRestriction;
   evidenceRequirement?: LeaveEvidenceRequirement;
   useUnit?: LeaveUseUnit;
+  hourUnitMinutes?: number | null;
   deductOnHoliday?: boolean;
   periodicCycle?: string | null;
   tenureYears?: number | null;
@@ -103,6 +105,7 @@ export async function listLeaveTypesFull(
       genderRestriction: t.genderRestriction,
       evidenceRequirement: t.evidenceRequirement,
       useUnit: t.useUnit,
+      hourUnitMinutes: t.hourUnitMinutes,
       deductOnHoliday: t.deductOnHoliday,
       periodicCycle: t.periodicCycle,
       tenureYears: t.tenureYears,
@@ -159,6 +162,7 @@ export async function createLeaveType(
       genderRestriction: input.genderRestriction ?? "ALL",
       evidenceRequirement: input.evidenceRequirement ?? "NONE",
       useUnit: input.useUnit ?? "DAY",
+      hourUnitMinutes: input.hourUnitMinutes ?? null,
       deductOnHoliday: input.deductOnHoliday ?? false,
       periodicCycle: input.periodicCycle ?? null,
       tenureYears: input.tenureYears ?? null,
@@ -205,6 +209,7 @@ export async function updateLeaveType(
       ...(input.genderRestriction !== undefined && { genderRestriction: input.genderRestriction }),
       ...(input.evidenceRequirement !== undefined && { evidenceRequirement: input.evidenceRequirement }),
       ...(input.useUnit !== undefined && { useUnit: input.useUnit }),
+      ...(input.hourUnitMinutes !== undefined && { hourUnitMinutes: input.hourUnitMinutes }),
       ...(input.deductOnHoliday !== undefined && { deductOnHoliday: input.deductOnHoliday }),
       ...(input.periodicCycle !== undefined && { periodicCycle: input.periodicCycle }),
       ...(input.tenureYears !== undefined && { tenureYears: input.tenureYears }),
