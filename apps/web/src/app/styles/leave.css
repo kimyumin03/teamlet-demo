@@ -60,16 +60,16 @@
 
 /* 히어로 사용 바 (다크 슬레이트 위) */
 .lv-hero-bar-wrap { display: flex; flex-direction: column; gap: 10px; min-width: 240px; }
-.lv-hero-bar { height: 12px; border-radius: 6px; background: rgba(255,255,255,0.16); display: flex; overflow: hidden; }
+.lv-hero-bar { height: 10px; border-radius: 5px; background: var(--color-blue-100); display: flex; overflow: hidden; }
 .lv-hero-bar i { height: 100%; display: block; }
-.lv-hero-bar i.used { background: #fff; }
-.lv-hero-bar i.sch { background: rgba(255,255,255,0.5); }
-.lv-hero-legend { display: flex; gap: 14px; font-size: 11.5px; color: rgba(255,255,255,0.8); flex-wrap: wrap; }
+.lv-hero-bar i.used { background: var(--accent); }
+.lv-hero-bar i.sch { background: var(--color-blue-200); }
+.lv-hero-legend { display: flex; gap: 14px; font-size: 11.5px; color: var(--fg-muted); flex-wrap: wrap; }
 .lv-hero-legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .lv-hero-legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
-.lv-hero-legend .u { background: #fff; }
-.lv-hero-legend .s { background: rgba(255,255,255,0.5); }
-.lv-hero-legend .r { background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.4); }
+.lv-hero-legend .u { background: var(--accent); }
+.lv-hero-legend .s { background: var(--color-blue-200); }
+.lv-hero-legend .r { background: var(--bg-primary); border: 1px solid var(--color-blue-200); }
 
 .app.dense .lv-apply-main { gap: 12px; padding: 16px; }
 

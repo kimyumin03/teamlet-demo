@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { LeaveRequestEntry } from "./_components/leave-request-entry";
 import { redirect } from "next/navigation";
 import { getLeaveBalances, listLeaveTypes, listMyLeaveRequests, getAnnualLeaveLedger, getMyAnnualPolicyApprover, getMyLeavePromotions } from "@teamlet/modules/leave";
 import { listApproverCandidates } from "@teamlet/modules/workflow";
@@ -97,9 +97,11 @@ export default async function LeavePage({
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Link href="/leave?tab=history" className="btn btn-outline">사용 내역</Link>
-          <Link href="/leave/requests" className="btn btn-primary">
-            <Plus size={14} strokeWidth={2.4} /> 휴가 신청
-          </Link>
+          <LeaveRequestEntry
+            leaveTypes={leaveTypes}
+            balances={balances}
+            approverCandidates={approverCandidates}
+          />
         </div>
       </div>
 
@@ -152,7 +154,7 @@ export default async function LeavePage({
                 예정된 / 최근 신청
                 <span className="sub">{requests.length}건</span>
               </h3>
-              {requests.slice(0, 5).map((r) => (
+              {requests.slice(0, 3).map((r) => (
                 <div key={r.id} className="hist-row">
                   <div className="date">
                     <b>{fmtDate(r.startDate)}</b>
@@ -170,7 +172,7 @@ export default async function LeavePage({
                   </div>
                 </div>
               ))}
-              {requests.length > 5 && (
+              {requests.length > 3 && (
                 <div style={{ textAlign: "right", marginTop: "10px" }}>
                   <Link href="/leave?tab=history" className="btn btn-ghost sm">전체 보기 →</Link>
                 </div>

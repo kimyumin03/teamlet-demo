@@ -11,7 +11,7 @@ import { ScheduleEditor, businessDays } from "./schedule-editor";
 import type { LeaveScheduleEntry } from "@teamlet/modules/leave";
 
 /* ── 부여 방식 레이블 ─────────────────────── */
-function grantLabel(t: LeaveTypeItem, balance?: LeaveBalanceSummary): string {
+export function grantLabel(t: LeaveTypeItem, balance?: LeaveBalanceSummary): string {
   if (balance && (balance.grantedDays > 0 || balance.adjustedDays > 0)) return `잔여 ${balance.remainingDays}일`;
   const amt = t.grantAmount;
   switch (t.grantMethod) {
@@ -85,7 +85,7 @@ const AFTERNOON_S = "14:00", AFTERNOON_E = "18:00";
    Step 1: 날짜 선택 + 사용 단위 (캘린더 영역 아래에 라디오)
    Step 2: 확인 (사유 + 증명자료 + 결재자)
 ───────────────────────────────────────── */
-function RequestDialog({
+export function RequestDialog({
   leaveType,
   approverCandidates,
   onClose,
@@ -509,12 +509,19 @@ export function LeaveTypeCards({
   const [selected, setSelected] = useState<LeaveTypeItem | null>(null);
   const balanceMap = new Map(balances.map((b) => [b.leaveTypeId, b]));
 
+  // 9개씩 페이지네이션 (처음에 너무 길어지지 않게)
+  const PER_PAGE = 9;
+  const [page, setPage] = useState(0);
+  const totalPages = Math.ceil(leaveTypes.length / PER_PAGE);
+  const safePage = Math.min(page, Math.max(0, totalPages - 1));
+  const pageTypes = leaveTypes.slice(safePage * PER_PAGE, safePage * PER_PAGE + PER_PAGE);
+
   return (
     <>
       <div className="breakdown">
         <h3>휴가 등록</h3>
         <div className="types-grid">
-          {leaveTypes.map((t) => {
+          {pageTypes.map((t) => {
             const balance = balanceMap.get(t.id);
             const isExhausted = balance && balance.remainingDays <= 0 && balance.grantedDays > 0;
             return (
@@ -525,6 +532,7 @@ export function LeaveTypeCards({
                   border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px",
                   background: isExhausted ? "var(--bg-secondary)" : "var(--bg-primary)",
                   transition: "border-color 0.15s, box-shadow 0.15s",
+                  minHeight: 84, display: "flex", flexDirection: "column", justifyContent: "center", gap: 2,
                 }}
                 onMouseEnter={(e) => {
                   if (!isExhausted) {
@@ -554,6 +562,20 @@ export function LeaveTypeCards({
             );
           })}
         </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 12 }}>
+            <button type="button" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={safePage === 0}
+              style={{ borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-primary)", padding: "4px 10px", fontSize: 12.5, color: "var(--fg-muted)", cursor: safePage === 0 ? "default" : "pointer", opacity: safePage === 0 ? 0.4 : 1 }}>
+              ‹ 이전
+            </button>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--fg-muted)" }}>{safePage + 1} / {totalPages}</span>
+            <button type="button" onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={safePage >= totalPages - 1}
+              style={{ borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-primary)", padding: "4px 10px", fontSize: 12.5, color: "var(--fg-muted)", cursor: safePage >= totalPages - 1 ? "default" : "pointer", opacity: safePage >= totalPages - 1 ? 0.4 : 1 }}>
+              다음 ›
+            </button>
+          </div>
+        )}
       </div>
 
       {selected && (
