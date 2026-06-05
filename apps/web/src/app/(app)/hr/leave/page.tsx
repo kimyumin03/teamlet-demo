@@ -9,6 +9,7 @@ import {
   listCompanyLeavePromotions,
 } from "@teamlet/modules/leave";
 import { listEmployees } from "@teamlet/modules/employee";
+import { listDepartments } from "@teamlet/modules/department";
 import { GrantLeaveButton } from "@/components/hr/grant-leave-button";
 import { AdjustLeaveButton } from "@/components/hr/adjust-leave-button";
 import { GrantHistoryButton } from "@/components/hr/grant-history-button";
@@ -46,7 +47,7 @@ export default async function HrLeavePage({
   const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
   const employeeId = session.user.employeeId;
 
-  const [balancesResult, requestsResult, typesResult, employeesResult, monthlyResult, promotionResult] =
+  const [balancesResult, requestsResult, typesResult, employeesResult, monthlyResult, promotionResult, departmentsResult] =
     await Promise.all([
       listCompanyLeaveBalances(employeeId, year),
       listCompanyLeaveRequests(employeeId),
@@ -54,6 +55,7 @@ export default async function HrLeavePage({
       listEmployees(employeeId),
       listMonthlyAnnualUsage(employeeId, year),
       listCompanyLeavePromotions(employeeId, year),
+      listDepartments(employeeId),
     ]);
 
   const rows = balancesResult.ok ? balancesResult.data : [];
@@ -62,7 +64,10 @@ export default async function HrLeavePage({
   const employees = employeesResult.ok
     ? employeesResult.data
         .filter((e) => e.isActive)
-        .map((e) => ({ id: e.id, name: e.name, departmentName: e.departmentName }))
+        .map((e) => ({ id: e.id, name: e.name, departmentId: e.departmentId, departmentName: e.departmentName }))
+    : [];
+  const departments = departmentsResult.ok
+    ? departmentsResult.data.map((d) => ({ id: d.id, name: d.name, parentId: d.parentId }))
     : [];
   const monthlyRows = monthlyResult.ok ? monthlyResult.data : [];
   const promotions = promotionResult.ok ? promotionResult.data : [];
@@ -141,8 +146,8 @@ export default async function HrLeavePage({
         <div style={{ display: "flex", gap: "8px" }}>
           <ExpiryButton year={year} />
           <GrantHistoryButton year={year} />
-          <AdjustLeaveButton employees={employees} leaveTypes={leaveTypes} />
-          <GrantLeaveButton employees={employees} leaveTypes={leaveTypes} />
+          <AdjustLeaveButton employees={employees} departments={departments} leaveTypes={leaveTypes} />
+          <GrantLeaveButton employees={employees} departments={departments} leaveTypes={leaveTypes} />
         </div>
       </div>
 

@@ -286,11 +286,14 @@ export function LeaveStatusView({
           {/* 액션 버튼 */}
           <div className="mt-auto flex gap-2 pt-4">
             <GrantLeaveButton
-              employees={[{ id: selected.employeeId, name: selected.employeeName, departmentName: selected.departmentName }]}
+              employees={[{ id: selected.employeeId, name: selected.employeeName, departmentId: null, departmentName: selected.departmentName }]}
+              departments={[]}
               leaveTypes={leaveTypes}
+              presetEmployeeId={selected.employeeId}
             />
             <AdjustLeaveButton
-              employees={[{ id: selected.employeeId, name: selected.employeeName, departmentName: selected.departmentName }]}
+              employees={[{ id: selected.employeeId, name: selected.employeeName, departmentId: null, departmentName: selected.departmentName }]}
+              departments={[]}
               leaveTypes={leaveTypes}
               presetEmployeeId={selected.employeeId}
             />

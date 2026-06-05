@@ -5,26 +5,27 @@ import { useRouter } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import { Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@teamlet/ui";
 import { adjustLeaveAction } from "@/lib/actions/leave";
+import { TargetPicker, type PickerEmployee, type PickerDepartment } from "@/components/common/recipient-picker";
+import { LeaveTypePicker } from "./leave-type-picker";
 
-type Employee = { id: string; name: string; departmentName: string | null };
 type LeaveType = { id: string; name: string };
-
-const SELECT_CLS =
-  "w-full rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground outline-none focus:border-foreground-subtle";
 
 export function AdjustLeaveButton({
   employees,
+  departments = [],
   leaveTypes,
   presetEmployeeId,
   variant = "secondary",
 }: {
-  employees: Employee[];
+  employees: PickerEmployee[];
+  departments?: PickerDepartment[];
   leaveTypes: LeaveType[];
   presetEmployeeId?: string;
   variant?: "primary" | "secondary";
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [employeeId, setEmployeeId] = useState(presetEmployeeId ?? "");
   const [leaveTypeId, setLeaveTypeId] = useState("");
   const [direction, setDirection] = useState<"grant" | "deduct">("grant");
@@ -32,6 +33,8 @@ export function AdjustLeaveButton({
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const target = employees.find((e) => e.id === employeeId) ?? null;
 
   function reset() {
     setEmployeeId(presetEmployeeId ?? "");
@@ -81,26 +84,30 @@ export function AdjustLeaveButton({
           <div className="flex flex-col gap-4 py-1">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-foreground-muted">대상자</label>
-              <select className={SELECT_CLS} value={employeeId}
-                onChange={(e) => setEmployeeId(e.target.value)} disabled={isPending || !!presetEmployeeId}>
-                <option value="">구성원 선택</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.name}{emp.departmentName ? ` (${emp.departmentName})` : ""}
-                  </option>
-                ))}
-              </select>
+              <button
+                type="button"
+                onClick={() => { if (!presetEmployeeId) setPickerOpen(true); }}
+                disabled={isPending || !!presetEmployeeId}
+                className="flex items-center gap-2.5 rounded-[8px] border border-border bg-background-primary px-3 py-2 text-left transition-colors hover:border-border-strong disabled:cursor-default disabled:hover:border-border"
+              >
+                {target ? (
+                  <>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-[11px] font-bold text-primary">
+                      {target.name.slice(-2)}
+                    </span>
+                    <span className="text-[13px] font-medium text-foreground">{target.name}</span>
+                    {target.departmentName && <span className="text-[11.5px] text-foreground-muted">· {target.departmentName}</span>}
+                  </>
+                ) : (
+                  <span className="text-[13px] text-foreground-subtle">구성원 선택</span>
+                )}
+                {!presetEmployeeId && <span className="ml-auto text-[13px] text-foreground-subtle">›</span>}
+              </button>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-foreground-muted">휴가 종류</label>
-              <select className={SELECT_CLS} value={leaveTypeId}
-                onChange={(e) => setLeaveTypeId(e.target.value)} disabled={isPending}>
-                <option value="">종류 선택</option>
-                {leaveTypes.map((lt) => (
-                  <option key={lt.id} value={lt.id}>{lt.name}</option>
-                ))}
-              </select>
+              <LeaveTypePicker leaveTypes={leaveTypes} value={leaveTypeId} onChange={setLeaveTypeId} disabled={isPending} />
             </div>
 
             {/* 구분: 부여(+) / 차감(−) */}
@@ -158,6 +165,17 @@ export function AdjustLeaveButton({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {pickerOpen && (
+        <TargetPicker
+          employees={employees}
+          departments={departments}
+          selectedIds={employeeId ? [employeeId] : []}
+          onPick={(id) => { setEmployeeId(id); setPickerOpen(false); }}
+          onClose={() => setPickerOpen(false)}
+          title="대상자 선택"
+        />
+      )}
     </>
   );
 }

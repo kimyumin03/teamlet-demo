@@ -5,28 +5,38 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@teamlet/ui";
 import { grantLeaveAction } from "@/lib/actions/leave";
+import { TargetPicker, type PickerEmployee, type PickerDepartment } from "@/components/common/recipient-picker";
+import { LeaveTypePicker } from "./leave-type-picker";
 
-type Employee = { id: string; name: string; departmentName: string | null };
 type LeaveType = { id: string; name: string };
 
 export function GrantLeaveButton({
   employees,
+  departments = [],
   leaveTypes,
+  presetEmployeeId,
+  variant = "primary",
 }: {
-  employees: Employee[];
+  employees: PickerEmployee[];
+  departments?: PickerDepartment[];
   leaveTypes: LeaveType[];
+  presetEmployeeId?: string;
+  variant?: "primary" | "secondary";
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [employeeId, setEmployeeId] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [employeeId, setEmployeeId] = useState(presetEmployeeId ?? "");
   const [leaveTypeId, setLeaveTypeId] = useState("");
   const [days, setDays] = useState<number | "">(1);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const target = employees.find((e) => e.id === employeeId) ?? null;
+
   function reset() {
-    setEmployeeId("");
+    setEmployeeId(presetEmployeeId ?? "");
     setLeaveTypeId("");
     setDays(1);
     setReason("");
@@ -57,7 +67,7 @@ export function GrantLeaveButton({
 
   return (
     <>
-      <Button onClick={() => { reset(); setOpen(true); }}>
+      <Button variant={variant} onClick={() => { reset(); setOpen(true); }}>
         <Plus className="mr-1 h-3.5 w-3.5" />
         맞춤 휴가 부여
       </Button>
@@ -69,45 +79,40 @@ export function GrantLeaveButton({
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-1">
+            {/* 대상자 — 구성원 선택 피커 */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-foreground-muted">대상자</label>
-              <select
-                className="w-full rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground outline-none focus:border-foreground-subtle"
-                value={employeeId}
-                onChange={(e) => setEmployeeId(e.target.value)}
-                disabled={isPending}
+              <button
+                type="button"
+                onClick={() => { if (!presetEmployeeId) setPickerOpen(true); }}
+                disabled={isPending || !!presetEmployeeId}
+                className="flex items-center gap-2.5 rounded-[8px] border border-border bg-background-primary px-3 py-2 text-left transition-colors hover:border-border-strong disabled:cursor-default disabled:hover:border-border"
               >
-                <option value="">구성원 선택</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.name}{emp.departmentName ? ` (${emp.departmentName})` : ""}
-                  </option>
-                ))}
-              </select>
+                {target ? (
+                  <>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-[11px] font-bold text-primary">
+                      {target.name.slice(-2)}
+                    </span>
+                    <span className="text-[13px] font-medium text-foreground">{target.name}</span>
+                    {target.departmentName && <span className="text-[11.5px] text-foreground-muted">· {target.departmentName}</span>}
+                  </>
+                ) : (
+                  <span className="text-[13px] text-foreground-subtle">구성원 선택</span>
+                )}
+                {!presetEmployeeId && <span className="ml-auto text-[13px] text-foreground-subtle">›</span>}
+              </button>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-foreground-muted">휴가 종류</label>
-              <select
-                className="w-full rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground outline-none focus:border-foreground-subtle"
-                value={leaveTypeId}
-                onChange={(e) => setLeaveTypeId(e.target.value)}
-                disabled={isPending}
-              >
-                <option value="">종류 선택</option>
-                {leaveTypes.map((lt) => (
-                  <option key={lt.id} value={lt.id}>{lt.name}</option>
-                ))}
-              </select>
+              <LeaveTypePicker leaveTypes={leaveTypes} value={leaveTypeId} onChange={setLeaveTypeId} disabled={isPending} />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-foreground-muted">부여 일수</label>
               <div className="flex items-center gap-2">
                 <input
-                  type="number"
-                  min={0.5}
-                  step={0.5}
+                  type="number" min={0.5} step={0.5}
                   className="w-28 rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground outline-none focus:border-foreground-subtle"
                   value={days}
                   onChange={(e) => setDays(e.target.value === "" ? "" : Number(e.target.value))}
@@ -128,7 +133,7 @@ export function GrantLeaveButton({
               />
             </div>
 
-            {error && <p className="text-[12px] text-destructive">{error}</p>}
+            {error && <p className="text-[12px] text-destructive-600">{error}</p>}
           </div>
 
           <DialogFooter>
@@ -139,6 +144,17 @@ export function GrantLeaveButton({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {pickerOpen && (
+        <TargetPicker
+          employees={employees}
+          departments={departments}
+          selectedIds={employeeId ? [employeeId] : []}
+          onPick={(id) => { setEmployeeId(id); setPickerOpen(false); }}
+          onClose={() => setPickerOpen(false)}
+          title="대상자 선택"
+        />
+      )}
     </>
   );
 }
