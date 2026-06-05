@@ -3,46 +3,32 @@
 import { useEffect, useState, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
-import { searchEmployeesAction, getSearchPreviewAction, type EmployeeSearchResult, type HomeEventItem } from "@/lib/actions/search";
+import { searchEmployeesAction, type EmployeeSearchResult } from "@/lib/actions/search";
 
-const NAV_ITEMS = [
-  {
-    group: "페이지",
-    items: [
-      { label: "홈", href: "/home", keyword: "home 홈" },
-      { label: "구성원", href: "/members", keyword: "members 구성원" },
-      { label: "휴가", href: "/leave", keyword: "leave 휴가" },
-      { label: "워크플로우", href: "/workflow", keyword: "workflow 결재" },
-      { label: "휴가 관리", href: "/hr/leave", keyword: "hr leave 휴가관리" },
-      { label: "채용", href: "/recruit", keyword: "recruit 채용" },
-      { label: "문서", href: "/documents", keyword: "documents 문서" },
-    ],
-  },
+// adminOnly=false 는 전 구성원 공개(홈/휴가/문서·증명서), true 는 관리자 권한 필요
+const NAV_PAGES = [
+  { label: "홈", href: "/home", keyword: "home 홈", adminOnly: false },
+  { label: "내 휴가", href: "/leave", keyword: "leave 휴가", adminOnly: false },
+  { label: "문서·증명서", href: "/documents", keyword: "documents 문서 증명서", adminOnly: false },
+  { label: "구성원", href: "/members", keyword: "members 구성원", adminOnly: true },
+  { label: "워크플로우", href: "/workflow", keyword: "workflow 결재", adminOnly: true },
+  { label: "휴가 관리", href: "/hr/leave", keyword: "hr leave 휴가관리", adminOnly: true },
+  { label: "채용", href: "/recruit", keyword: "recruit 채용", adminOnly: true },
+  { label: "설정", href: "/settings/profile", keyword: "settings 설정", adminOnly: true },
 ];
-
-const EVENT_ICON: Record<HomeEventItem["eventType"], string> = {
-  birthday: "🎂",
-  join_anniversary: "🎉",
-  new_join: "👋",
-};
-
-function eventLabel(e: HomeEventItem): string {
-  if (e.eventType === "birthday") return `${e.name}님의 생일이에요!`;
-  if (e.eventType === "join_anniversary") return `${e.name}님 ${e.years}주년을 축하해요!`;
-  return `${e.name}님이 합류한 지 ${e.daysAgo === 0 ? "오늘" : `${e.daysAgo}일`} 됐어요!`;
-}
 
 function initials(name: string) {
   return name.slice(0, 1);
 }
 
-export function CommandPalette() {
+export function CommandPalette({ isAdmin = false }: { isAdmin?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [employees, setEmployees] = useState<EmployeeSearchResult[]>([]);
-  const [events, setEvents] = useState<HomeEventItem[]>([]);
   const [isPending, startTransition] = useTransition();
+
+  const pages = NAV_PAGES.filter((p) => !p.adminOnly || isAdmin);
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
@@ -55,14 +41,11 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  // 열릴 때 이벤트 fetch, 닫힐 때 초기화
+  // 닫힐 때 초기화
   useEffect(() => {
-    if (open) {
-      getSearchPreviewAction().then(setEvents);
-    } else {
+    if (!open) {
       setQuery("");
       setEmployees([]);
-      setEvents([]);
     }
   }, [open]);
 
@@ -84,8 +67,6 @@ export function CommandPalette() {
   }
 
   if (!open) return null;
-
-  const isEmpty = query.trim().length === 0;
 
   return (
     <div
@@ -128,39 +109,6 @@ export function CommandPalette() {
             </button>
           </div>
 
-          {/* 빈 상태 — 오늘의 이벤트 */}
-          {isEmpty && events.length > 0 && (
-            <div className="px-3 pt-3 pb-1">
-              <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-widest text-foreground-subtle">오늘의 소식</p>
-              <div className="flex flex-col gap-1">
-                {events.slice(0, 4).map((ev) => (
-                  <button
-                    key={`${ev.employeeId}-${ev.eventType}`}
-                    type="button"
-                    onClick={() => navigate(`/members/${ev.employeeId}`)}
-                    className="flex items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-background-secondary"
-                  >
-                    {/* 이모지 배지 */}
-                    <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
-                      style={{ background: "var(--primary-soft)" }}
-                    >
-                      {EVENT_ICON[ev.eventType]}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-semibold text-foreground">{eventLabel(ev)}</p>
-                      {ev.departmentName && (
-                        <p className="text-[11.5px] text-foreground-muted">{ev.departmentName}</p>
-                      )}
-                    </div>
-                    <span className="shrink-0 text-xs text-foreground-subtle">프로필 →</span>
-                  </button>
-                ))}
-              </div>
-              <div className="my-2 h-px bg-border" />
-            </div>
-          )}
-
           <Command.List className="max-h-72 overflow-y-auto p-2">
             <Command.Empty className="py-8 text-center text-sm text-foreground-muted">
               결과가 없어요
@@ -195,28 +143,25 @@ export function CommandPalette() {
               </Command.Group>
             )}
 
-            {/* 페이지 네비게이션 */}
-            {NAV_ITEMS.map(({ group, items }) => (
-              <Command.Group
-                key={group}
-                heading={group}
-                className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-foreground-subtle"
-              >
-                {items.map((item) => (
-                  <Command.Item
-                    key={item.href}
-                    value={`${item.label} ${item.keyword}`}
-                    onSelect={() => navigate(item.href)}
-                    className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm text-foreground aria-selected:bg-background-secondary"
-                  >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-background-secondary text-xs text-foreground-muted font-medium">
-                      {item.href.replace(/^\/settings\//, "⚙ ").replace(/^\//, "").slice(0, 2).toUpperCase()}
-                    </span>
-                    {item.label}
-                  </Command.Item>
-                ))}
-              </Command.Group>
-            ))}
+            {/* 페이지 네비게이션 — 권한에 따라 접근 가능한 페이지만 */}
+            <Command.Group
+              heading="페이지"
+              className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-foreground-subtle"
+            >
+              {pages.map((item) => (
+                <Command.Item
+                  key={item.href}
+                  value={`${item.label} ${item.keyword}`}
+                  onSelect={() => navigate(item.href)}
+                  className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm text-foreground aria-selected:bg-background-secondary"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-background-secondary text-xs text-foreground-muted font-medium">
+                    {item.href.replace(/^\/settings\//, "⚙ ").replace(/^\//, "").slice(0, 2).toUpperCase()}
+                  </span>
+                  {item.label}
+                </Command.Item>
+              ))}
+            </Command.Group>
           </Command.List>
 
           <div className="border-t border-border px-4 py-2.5">

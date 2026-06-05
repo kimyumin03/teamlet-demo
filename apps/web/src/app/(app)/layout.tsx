@@ -4,6 +4,7 @@ import { isPlatformAdminEmail } from "@/lib/platform-admin";
 import { getMembershipSummary, getCompanyInfo } from "@teamlet/modules/tenancy";
 import { listNotifications, countUnreadNotifications } from "@teamlet/modules/notification";
 import { listPendingApprovals } from "@teamlet/modules/workflow";
+import { hasPermission } from "@teamlet/modules/permission";
 import { NotificationBell } from "@/components/notification/notification-bell";
 import { CommandPalette } from "@/components/command-palette/command-palette";
 import { CommandPaletteTrigger } from "@/components/command-palette/command-palette-trigger";
@@ -38,6 +39,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const notifications = notifResult.ok ? notifResult.data : [];
   const companyName = companyResult.ok ? companyResult.data.name : undefined;
   const pendingCount = pendingResult.ok ? pendingResult.data.length : 0;
+  // 검색에서 전체 페이지 노출 여부 (관리자 권한). 일반 팀원은 공개 페이지만.
+  const canSeeAllPages = employeeId ? await hasPermission(employeeId, "member.directory.manage") : false;
 
   const logoutAction = async () => {
     "use server";
@@ -62,7 +65,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {/* 탑바 */}
         <header className="topbar">
           {employeeId && <CommandPaletteTrigger />}
-          {employeeId && <CommandPalette />}
+          {employeeId && <CommandPalette isAdmin={canSeeAllPages} />}
           <div className="top-actions">
             {employeeId && (
               <NotificationBell items={notifications} unreadCount={unreadCount} />

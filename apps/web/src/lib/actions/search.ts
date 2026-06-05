@@ -6,8 +6,6 @@ import { auth } from "@/auth";
 import { listHomeEvents } from "@teamlet/modules/employee";
 import type { HomeEventItem } from "@teamlet/modules/employee";
 
-export type { HomeEventItem };
-
 export type EmployeeSearchResult = {
   id: string;
   name: string;
