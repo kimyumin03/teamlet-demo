@@ -6,6 +6,39 @@ import type { AnnouncementItem, CreateAnnouncementInput, UpdateAnnouncementInput
 
 const ANNOUNCEMENT_MANAGE = "company.announcement.manage";
 
+/** 읽지 않은 공지 수 = 마지막 확인 시각 이후 생성된 회사 공지 수 (A안 — 타임스탬프 기반).
+ *  ⚠️ 신규 필드 의존 — Prisma client 미반영(dev 미재시작) 시 0으로 안전 degrade. */
+export async function getUnreadAnnouncementCount(employeeId: string): Promise<number> {
+  try {
+    const emp = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { companyId: true, lastAnnouncementReadAt: true },
+    });
+    if (!emp) return 0;
+    return await prisma.announcement.count({
+      where: {
+        companyId: emp.companyId,
+        ...(emp.lastAnnouncementReadAt ? { createdAt: { gt: emp.lastAnnouncementReadAt } } : {}),
+      },
+    });
+  } catch {
+    return 0;
+  }
+}
+
+/** 공지 확인 처리 — 마지막 확인 시각을 현재로 갱신 (회사 소식 탭 진입 시 호출). */
+export async function markAnnouncementsRead(employeeId: string): Promise<Result<void>> {
+  try {
+    await prisma.employee.update({
+      where: { id: employeeId },
+      data: { lastAnnouncementReadAt: new Date() },
+    });
+  } catch {
+    // 신규 필드 미반영 시 무동작 — dev 재시작 후 정상
+  }
+  return ok(undefined);
+}
+
 export async function listAnnouncements(
   employeeId: string,
 ): Promise<Result<AnnouncementItem[]>> {

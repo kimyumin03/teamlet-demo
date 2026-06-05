@@ -11,6 +11,7 @@ import {
   listComments,
   createComment,
   deleteComment,
+  markAnnouncementsRead,
   type CommentItem,
 } from "@teamlet/modules/announcement";
 import { toApiResponse, type ApiResponse } from "@teamlet/shared";
@@ -26,6 +27,12 @@ async function requireEmployee(): Promise<{ employeeId: string; companyId: strin
   });
   if (!emp) redirect("/join-company");
   return { employeeId: session.user.employeeId, companyId: emp.companyId };
+}
+
+export async function markAnnouncementsReadAction(): Promise<ApiResponse<void>> {
+  const { employeeId } = await requireEmployee();
+  // revalidate 생략 — 다음 방문 시 읽지 않은 수가 반영되도록(플래시 방지)
+  return toApiResponse(await markAnnouncementsRead(employeeId));
 }
 
 export async function createAnnouncementAction(input: {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ThumbsUp, Heart, Pin } from "lucide-react";
 import type { LeaveBalanceSummary } from "@teamlet/modules/leave";
 import type { PendingApprovalItem, DocumentListItem } from "@teamlet/modules/workflow";
 import type { AnnouncementItem } from "@teamlet/modules/announcement";
@@ -16,9 +17,20 @@ function formatRelative(d: Date) {
   return `${Math.floor(diff / 1440)}일 전`;
 }
 
+// 디자인 feed.jsx SecDivider — 섹션 구분 헤더
+function SecDivider({ label, count }: { label: string; count?: number }) {
+  return (
+    <div className="sec-divider">
+      {label}
+      {count != null && <span className="ct">{count}</span>}
+      <span className="line" />
+    </div>
+  );
+}
+
 const REACTIONS = [
-  { key: "clap", emoji: "👏" },
-  { key: "heart", emoji: "❤️" },
+  { key: "clap", Icon: ThumbsUp },
+  { key: "heart", Icon: Heart },
 ] as const;
 
 function PostCard({ item }: { item: AnnouncementItem }) {
@@ -40,21 +52,23 @@ function PostCard({ item }: { item: AnnouncementItem }) {
           <div className="who">{item.authorName} <span className="role">· 공지사항</span></div>
           <div className="meta">{formatRelative(date)}</div>
         </div>
-        {item.isPinned && <span className="pin">📌 필독</span>}
+        {item.isPinned && (
+          <span className="pin"><Pin size={11} strokeWidth={2} /> 고정</span>
+        )}
       </div>
       <div className="post-b">
         <h3>{item.title}</h3>
         <div className="text">{item.content}</div>
       </div>
       <div className="post-f">
-        {REACTIONS.map((r) => (
+        {REACTIONS.map(({ key, Icon }) => (
           <button
-            key={r.key}
+            key={key}
             className="react"
-            onClick={() => toggle(r.key)}
-            style={active[r.key] ? { background: "var(--primary-soft)", outline: "1.5px solid var(--primary)" } : {}}
+            onClick={() => toggle(key)}
+            style={active[key] ? { background: "var(--primary-soft)", color: "var(--primary)" } : {}}
           >
-            {r.emoji} {(counts[r.key] ?? 0) > 0 && <b>{counts[r.key]}</b>}
+            <Icon size={14} /> {(counts[key] ?? 0) > 0 && <b>{counts[key]}</b>}
           </button>
         ))}
         <span style={{ marginLeft: "auto", fontSize: "12px", color: "var(--fg-subtle)" }}>
@@ -133,10 +147,6 @@ function EventRow({ events, type }: { events: HomeEventItem[]; type: "birthday" 
 }
 
 export function FeedTab({
-  employeeId,
-  pending,
-  myDocs,
-  annualBalance,
   announcements,
   events = [],
 }: {
@@ -149,60 +159,38 @@ export function FeedTab({
   events?: HomeEventItem[];
   year: number;
 }) {
-  const inProgressDocs = myDocs.filter((d) => d.status === "IN_PROGRESS").length;
-  const urgentCount = pending.filter(
-    (p) => Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000) >= 3
-  ).length;
+  // 오늘의 소식 = 오늘 기준 이벤트만 (신규합류는 당일 입사분만 → 하루 지나면 사라짐), 최대 3개
+  const todayEvents = events
+    .filter((e) =>
+      e.eventType === "birthday" ||
+      e.eventType === "join_anniversary" ||
+      (e.eventType === "new_join" && (e.daysAgo ?? 0) === 0),
+    )
+    .slice(0, 3);
+  const birthdays = todayEvents.filter((e) => e.eventType === "birthday");
+  const newJoins = todayEvents.filter((e) => e.eventType === "new_join");
+  const anniversaries = todayEvents.filter((e) => e.eventType === "join_anniversary");
+  const hasEvents = todayEvents.length > 0;
 
-  const birthdays = events.filter((e) => e.eventType === "birthday");
-  const newJoins = events.filter((e) => e.eventType === "new_join");
-  const anniversaries = events.filter((e) => e.eventType === "join_anniversary");
+  // 홈 피드 공지: 필독 있으면 필독1 + 최신1, 없으면 최신2 (최대 2개)
+  const byDate = [...announcements].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+  const pinned = byDate.find((a) => a.isPinned);
+  const feedAnnouncements = (
+    pinned
+      ? [pinned, byDate.find((a) => a.id !== pinned.id)]
+      : byDate.slice(0, 2)
+  ).filter(Boolean) as AnnouncementItem[];
 
   return (
     <section>
-      {/* KPI 4장 */}
-      {employeeId && (
-        <div className="kpis">
-          <Link href="/leave" className="kpi">
-            <span className="lbl">연차 잔여</span>
-            <span className="val num">
-              {annualBalance?.remainingDays ?? "—"}
-              {annualBalance && <small>/ {annualBalance.grantedDays}일</small>}
-            </span>
-            <span className="delta">휴가 신청 →</span>
-          </Link>
-          <Link href="/workflow" className={`kpi${pending.length > 0 ? " cta" : ""}`}>
-            <span className="lbl">결재 대기</span>
-            <span className="val num">{pending.length}<small>건</small></span>
-            <span className="delta">
-              {pending.length > 0 ? `마감 임박 ${urgentCount} · 일반 ${pending.length - urgentCount}` : "모두 처리됐어요"}
-            </span>
-          </Link>
-          <Link href="/workflow" className="kpi">
-            <span className="lbl">진행 중 문서</span>
-            <span className="val num">{inProgressDocs}<small>건</small></span>
-            <span className="delta">내가 기안한 문서 →</span>
-          </Link>
-          <Link href="/home?tab=tasks" className={`kpi${urgentCount > 0 ? " cta" : ""}`}>
-            <span className="lbl">오늘 할 일</span>
-            <span className="val num">{pending.length + inProgressDocs}<small>건</small></span>
-            <span className="delta">
-              {urgentCount > 0 ? `마감 임박 ${urgentCount}건` : "할 일 탭 열기 →"}
-            </span>
-          </Link>
+      {/* 공지 — 인정은 별도 탭. 필독1+최신1 또는 최신2만 노출 */}
+      <SecDivider label="공지" count={announcements.length || undefined} />
+      {feedAnnouncements.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {feedAnnouncements.map((a) => <PostCard key={a.id} item={a} />)}
         </div>
-      )}
-
-      {/* 이벤트 행 */}
-      <EventRow events={birthdays} type="birthday" />
-      <EventRow events={newJoins} type="new_join" />
-      <EventRow events={anniversaries} type="join_anniversary" />
-
-      {/* 공지 피드 */}
-      {announcements.length > 0 ? (
-        announcements.slice(0, 6).map((a) => (
-          <PostCard key={a.id} item={a} />
-        ))
       ) : (
         <div style={{
           padding: "48px 20px", textAlign: "center",
@@ -214,6 +202,16 @@ export function FeedTab({
           </div>
           <div style={{ fontSize: "12.5px" }}>팀의 소식을 공유해 보세요.</div>
         </div>
+      )}
+
+      {/* 오늘의 소식 — 오늘 기준 이벤트(생일·입사기념일·당일 합류) */}
+      {hasEvents && (
+        <>
+          <SecDivider label="오늘의 소식" count={todayEvents.length} />
+          <EventRow events={birthdays} type="birthday" />
+          <EventRow events={newJoins} type="new_join" />
+          <EventRow events={anniversaries} type="join_anniversary" />
+        </>
       )}
     </section>
   );

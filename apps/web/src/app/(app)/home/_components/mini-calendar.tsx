@@ -16,7 +16,7 @@ export function MiniCalendar({
   leaveRanges = [],
   eventDates = [],
 }: {
-  holidays?: { date: Date | string }[];
+  holidays?: { date: Date | string; name?: string }[];
   leaveRanges?: { startDate: Date | string; endDate: Date | string }[];
   eventDates?: (Date | string)[];
 }) {
@@ -32,9 +32,9 @@ export function MiniCalendar({
   const firstDay = getFirstDayOfWeek(viewYear, viewMonth);
   const daysInPrev = getDaysInMonth(viewYear, viewMonth === 0 ? 11 : viewMonth - 1);
 
-  // 빠른 조회용 Set
-  const holidaySet = new Set(
-    holidays.map((h) => { const d = new Date(h.date); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; })
+  // 빠른 조회용 Map (날짜 → 공휴일명)
+  const holidayMap = new Map<string, string>(
+    holidays.map((h) => { const d = new Date(h.date); return [`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`, h.name ?? "공휴일"]; })
   );
   const eventSet = new Set(
     eventDates.map((d) => { const dt = new Date(d); return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`; })
@@ -91,7 +91,7 @@ export function MiniCalendar({
       {/* 요일 헤더 */}
       <div className="cal">
         {DAY_NAMES.map((d, i) => (
-          <div key={d} className={`dow${i === 0 ? " sun" : ""}`}>{d}</div>
+          <div key={d} className={`dow${i === 0 || i === 6 ? " sun" : ""}`}>{d}</div>
         ))}
 
         {/* 날짜 셀 */}
@@ -100,20 +100,22 @@ export function MiniCalendar({
             const isToday = !cell.outOfMonth && viewYear === todayY && viewMonth === todayM && cell.day === todayD;
             const key = `${viewYear}-${cell.outOfMonth ? (di < firstDay ? (viewMonth === 0 ? 11 : viewMonth - 1) : (viewMonth === 11 ? 0 : viewMonth + 1)) : viewMonth}-${cell.day}`;
             const curKey = `${viewYear}-${viewMonth}-${cell.day}`;
-            const isHoliday = !cell.outOfMonth && holidaySet.has(curKey);
+            const holidayName = !cell.outOfMonth ? holidayMap.get(curKey) : undefined;
+            const isHoliday = holidayName != null;
             const isRange = !cell.outOfMonth && rangeSet.has(curKey);
             const hasEvent = !cell.outOfMonth && eventSet.has(curKey);
-            const isSun = di === 0;
+            const isWeekend = di === 0 || di === 6;
 
             let cls = "d";
             if (cell.outOfMonth) cls += " out";
             else if (isToday) cls += " today";
-            else if (isSun || isHoliday) cls += " sun";
+            else if (isWeekend || isHoliday) cls += " sun";
+            if (isHoliday) cls += " holiday";
             if (isRange && !isToday) cls += " range";
             if (hasEvent || isHoliday) cls += " dot";
 
             return (
-              <div key={`${wi}-${di}`} className={cls}>
+              <div key={`${wi}-${di}`} className={cls} title={holidayName}>
                 {cell.day}
               </div>
             );
