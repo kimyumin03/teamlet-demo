@@ -23,7 +23,7 @@ export type { PendingMemberItem } from "./membership";
 export type { ApprovalResult } from "./approval";
 export { getCompanyInfo, updateCompanyInfo } from "./company";
 export type { CompanyInfo, CompanyUpdateInput } from "./company";
-export { listCompanyHolidays, addCompanyHoliday, deleteCompanyHoliday } from "./holiday";
+export { listCompanyHolidays, addCompanyHoliday, deleteCompanyHoliday, syncStatutoryHolidays, syncStatutoryHolidaysRange, fetchKoreanStatutoryHolidays } from "./holiday";
 export type { HolidayItem } from "./holiday";
 export {
   listCompanyApplications,

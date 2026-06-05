@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input } from "@teamlet/ui";
 import type { HolidayItem } from "@teamlet/modules/tenancy";
-import { addCompanyHolidayAction, deleteCompanyHolidayAction } from "@/lib/actions/company";
+import { addCompanyHolidayAction, deleteCompanyHolidayAction, syncStatutoryHolidaysRangeAction } from "@/lib/actions/company";
+
+// 공휴일 데이터 시작 연도 (그 이전은 데이터 없음 → 네비게이션 차단)
+const MIN_HOLIDAY_YEAR = 2023;
 
 function formatDate(d: Date): string {
   const dt = new Date(d);
@@ -19,11 +22,33 @@ function formatDateShort(d: Date): string {
 export function HolidaysClient({ initialHolidays, year }: { initialHolidays: HolidayItem[]; year: number }) {
   const router = useRouter();
   const [holidays, setHolidays] = useState(initialHolidays);
+  // 연도 네비게이션 등으로 prop이 바뀌면 목록 동기화 (안 하면 처음 연도만 표시됨)
+  useEffect(() => { setHolidays(initialHolidays); }, [initialHolidays]);
   const [date, setDate] = useState("");
   const [name, setName] = useState("");
   const [isNational, setIsNational] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [syncMsg, setSyncMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  function handleSyncRange() {
+    const from = year - 2;
+    const to = year + 2;
+    setSyncMsg(null);
+    setIsSyncing(true);
+    startTransition(async () => {
+      const res = await syncStatutoryHolidaysRangeAction(from, to);
+      setIsSyncing(false);
+      if (!res.ok) { setSyncMsg({ kind: "err", text: res.error.message }); return; }
+      const { added } = res.data;
+      setSyncMsg({
+        kind: "ok",
+        text: added === 0 ? "법정공휴일이 이미 모두 등록돼 있어요." : `법정공휴일 ${added}건을 등록했어요.`,
+      });
+      router.refresh();
+    });
+  }
 
   function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -60,15 +85,16 @@ export function HolidaysClient({ initialHolidays, year }: { initialHolidays: Hol
           </span>
         </div>
         <p className="mb-4 text-[12.5px] text-foreground-muted">
-          법정 공휴일은 자동으로 반영됩니다. 회사 자율 휴일은 직접 추가·삭제 가능해요.
+          공공데이터포털 법정공휴일을 연도별로 자동 등록할 수 있어요. 회사 자율 휴일은 직접 추가·삭제 가능해요.
         </p>
 
-        {/* 연도 네비게이션 */}
-        <div className="mb-4 flex items-center gap-1.5">
+        {/* 연도 네비게이션 + 자동 등록 (공휴일 데이터는 2023년부터) */}
+        <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
           <button
             type="button"
+            disabled={year <= MIN_HOLIDAY_YEAR}
             onClick={() => router.push(`/settings/holidays?year=${year - 1}`)}
-            className="rounded-md border border-border bg-background-primary px-2.5 py-1 text-[12.5px] text-foreground-muted hover:bg-background-secondary transition-colors"
+            className="rounded-md border border-border bg-background-primary px-2.5 py-1 text-[12.5px] text-foreground-muted hover:bg-background-secondary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             ‹ {year - 1}
           </button>
@@ -80,7 +106,20 @@ export function HolidaysClient({ initialHolidays, year }: { initialHolidays: Hol
           >
             {year + 1} ›
           </button>
+          <div className="ml-auto">
+            <Button onClick={handleSyncRange} disabled={isSyncing || isPending}>
+              {isSyncing ? "등록 중…" : "공휴일 등록"}
+            </Button>
+          </div>
         </div>
+        {syncMsg && (
+          <p
+            className={`mb-3 text-[12px] ${syncMsg.kind === "ok" ? "text-foreground-muted" : "text-destructive-600"}`}
+            role={syncMsg.kind === "err" ? "alert" : undefined}
+          >
+            {syncMsg.text}
+          </p>
+        )}
 
         {holidays.length === 0 ? (
           <div className="rounded-[10px] border border-border bg-background-secondary py-8 text-center text-[13px] text-foreground-muted">
@@ -131,8 +170,8 @@ export function HolidaysClient({ initialHolidays, year }: { initialHolidays: Hol
         )}
       </div>
 
-      {/* 추가 폼 카드 */}
-      <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
+      {/* 추가 폼 카드 — 목록 위로 (order-first) */}
+      <div className="order-first rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
         <h3 className="mb-4 text-[15px] font-bold text-foreground">회사 자율 휴일 추가</h3>
         <form onSubmit={handleAdd}>
           <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
@@ -143,8 +182,6 @@ export function HolidaysClient({ initialHolidays, year }: { initialHolidays: Hol
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                min={`${year}-01-01`}
-                max={`${year}-12-31`}
               />
             </div>
             <div className="flex flex-col gap-1.5">

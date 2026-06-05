@@ -44,3 +44,20 @@ export async function deleteCompanyHolidayAction(holidayId: string): Promise<Api
   const employeeId = await requireEmployee();
   return toApiResponse(await deleteCompanyHoliday(employeeId, holidayId));
 }
+
+export async function syncStatutoryHolidaysAction(
+  year: number,
+): Promise<ApiResponse<{ added: number; skipped: number }>> {
+  const employeeId = await requireEmployee();
+  const { syncStatutoryHolidays } = await import("@teamlet/modules/tenancy");
+  return toApiResponse(await syncStatutoryHolidays(employeeId, year));
+}
+
+export async function syncStatutoryHolidaysRangeAction(
+  fromYear: number,
+  toYear: number,
+): Promise<ApiResponse<{ added: number; skipped: number; years: number }>> {
+  const employeeId = await requireEmployee();
+  const { syncStatutoryHolidaysRange } = await import("@teamlet/modules/tenancy");
+  return toApiResponse(await syncStatutoryHolidaysRange(employeeId, fromYear, toYear));
+}
