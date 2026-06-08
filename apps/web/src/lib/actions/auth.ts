@@ -13,6 +13,19 @@ export async function googleLoginAction() {
   await signIn("google", { redirectTo: "/home" });
 }
 
+/** 데모 체험 — demo@teamlet.io 로 자동 로그인 (pnpm db:seed 필요) */
+export async function demoLoginAction(_prev: ActionState): Promise<ActionState> {
+  try {
+    await signIn("credentials", { email: "demo@teamlet.io", password: "Demo1234!", redirectTo: "/home" });
+    return { error: null };
+  } catch (e) {
+    if (e instanceof AuthError) {
+      return { error: "데모 계정이 없어요. pnpm db:seed를 먼저 실행해 주세요." };
+    }
+    throw e;
+  }
+}
+
 export type ActionState = { error: string | null };
 
 function safeCallbackUrl(raw: string | null | undefined): string {

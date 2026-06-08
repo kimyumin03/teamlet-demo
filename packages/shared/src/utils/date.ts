@@ -31,3 +31,20 @@ export function startOfToday(): Date {
   d.setHours(0, 0, 0, 0);
   return d;
 }
+
+/**
+ * 입사일로부터 asOf 기준 완성된 개월 수 (민법§160 응당일).
+ * 연차 부여 엔진(auto-grant.ts)과 동일 함수 — 표시와 계산이 항상 일치.
+ * 클라이언트 번들에서 안전하게 사용 가능 (DB/fs 의존성 없음).
+ */
+export function completedMonthsSinceHire(hireDate: Date, asOf: Date): number {
+  let months =
+    (asOf.getUTCFullYear() - hireDate.getUTCFullYear()) * 12 +
+    (asOf.getUTCMonth() - hireDate.getUTCMonth());
+  const lastDayOfAsOfMonth = new Date(
+    Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  const anniversaryDay = Math.min(hireDate.getUTCDate(), lastDayOfAsOfMonth);
+  if (asOf.getUTCDate() < anniversaryDay) months -= 1;
+  return Math.max(0, months);
+}

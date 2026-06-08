@@ -7,17 +7,18 @@ import {
   listLeaveTypes,
   listMonthlyAnnualUsage,
   listCompanyLeavePromotions,
+  listLeaveGrantHistory,
 } from "@teamlet/modules/leave";
 import { listEmployees } from "@teamlet/modules/employee";
 import { listDepartments } from "@teamlet/modules/department";
-import { GrantLeaveButton } from "@/components/hr/grant-leave-button";
-import { AdjustLeaveButton } from "@/components/hr/adjust-leave-button";
-import { GrantHistoryButton } from "@/components/hr/grant-history-button";
+import { GrantLeaveDropdown } from "@/components/hr/grant-leave-dropdown";
+import { AdjustLeaveDropdown } from "@/components/hr/adjust-leave-dropdown";
 import { ExpiryButton } from "@/components/hr/expiry-button";
 import { LeaveStatusView } from "./_components/leave-status-view";
 import { RequestsTable } from "./_components/requests-table";
 import { MonthlyAnnualTable } from "./_components/monthly-annual-table";
 import { PromotionTable } from "./_components/promotion-table";
+import { GrantHistoryFullView } from "./_components/grant-history-full-view";
 
 export const dynamic = "force-dynamic";
 
@@ -32,13 +33,37 @@ type TabId = (typeof TABS)[number]["id"];
 export default async function HrLeavePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; year?: string }>;
+  searchParams: Promise<{ tab?: string; year?: string; view?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const { tab, year: yearParam } = await searchParams;
+  const { tab, year: yearParam, view } = await searchParams;
+
+  // 맞춤 휴가 부여 내역 전체 화면
+  if (view === "grant-history") {
+    const employeeId = session.user.employeeId;
+    const currentYear = new Date().getFullYear();
+    const [historyResult, typesResult, empsResult] = await Promise.all([
+      listLeaveGrantHistory(employeeId, { year: currentYear }),
+      listLeaveTypes(employeeId),
+      listEmployees(employeeId),
+    ]);
+    const initialRows = historyResult.ok ? historyResult.data : [];
+    const leaveTypes = typesResult.ok ? typesResult.data : [];
+    const historyEmployees = empsResult.ok
+      ? empsResult.data.filter((e) => e.isActive).map((e) => ({ id: e.id, name: e.name, departmentName: e.departmentName }))
+      : [];
+    return (
+      <GrantHistoryFullView
+        initialRows={initialRows}
+        leaveTypes={leaveTypes}
+        employees={historyEmployees}
+        currentYear={currentYear}
+      />
+    );
+  }
   const activeTab: TabId =
     tab === "requests" ? "requests"
     : tab === "monthly" ? "monthly"
@@ -145,9 +170,8 @@ export default async function HrLeavePage({
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <ExpiryButton year={year} />
-          <GrantHistoryButton year={year} />
-          <AdjustLeaveButton employees={employees} departments={departments} leaveTypes={leaveTypes} />
-          <GrantLeaveButton employees={employees} departments={departments} leaveTypes={leaveTypes} />
+          <AdjustLeaveDropdown employees={employees} departments={departments} leaveTypes={leaveTypes} />
+          <GrantLeaveDropdown employees={employees} departments={departments} leaveTypes={leaveTypes} />
         </div>
       </div>
 

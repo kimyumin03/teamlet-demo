@@ -3,6 +3,15 @@
 > 세션 시작 시 이 파일을 먼저 읽고, 작업이 끝나면 **다음에 할 일** 섹션을 업데이트하세요.
 > 상세 스펙은 `CLAUDE.md` + `/docs` 참조.
 
+> 🎭 **2026-06-08 데모 모드 구현 완료**
+> - `packages/db/seed/demo.ts` 전면 확장: 부서 5개·직책 5개·직원 13명(계정 3명+직원전용 10명)·휴가종류 3종(연차/병가/경조사)·결재이력 다양화(PENDING/APPROVED/REJECTED)
+> - `demoLoginAction` 서버 액션 추가(`apps/web/src/lib/actions/auth.ts`)
+> - 로그인 폼 하단 "데모 관리자로 체험 시작 →" 버튼 추가 (1클릭 자동 로그인)
+> - `DemoBanner` 컴포넌트: 데모 계정 로그인 시 상단 DEMO 배너 표시·닫기 가능
+> - **체험 시나리오**: S1 홈 13명 구성원·S2 결재 대기 승인·S3 HR 휴가 관리·S4 맞춤 부여·S5 구성원 상세 발령
+> - 활성화: `pnpm db:seed` (NODE_ENV≠production 시 자동 실행). 기존 DEMO-0001 회사 있으면 건너뜀 → DB 리셋 후 재시드 필요
+> - 타입체크 클린 (tsc exit 0)
+
 > 🎨 **디자인 리뉴얼 ↔ 실제 앱 정합 — 1차 완료** → `docs/_handoff/디자인_리뉴얼_정합_핸드오프.md` 필독.
 > 7개 영역(기반·home·leave·members·workflow·documents·settings+hr/leave) 정합/검증 끝. 전체 tsc 클린.
 > 디자인 소스 = `C:\Users\PC\OneDrive\바탕 화면\teamlet (2)` (styles/ + app/*.jsx). 채용 제외. dev=localhost:3001.
@@ -283,14 +292,45 @@
 - **#6 관리자 모달** — 맞춤부여·연차조정·부여내역·엑셀다운로드
 - **런타임 검증**: 브라우저에서 RecipientPicker 이벤트 카드·CommandPalette 미리보기 확인 필요
 
+## 2026-06-08 세션 — 휴가 완성 로드맵 #5·#6 구현 (Opus 선작업 → Sonnet 구현)
+
+**완료 (타입체크 통과, DB push 완료)**
+
+### #5 맞춤휴가 PERIODIC 동적폼 (세션 이전 Opus 선작업 → Sonnet 완성)
+- `leave-types-client.tsx` — PERIODIC 섹션 2단계 선택 UI: 매년(annually_from_hire/2~5년차 5종) + 매월(monthly_from_hire/2~11개월차 11종) + 안내문구 verbatim(flexv2 §M)
+- `periodicType: "annually" | "monthly"` FormState 추가, 근속시부여 `입사일 기준` 토글 추가
+
+### #6 관리자 모달 전면 구현
+- ✅ **6a. 맞춤 휴가 부여 내역 전체 화면** — `grant-history-full-view.tsx`: 뷰 토글(부여건별/대상자별) + 연도/휴가종류 필터 + 일괄변경 드롭다운 + `?view=grant-history` searchParam으로 page.tsx에서 분기
+- ✅ **6b. 엑셀 다운로드 모달** — `grant-download-modal.tsx`(필터 UI: 부여기간/부여자/부여대상자/휴가종류 멀티셀렉트/휴가상태/만료여부) + `app/api/hr/leave/export/grants/route.ts`(exceljs xlsx 생성, 스타일링 포함)
+- ✅ **6c. 연차 사용 내역 업로드** — `usage-upload-modal.tsx`(단위 토글 일·시간·분/소수점 + 드롭존) + `app/api/hr/leave/export/usage-template/route.ts`(양식 다운로드, 안내시트 포함) + `app/api/hr/leave/import/usage/route.ts`(**BulkOperation 경유** Anti-Pattern #11 준수, 행별 검증/적용, auditLog)
+- ✅ **6d. 연차 조정 ▾ 드롭다운** — `adjust-leave-dropdown.tsx`: 조정(연차조정/재직자정산용/퇴직자정산용) + 조정내역(연차조정내역/재직·퇴직자잔여조정내역) verbatim
+- ✅ **GrantLeaveDropdown** — `grant-leave-dropdown.tsx`: 맞춤 휴가 부여 + 부여 내역 통합 드롭다운, 기존 `GrantLeaveButton`+`GrantHistoryButton` 대체
+
+### 스키마 변경 (db push 완료)
+- `LeaveTransaction`: `usableFrom DateTime?` + `usableUntil DateTime?` 추가
+- `BulkOperation`/`BulkOperationRow` 모델 신규 (Anti-Pattern #11 인프라). `BulkOperationType`(LEAVE_GRANT_IMPORT/LEAVE_USAGE_IMPORT/EMPLOYEE_CREATE) + `BulkOperationStatus` + `BulkRowStatus` enum
+- `Company.bulkOperations` + `Employee.bulkOperations` 역관계
+
+### 버그/리팩토링
+- `completedMonthsSinceHire` → `leave-date-utils.ts` 분리(Prisma 의존 제거) → `fs` 모듈 클라이언트 번들 오류 해소
+- `monthly-annual-table.tsx` — `연차 사용 내역 업로드` 버튼 + UsageUploadModal 연결
+- **로그인 페이지**: Google 버튼 → "AxHub로 계속하기" 버튼(disabled, AxHub API 연동 준비 후 활성화 예정)
+
+### ⏭️ 남은 작업
+- **런타임 검증** — 브라우저에서 6a/6b/6c/6d 전체 시나리오 테스트
+- `usableFrom`/`usableUntil` UI 연결 — 맞춤부여 모달에서 사용기간 입력 → DB 저장, 6a에서 표시
+- 조정내역/재직·퇴직자 정산 내역 화면 구현 (6d 메뉴 아직 준비중 상태)
+- AxHub 로그인 OAuth 연동 (AxHub 인프라 준비 후)
+
 ## 현재 위치
 
-- **Phase**: 디자인 전면 교체 완료 → 빈 기능 채우기 단계
+- **Phase**: 휴가 완성 로드맵 구현 완료 → 런타임 검증 단계
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 커밋**: 세션3 디자인 교체 커밋 (이번 세션)
+- **마지막 세션**: 2026-06-08 휴가 #5·#6 + BulkOperation 스키마 + AxHub 로그인 UI
 - **dev 서버**: `http://localhost:3001` (포트 3001 고정)
-- **마이그레이션**: 12개 + `appointments` 테이블 — db push 적용
+- **스키마**: db push 적용됨 (LeaveTransaction usableFrom/Until, BulkOperation/Row 신규)
 - **AxHub 연동 예정**: 향후 AxHub 구성원·회사 데이터를 teamlet에 sync 예정. `sync_locked_fields` 우회 금지.
 
 ## 다음 작업 후보 (Flex 비교 검토 2026-05-21 반영)

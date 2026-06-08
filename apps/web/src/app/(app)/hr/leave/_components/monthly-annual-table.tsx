@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import { Upload } from "lucide-react";
 import type { MonthlyAnnualUsageRow } from "@teamlet/modules/leave";
+import { UsageUploadModal } from "./usage-upload-modal";
 
 const MONTHS = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
 
@@ -16,17 +19,34 @@ function fmtDate(d: Date | null) {
 }
 
 export function MonthlyAnnualTable({ rows }: { rows: MonthlyAnnualUsageRow[] }) {
-  if (rows.length === 0) {
-    return (
-      <div style={{ padding: "60px 20px", textAlign: "center", border: "1px dashed var(--border)", borderRadius: "14px", color: "var(--fg-muted)" }}>
-        <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "6px" }}>연차 사용 내역이 없어요</div>
-        <div style={{ fontSize: "12.5px" }}>이 해에 연차를 사용한 구성원이 없어요</div>
-      </div>
-    );
-  }
+  const [uploadOpen, setUploadOpen] = useState(false);
+
+  const emptyContent = rows.length === 0 ? (
+    <div style={{ padding: "60px 20px", textAlign: "center", border: "1px dashed var(--border)", borderRadius: "14px", color: "var(--fg-muted)" }}>
+      <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "6px" }}>연차 사용 내역이 없어요</div>
+      <div style={{ fontSize: "12.5px" }}>이 해에 연차를 사용한 구성원이 없어요</div>
+    </div>
+  ) : null;
 
   return (
-    <div style={{ overflowX: "auto" }}>
+    <>
+      {/* 탭 내부 헤더 */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+        <button
+          type="button"
+          onClick={() => setUploadOpen(true)}
+          style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+            background: "var(--primary)", color: "#fff", border: "none", cursor: "pointer",
+          }}
+        >
+          <Upload size={13} /> 연차 사용 내역 업로드
+        </button>
+      </div>
+
+      {emptyContent ?? (
+      <div style={{ overflowX: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
         <thead>
           <tr style={{ borderBottom: "1px solid var(--border)" }}>
@@ -57,6 +77,10 @@ export function MonthlyAnnualTable({ rows }: { rows: MonthlyAnnualUsageRow[] }) 
         </tbody>
       </table>
     </div>
+      )}
+
+      <UsageUploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
+    </>
   );
 }
 

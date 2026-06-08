@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { CompanyLeaveBalanceRow, LeaveTypeItem } from "@teamlet/modules/leave";
-import { completedMonthsSinceHire } from "@teamlet/modules/leave";
+import { completedMonthsSinceHire } from "@teamlet/shared";
 import { GrantLeaveButton } from "@/components/hr/grant-leave-button";
 import { AdjustLeaveButton } from "@/components/hr/adjust-leave-button";
 
