@@ -132,7 +132,7 @@ export const PERMISSION_CATALOG: PermissionSeed[] = [
   // ── 설정 / 권한
   ...pair("permission", "role", "권한 그룹", {
     sensitivity: "CRITICAL",
-    warningText: "권한 변경은 전사 영향",
+    warningText: "권한 변경은 전체 영향",
   }),
   ...pair("settings", "company_security", "보안·인증 정책", {
     sensitivity: "CRITICAL",

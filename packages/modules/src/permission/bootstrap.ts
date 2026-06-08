@@ -59,7 +59,7 @@ export async function bootstrapCompanyRoles(
     ensureSystemRole(companyId, {
       name: "최고 관리자",
       type: "SYSTEM_SUPER_ADMIN",
-      description: "전사 권한 보유. 회사에 반드시 1명 이상 유지되어야 해요.",
+      description: "전체 권한 보유. 회사에 반드시 1명 이상 유지되어야 해요.",
     }),
     ensureSystemRole(companyId, {
       name: "조직장",
