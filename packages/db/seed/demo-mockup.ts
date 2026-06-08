@@ -292,8 +292,23 @@ export async function seedDemoMockup(prisma: PrismaClient): Promise<void> {
     prisma.leaveTransaction.create({ data: { employeeId: emp10.id, leaveTypeId: condolenceLeave.id, category: "EXTRA_GRANT", txType: "GRANT", days: 3, reason: "경조사 — 본인 결혼" } }),
   ]);
 
-  // ── 12. 법정 휴가 20종 upsert ────────────────────────────────────
+  // ── 12. 법정 휴가 upsert (필수만) ────────────────────────────────────
   await bootstrapLeaveTypes(prisma, cid);
+
+  // ── 12.5. 승인·참조 설정 (Flex 패턴: 모성보호·난임·배우자·보건·군소집 = 1단계 승인 + 참조) ──
+  const ccRef = createdEmps[10]!; // 송유진(인사팀 팀장) 참조자
+  await prisma.leaveType.updateMany({
+    where: {
+      companyId: cid,
+      key: { in: ["maternity_self", "maternity_premature", "maternity_multiple", "infertility", "spouse_childbirth", "menstrual", "military_training"] },
+    },
+    data: { approverEmployeeId: adminEmp.id, ccEmployeeIds: [ccRef.id] },
+  });
+  // 배우자출산 — 취소 시에도 승인 필요 (취소 승인 워크플로우 시연용)
+  await prisma.leaveType.update({
+    where: { companyId_key: { companyId: cid, key: "spouse_childbirth" } },
+    data: { approveOnCancel: true },
+  });
 
   // ── 13. 공휴일 (올해·내년 — 특일정보 API 우선, 양력 fallback) ──────
   const holi = await seedCompanyHolidays(prisma, cid, [year, year + 1]);
