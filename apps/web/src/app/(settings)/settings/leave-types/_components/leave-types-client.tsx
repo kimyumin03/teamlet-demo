@@ -117,7 +117,7 @@ type FormState = {
   tenureYears: string;
   tenureHireDateBased: boolean;
   paymentType: LeavePaymentType;
-  partialPayPercent: string;
+  partialPayDays: string;
   useUnit: LeaveUseUnit;
   hourUnitMinutes: string;
   genderRestriction: LeaveGenderRestriction;
@@ -141,7 +141,7 @@ function defaultForm(): FormState {
     tenureYears: "1",
     tenureHireDateBased: false,
     paymentType: "PAID",
-    partialPayPercent: "",
+    partialPayDays: "",
     useUnit: "DAY",
     hourUnitMinutes: "",
     genderRestriction: "ALL",
@@ -166,7 +166,7 @@ function typeToForm(t: LeaveTypeFullItem): FormState {
     tenureYears: t.tenureYears != null ? String(t.tenureYears) : "1",
     tenureHireDateBased: false,
     paymentType: t.paymentType,
-    partialPayPercent: t.partialPayPercent != null ? String(t.partialPayPercent) : "",
+    partialPayDays: t.partialPayDays != null ? String(t.partialPayDays) : "",
     useUnit: t.useUnit,
     hourUnitMinutes: t.hourUnitMinutes != null ? String(t.hourUnitMinutes) : "",
     genderRestriction: t.genderRestriction,
@@ -247,8 +247,8 @@ function LeaveTypeDialog({
     setError(null);
 
     const amount = hideGrantAmount ? null : form.grantAmount ? parseFloat(form.grantAmount) : null;
-    const partialPay = form.paymentType === "PARTIAL_PAID" && form.partialPayPercent
-      ? parseInt(form.partialPayPercent, 10) : null;
+    const partialPay = form.paymentType === "PARTIAL_PAID" && form.partialPayDays
+      ? parseInt(form.partialPayDays, 10) : null;
     const hourUnit = form.useUnit === "HOUR" && form.hourUnitMinutes
       ? parseInt(form.hourUnitMinutes, 10) : null;
 
@@ -258,7 +258,7 @@ function LeaveTypeDialog({
             name: form.name, description: form.description,
             grantMethod: form.grantMethod, grantUnit: form.grantUnit,
             grantAmount: amount, paymentType: form.paymentType,
-            partialPayPercent: partialPay,
+            partialPayDays: partialPay,
             genderRestriction: form.genderRestriction,
             evidenceRequirement: form.evidenceRequirement,
             useUnit: form.useUnit,
@@ -275,7 +275,7 @@ function LeaveTypeDialog({
             name: form.name, key, description: form.description,
             grantMethod: form.grantMethod, grantUnit: form.grantUnit,
             grantAmount: amount, paymentType: form.paymentType,
-            partialPayPercent: partialPay,
+            partialPayDays: partialPay,
             genderRestriction: form.genderRestriction,
             evidenceRequirement: form.evidenceRequirement,
             useUnit: form.useUnit,
@@ -495,11 +495,11 @@ function LeaveTypeDialog({
               </select>
               {form.paymentType === "PARTIAL_PAID" && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-                  <span style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>얼마나 유급 휴가로 인정할까요?</span>
-                  <input type="number" min={0} max={100} className={INPUT_CLS} style={{ width: 80 }}
-                    placeholder="0" value={form.partialPayPercent}
-                    onChange={(e) => set("partialPayPercent", e.target.value)} />
-                  <span style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>%</span>
+                  <span style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>며칠을 유급으로 인정할까요?</span>
+                  <input type="number" min={0} className={INPUT_CLS} style={{ width: 80 }}
+                    placeholder="0" value={form.partialPayDays}
+                    onChange={(e) => set("partialPayDays", e.target.value)} />
+                  <span style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>일</span>
                 </div>
               )}
             </Field>

@@ -26,6 +26,7 @@ export type LeaveTypeFullItem = {
   grantAmount: number | null;
   paymentType: LeavePaymentType;
   partialPayPercent: number | null;
+  partialPayDays: number | null;
   genderRestriction: LeaveGenderRestriction;
   evidenceRequirement: LeaveEvidenceRequirement;
   useUnit: LeaveUseUnit;
@@ -50,6 +51,7 @@ export type LeaveTypeCreateInput = {
   grantAmount?: number | null;
   paymentType?: LeavePaymentType;
   partialPayPercent?: number | null;
+  partialPayDays?: number | null;
   genderRestriction?: LeaveGenderRestriction;
   evidenceRequirement?: LeaveEvidenceRequirement;
   useUnit?: LeaveUseUnit;
@@ -102,6 +104,7 @@ export async function listLeaveTypesFull(
       grantAmount: t.grantAmount ? Number(t.grantAmount) : null,
       paymentType: t.paymentType,
       partialPayPercent: t.partialPayPercent,
+      partialPayDays: t.partialPayDays,
       genderRestriction: t.genderRestriction,
       evidenceRequirement: t.evidenceRequirement,
       useUnit: t.useUnit,
@@ -159,6 +162,7 @@ export async function createLeaveType(
       grantAmount: input.grantAmount ?? null,
       paymentType: input.paymentType ?? "PAID",
       partialPayPercent: input.partialPayPercent ?? null,
+      partialPayDays: input.partialPayDays ?? null,
       genderRestriction: input.genderRestriction ?? "ALL",
       evidenceRequirement: input.evidenceRequirement ?? "NONE",
       useUnit: input.useUnit ?? "DAY",
@@ -206,6 +210,7 @@ export async function updateLeaveType(
       ...(input.grantAmount !== undefined && { grantAmount: input.grantAmount }),
       ...(input.paymentType !== undefined && { paymentType: input.paymentType }),
       ...(input.partialPayPercent !== undefined && { partialPayPercent: input.partialPayPercent }),
+      ...(input.partialPayDays !== undefined && { partialPayDays: input.partialPayDays }),
       ...(input.genderRestriction !== undefined && { genderRestriction: input.genderRestriction }),
       ...(input.evidenceRequirement !== undefined && { evidenceRequirement: input.evidenceRequirement }),
       ...(input.useUnit !== undefined && { useUnit: input.useUnit }),
