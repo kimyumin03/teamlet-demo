@@ -3,7 +3,25 @@ import { auth } from "@/auth";
 import { listLeaveTypesFull } from "@teamlet/modules/leave";
 import { listEmployees } from "@teamlet/modules/employee";
 import { listDepartments } from "@teamlet/modules/department";
+import { KR_STATUTORY_LEAVE_TYPES } from "@teamlet/db/seed/leave-types";
 import { LeaveTypesClient } from "./_components/leave-types-client";
+
+// 법정 휴가 권장 설정 가이드 (카탈로그 기준) — 휴가 설정이 법령에 적합한지 비교
+const STATUTORY_GUIDE = Object.fromEntries(
+  KR_STATUTORY_LEAVE_TYPES.map((lt) => [
+    lt.key,
+    {
+      description: lt.description,
+      grantMethod: lt.grantMethod,
+      grantUnit: lt.grantUnit,
+      grantAmount: lt.grantAmount ?? null,
+      paymentType: lt.paymentType,
+      partialPayDays: lt.partialPayDays ?? null,
+      genderRestriction: lt.genderRestriction,
+      deductOnHoliday: lt.deductOnHoliday ?? false,
+    },
+  ]),
+);
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +68,7 @@ export default async function LeaveTypesPage() {
         </div>
       ) : (
         <div className="rounded-[14px] border border-border bg-background-primary px-[26px] py-[22px]">
-          <LeaveTypesClient types={types} employees={employees} departments={departments} />
+          <LeaveTypesClient types={types} employees={employees} departments={departments} guide={STATUTORY_GUIDE} />
         </div>
       )}
     </div>

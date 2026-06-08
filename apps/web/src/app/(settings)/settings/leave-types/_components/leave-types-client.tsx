@@ -193,15 +193,74 @@ function Field({ label, desc, children }: { label: string; desc?: string; childr
   );
 }
 
+/* ── 법령 가이드 박스 (Flex 스타일 — 권장 설정과 현재 설정 비교) ── */
+export type GuideEntry = {
+  description: string;
+  grantMethod: LeaveGrantMethod;
+  grantUnit: LeaveGrantUnit;
+  grantAmount: number | null;
+  paymentType: LeavePaymentType;
+  partialPayDays: number | null;
+  genderRestriction: LeaveGenderRestriction;
+  deductOnHoliday: boolean;
+};
+
+function GuideBox({ name, guide, form }: { name: string; guide: GuideEntry; form: FormState }) {
+  const [open, setOpen] = useState(true);
+  const amtOk =
+    (guide.grantAmount == null && !form.grantAmount) ||
+    (guide.grantAmount != null && parseFloat(form.grantAmount || "0") === guide.grantAmount);
+  const payOk =
+    form.paymentType === guide.paymentType &&
+    (guide.paymentType !== "PARTIAL_PAID" || parseInt(form.partialPayDays || "0", 10) === guide.partialPayDays);
+  const checks = [
+    { label: "부여 방법", rec: GRANT_METHOD_LABEL[guide.grantMethod], ok: form.grantMethod === guide.grantMethod },
+    { label: "부여 단위", rec: GRANT_UNIT_LABEL[guide.grantUnit], ok: form.grantUnit === guide.grantUnit },
+    ...(guide.grantAmount != null ? [{ label: "부여 시간", rec: `${guide.grantAmount}일`, ok: amtOk }] : []),
+    { label: "급여 지급", rec: guide.paymentType === "PARTIAL_PAID" ? `일부 유급 (${guide.partialPayDays}일)` : PAYMENT_LABEL[guide.paymentType], ok: payOk },
+    { label: "사용 가능 성별", rec: GENDER_LABEL[guide.genderRestriction], ok: form.genderRestriction === guide.genderRestriction },
+    { label: "휴일에 등록된 휴가 차감", rec: guide.deductOnHoliday ? "O" : "X", ok: form.deductOnHoliday === guide.deductOnHoliday },
+  ];
+  const allOk = checks.every((c) => c.ok);
+  return (
+    <div style={{ border: "1px solid var(--border)", borderRadius: 12, background: "var(--bg-secondary)", padding: 14 }}>
+      <button type="button" onClick={() => setOpen(!open)}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)" }}>📋 {name} 법령 가이드</span>
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: allOk ? "var(--success-700)" : "var(--accent)" }}>
+          {allOk ? "✓ 적합한 설정이에요" : "권장값 확인 ▾"}
+        </span>
+      </button>
+      {open && (
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ fontSize: 12, color: "var(--fg-muted)", lineHeight: 1.5 }}>{guide.description}</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {checks.map((c) => (
+              <div key={c.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
+                <span style={{ color: "var(--fg-muted)" }}>{c.label}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <strong style={{ fontWeight: 600, color: "var(--fg)" }}>{c.rec}</strong>
+                  <span style={{ color: c.ok ? "var(--success-700)" : "var(--accent)", fontWeight: 700 }}>{c.ok ? "✓" : "•"}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── 메인 다이얼로그 ────────────────────────────────── */
 function LeaveTypeDialog({
-  open, onClose, initial, employees, departments,
+  open, onClose, initial, employees, departments, guide,
 }: {
   open: boolean;
   onClose: () => void;
   initial?: LeaveTypeFullItem;
   employees: PickerEmployee[];
   departments: PickerDepartment[];
+  guide: Record<string, GuideEntry>;
 }) {
   const router = useRouter();
   const isEdit = !!initial;
@@ -305,6 +364,9 @@ function LeaveTypeDialog({
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-1 max-h-[72vh] overflow-y-auto pr-1">
+            {isEdit && initial && guide[initial.key] && (
+              <GuideBox name={initial.name} guide={guide[initial.key]!} form={form} />
+            )}
             {/* 이름 + key */}
             <Field label="이름">
               <input className={INPUT_CLS} placeholder="예: 병가, 경조사" value={form.name}
@@ -651,11 +713,12 @@ function LeaveTypeDialog({
 
 /* ── 목록 클라이언트 ────────────────────────────────── */
 export function LeaveTypesClient({
-  types, employees, departments,
+  types, employees, departments, guide,
 }: {
   types: LeaveTypeFullItem[];
   employees: PickerEmployee[];
   departments: PickerDepartment[];
+  guide: Record<string, GuideEntry>;
 }) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
@@ -750,9 +813,9 @@ export function LeaveTypesClient({
         </div>
       )}
 
-      <LeaveTypeDialog open={createOpen} onClose={() => setCreateOpen(false)} employees={employees} departments={departments} />
+      <LeaveTypeDialog open={createOpen} onClose={() => setCreateOpen(false)} employees={employees} departments={departments} guide={guide} />
       {editTarget && (
-        <LeaveTypeDialog open onClose={() => setEditTarget(null)} initial={editTarget} employees={employees} departments={departments} />
+        <LeaveTypeDialog open onClose={() => setEditTarget(null)} initial={editTarget} employees={employees} departments={departments} guide={guide} />
       )}
     </>
   );
