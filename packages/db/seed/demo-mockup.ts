@@ -7,34 +7,16 @@
  * │   demo@teamlet.io  →  한지민 / 경영지원팀 팀장 (최고 관리자)  │
  * │                       비밀번호: Demo1234!                     │
  * │                                                              │
- * │ 시연 포인트                                                   │
- * │   • 구성원 15명 / 부서 5개 / 직책 5개                         │
- * │   • 법정 휴가 20종 (bootstrapLeaveTypes)                      │
- * │   • 연차·병가·경조사 잔여·이력                                │
- * │   • 결재 대기·완료·반려 이력                                   │
+ * │ 온보딩 체험 — DB 는 구성원·조직·권한만(깨끗한 신규 회사).     │
+ * │   • 구성원 15명 / 부서 5개 / 직책 5개 / 최고관리자 권한        │
+ * │   • 휴가종류·정책·공휴일·연차부여·신청·결재 = 체험자가 직접   │
+ * │     버튼으로 설정/축적. 로그아웃 시 원상복구(별도 동적 처리). │
  * └──────────────────────────────────────────────────────────────┘
  */
 
 import type { PrismaClient } from "../generated/client/index.js";
 import { scrypt as _scrypt, randomBytes } from "node:crypto";
 import { promisify } from "node:util";
-import { KR_STATUTORY_LEAVE_TYPES } from "./leave-types.js";
-import { seedCompanyHolidays } from "./holidays-sync.js";
-
-async function bootstrapLeaveTypes(prisma: PrismaClient, companyId: string): Promise<number> {
-  // 법정 필수(isRequired)만 기본 등록 — 선택 휴가는 "법정의무휴가 추가"/"맞춤 휴가"로 별도 추가
-  const results = await Promise.all(
-    KR_STATUTORY_LEAVE_TYPES.filter((lt) => lt.isRequired).map((lt) =>
-      prisma.leaveType.upsert({
-        where: { companyId_key: { companyId, key: lt.key } },
-        create: { companyId, key: lt.key, name: lt.name, description: lt.description, isSystem: lt.isSystem, isRequired: lt.isRequired, grantMethod: lt.grantMethod, grantUnit: lt.grantUnit, grantAmount: lt.grantAmount ?? null, periodicCycle: lt.periodicCycle ?? null, paymentType: lt.paymentType, partialPayDays: lt.partialPayDays ?? null, deductOnHoliday: lt.deductOnHoliday ?? false, genderRestriction: lt.genderRestriction, evidenceRequirement: lt.evidenceRequirement },
-        update: { name: lt.name, description: lt.description, isSystem: lt.isSystem, isRequired: lt.isRequired, grantMethod: lt.grantMethod, grantUnit: lt.grantUnit, grantAmount: lt.grantAmount ?? null, paymentType: lt.paymentType, partialPayDays: lt.partialPayDays ?? null, deductOnHoliday: lt.deductOnHoliday ?? false, genderRestriction: lt.genderRestriction, evidenceRequirement: lt.evidenceRequirement },
-        select: { id: true },
-      }),
-    ),
-  );
-  return results.length;
-}
 
 const scryptAsync = promisify(_scrypt);
 const KEYLEN = 64;
@@ -51,50 +33,15 @@ const DEMO_PW = "Demo1234!";
 const COMPANY_CODE = "DEMO-0000";
 const BUSINESS_NUMBER = "111-11-11111";
 
-function calcAnnualDays(hireDate: Date, year: number): number {
-  const refDate = new Date(year, 11, 31);
-  const months =
-    (refDate.getFullYear() - hireDate.getFullYear()) * 12 +
-    (refDate.getMonth() - hireDate.getMonth());
-  if (months < 12) return 11;
-  const years = Math.floor(months / 12);
-  // 근로기준법 §60: 1년 15일, 3년차부터 2년마다 +1일, 최대 25일 (부여 엔진 legalAnnualDays 와 동일)
-  const bonus = years >= 3 ? Math.floor((years - 1) / 2) : 0;
-  return Math.min(25, 15 + bonus);
-}
-
 export async function seedDemoMockup(prisma: PrismaClient): Promise<void> {
   const exists = await prisma.company.findUnique({ where: { companyCode: COMPANY_CODE } });
   if (exists) {
-    // 멱등 보강 — DB 리셋 없이 `pnpm db:seed` 만으로 기존 데모 회사에 누락분을 채운다.
-    const count = await bootstrapLeaveTypes(prisma, exists.id);
-
-    // 기본 연차 정책 보강 (없을 때만)
-    const annual = await prisma.leaveType.findFirst({
-      where: { companyId: exists.id, key: "annual" },
-      select: { id: true },
-    });
-    if (annual) {
-      const hasDefault = await prisma.leavePolicy.findFirst({
-        where: { companyId: exists.id, isDefault: true },
-        select: { id: true },
-      });
-      if (!hasDefault) {
-        await prisma.leavePolicy.create({
-          data: { companyId: exists.id, name: "기본 연차 정책", leaveTypeId: annual.id, isDefault: true, isActive: true },
-        });
-      }
-    }
-
-    // 공휴일 보강 (올해·내년 — API 우선, 양력 fallback)
-    const y = new Date().getFullYear();
-    const holi = await seedCompanyHolidays(prisma, exists.id, [y, y + 1]);
-    console.log(`  ✔ 법정 휴가 ${count}종 / 기본 정책·공휴일 ${holi.added}건(${holi.source}) 보강 (DEMO-0000)`);
+    // 목업은 온보딩 체험용(구성원·조직·권한만) — 추가 시드/보강 없음. 초기화는 reseed-mockup.
+    console.log("  ℹ 목업(DEMO-0000) 이미 존재 — 온보딩 체험용이라 추가 시드 없음");
     return;
   }
 
   const adminPw = await hashPw(DEMO_PW);
-  const year = new Date().getFullYear();
 
   // ── 1. 체험 계정 (demo@teamlet.io) ────────────────────────────
   const demoUser = await prisma.user.upsert({
@@ -186,7 +133,7 @@ export async function seedDemoMockup(prisma: PrismaClient): Promise<void> {
 
   // ── 8. 역할 (최고 관리자 / 기본) ────────────────────────────────
   const [superAdminRole, defaultRole] = await Promise.all([
-    prisma.role.create({ data: { companyId: cid, name: "최고 관리자", type: "SYSTEM_SUPER_ADMIN", isSystem: true, description: "전사 권한 보유" }, select: { id: true } }),
+    prisma.role.create({ data: { companyId: cid, name: "최고 관리자", type: "SYSTEM_SUPER_ADMIN", isSystem: true, description: "전체 권한 보유" }, select: { id: true } }),
     prisma.role.create({ data: { companyId: cid, name: "기본", type: "DEFAULT", isSystem: true, description: "구성원 기본 역할" }, select: { id: true } }),
   ]);
 
@@ -212,108 +159,11 @@ export async function seedDemoMockup(prisma: PrismaClient): Promise<void> {
     skipDuplicates: true,
   });
 
-  // ── 9. 휴가 종류 (연차·병가·경조사 — bootstrapLeaveTypes 와 별개로 시연용 3종) ──
-  const [annualLeave, sickLeave, condolenceLeave] = await Promise.all([
-    prisma.leaveType.upsert({ where: { companyId_key: { companyId: cid, key: "annual" } }, create: { companyId: cid, key: "annual", name: "연차", grantMethod: "PERIODIC", grantUnit: "DAY", grantAmount: 15, paymentType: "PAID", isActive: true, isRequired: true, isSystem: true }, update: { isRequired: true, isSystem: true }, select: { id: true, name: true } }),
-    prisma.leaveType.upsert({ where: { companyId_key: { companyId: cid, key: "sick" } }, create: { companyId: cid, key: "sick", name: "병가", grantMethod: "ON_REQUEST", grantUnit: "DAY", grantAmount: 60, paymentType: "UNPAID", isActive: true }, update: {}, select: { id: true, name: true } }),
-    prisma.leaveType.upsert({ where: { companyId_key: { companyId: cid, key: "condolence" } }, create: { companyId: cid, key: "condolence", name: "경조사 휴가", grantMethod: "ON_REQUEST", grantUnit: "DAY", grantAmount: 5, paymentType: "PAID", isActive: true }, update: {}, select: { id: true, name: true } }),
-  ]);
-
-  // ── 9.5. 기본 연차 정책 (teamlet 표준 — 부여 엔진이 미배정 구성원에 자동 적용) ──
-  // 근로기준법 §60 호환: 회계연도·월개근·반차·올림. 승인선 = 한지민(최고 관리자).
-  await prisma.leavePolicy.create({
-    data: {
-      companyId: cid,
-      name: "기본 연차 정책",
-      leaveTypeId: annualLeave.id,
-      isDefault: true,
-      isActive: true,
-      approverEmployeeId: adminEmp.id,
-    },
-  });
-
-  // ── 10. 연차 잔여 (전 직원 — 기본 정책 부여 엔진과 동일 규칙·멱등키) ──────
-  // 부여량 = calcAnnualDays(근로기준법 §60). note = "{year}년 정기 부여" 로 부여 엔진 멱등키와 정합
-  // → 데모 로그인 후 관리자가 "연차 자동부여"를 눌러도 중복 부여되지 않음.
-  const usedDaysMap: Record<number, number> = { 0: 3, 1: 2, 2: 8, 3: 1, 4: 0, 5: 0, 6: 3, 7: 1, 8: 4, 9: 0, 10: 2, 11: 1, 12: 5, 13: 0, 14: 6 };
-
-  await prisma.$transaction(
-    createdEmps.flatMap((emp, i) => {
-      const granted = calcAnnualDays(roster[i]!.hireDate, year);
-      const used = usedDaysMap[i] ?? 0;
-      return [
-        prisma.leaveBalance.create({ data: { employeeId: emp.id, leaveTypeId: annualLeave.id, year, grantedDays: granted, usedDays: used } }),
-        prisma.leaveTransaction.create({ data: { employeeId: emp.id, leaveTypeId: annualLeave.id, category: "ANNUAL", txType: "GRANT", days: granted, reason: "연차 자동부여", note: `${year}년 정기 부여` } }),
-        ...(used > 0 ? [prisma.leaveTransaction.create({ data: { employeeId: emp.id, leaveTypeId: annualLeave.id, category: "ANNUAL", txType: "USE", days: used, reason: "연차 사용" } })] : []),
-      ];
-    }),
-  );
-
-  // ── 11. 결재 이력 (APPROVED / PENDING / REJECTED) ────────────────
-  // 김민준 — 연차 3일 승인
-  const emp2 = createdEmps[2]!;
-  await prisma.$transaction(async (tx) => {
-    const doc = await tx.formDocument.create({ data: { companyId: cid, authorId: emp2.id, title: "휴가 신청 — 연차 2024-08-12~2024-08-14 (3일)", kind: "LEAVE_REQUEST", formData: { leaveTypeId: annualLeave.id, startDate: "2024-08-12", endDate: "2024-08-14", days: 3, reason: "가족 여행" }, status: "APPROVED" }, select: { id: true } });
-    await tx.approvalLine.create({ data: { documentId: doc.id, step: 1, approverId: adminEmp.id, status: "APPROVED", approvedAt: new Date("2024-08-05T10:00:00.000Z") } });
-    await tx.leaveRequest.create({ data: { employeeId: emp2.id, leaveTypeId: annualLeave.id, startDate: new Date("2024-08-12T00:00:00.000Z"), endDate: new Date("2024-08-14T00:00:00.000Z"), days: 3, reason: "가족 여행", status: "APPROVED", reviewedAt: new Date("2024-08-05T10:00:00.000Z"), reviewedBy: adminEmp.id, formDocumentId: doc.id } });
-  });
-
-  // 이서연 — 연차 1일 PENDING (한지민 결재 대기 — 시연 핵심)
-  const pendingDate = new Date();
-  pendingDate.setDate(pendingDate.getDate() + 5);
-  pendingDate.setHours(0, 0, 0, 0);
-  const pendingDateStr = pendingDate.toISOString().slice(0, 10);
-  const emp3 = createdEmps[3]!;
-  await prisma.$transaction(async (tx) => {
-    const doc = await tx.formDocument.create({ data: { companyId: cid, authorId: emp3.id, title: `휴가 신청 — 연차 ${pendingDateStr} (1일)`, kind: "LEAVE_REQUEST", formData: { leaveTypeId: annualLeave.id, startDate: pendingDateStr, endDate: pendingDateStr, days: 1, reason: "개인 사정" }, status: "IN_PROGRESS" }, select: { id: true } });
-    await tx.approvalLine.create({ data: { documentId: doc.id, step: 1, approverId: adminEmp.id, status: "PENDING" } });
-    await tx.leaveRequest.create({ data: { employeeId: emp3.id, leaveTypeId: annualLeave.id, startDate: pendingDate, endDate: pendingDate, days: 1, reason: "개인 사정", status: "PENDING", formDocumentId: doc.id } });
-  });
-
-  // 정다은 — 연차 반려
-  const emp5 = createdEmps[5]!;
-  await prisma.$transaction(async (tx) => {
-    const doc = await tx.formDocument.create({ data: { companyId: cid, authorId: emp5.id, title: "휴가 신청 — 연차 2024-11-29 (1일)", kind: "LEAVE_REQUEST", formData: { leaveTypeId: annualLeave.id, startDate: "2024-11-29", endDate: "2024-11-29", days: 1, reason: "개인 용무" }, status: "REJECTED" }, select: { id: true } });
-    await tx.approvalLine.create({ data: { documentId: doc.id, step: 1, approverId: adminEmp.id, status: "REJECTED", approvedAt: new Date("2024-11-25T09:00:00.000Z") } });
-    await tx.leaveRequest.create({ data: { employeeId: emp5.id, leaveTypeId: annualLeave.id, startDate: new Date("2024-11-29T00:00:00.000Z"), endDate: new Date("2024-11-29T00:00:00.000Z"), days: 1, reason: "개인 용무", status: "REJECTED", reviewedAt: new Date("2024-11-25T09:00:00.000Z"), reviewedBy: adminEmp.id, formDocumentId: doc.id } });
-  });
-
-  // 서소영 — 병가 맞춤 부여 5일
-  const emp6 = createdEmps[6]!;
-  await prisma.$transaction([
-    prisma.leaveBalance.create({ data: { employeeId: emp6.id, leaveTypeId: sickLeave.id, year, grantedDays: 5, usedDays: 0 } }),
-    prisma.leaveTransaction.create({ data: { employeeId: emp6.id, leaveTypeId: sickLeave.id, category: "EXTRA_GRANT", txType: "GRANT", days: 5, reason: "병가 처방 (진단서 제출 확인)" } }),
-  ]);
-
-  // 송유진 — 경조사 부여 3일 (결혼)
-  const emp10 = createdEmps[10]!;
-  await prisma.$transaction([
-    prisma.leaveBalance.create({ data: { employeeId: emp10.id, leaveTypeId: condolenceLeave.id, year, grantedDays: 3, usedDays: 0 } }),
-    prisma.leaveTransaction.create({ data: { employeeId: emp10.id, leaveTypeId: condolenceLeave.id, category: "EXTRA_GRANT", txType: "GRANT", days: 3, reason: "경조사 — 본인 결혼" } }),
-  ]);
-
-  // ── 12. 법정 휴가 upsert (필수만) ────────────────────────────────────
-  await bootstrapLeaveTypes(prisma, cid);
-
-  // ── 12.5. 승인·참조 설정 (Flex 패턴: 모성보호·난임·배우자·보건·군소집 = 1단계 승인 + 참조) ──
-  const ccRef = createdEmps[10]!; // 송유진(인사팀 팀장) 참조자
-  await prisma.leaveType.updateMany({
-    where: {
-      companyId: cid,
-      key: { in: ["maternity_self", "maternity_premature", "maternity_multiple", "infertility", "spouse_childbirth", "menstrual", "military_training"] },
-    },
-    data: { approverEmployeeId: adminEmp.id, ccEmployeeIds: [ccRef.id] },
-  });
-  // 배우자출산 — 취소 시에도 승인 필요 (취소 승인 워크플로우 시연용)
-  await prisma.leaveType.update({
-    where: { companyId_key: { companyId: cid, key: "spouse_childbirth" } },
-    data: { approveOnCancel: true },
-  });
-
-  // ── 13. 공휴일 (올해·내년 — 특일정보 API 우선, 양력 fallback) ──────
-  const holi = await seedCompanyHolidays(prisma, cid, [year, year + 1]);
+  // ⚠️ 목업은 온보딩 체험용 — 휴가종류·정책·공휴일·연차부여·신청·결재는 DB에 시드하지 않는다.
+  //   체험자가 직접 버튼으로 설정/부여한다("법정의무휴가 추가"·"기본 정책 만들기"·
+  //   "법정공휴일 자동등록"·"연차 자동부여"·휴가 신청). 로그아웃 시 원상복구(별도 동적 처리).
 
   console.log(`  ✔ 목업 회사 생성 (DEMO-0000): ${cid}`);
   console.log(`  ✔ 체험 계정: ${DEMO_EMAIL} / ${DEMO_PW} → 한지민 (경영지원팀 팀장, 최고 관리자)`);
-  console.log(`  ✔ 구성원 15명 / 부서 5개 / 법정 필수 휴가 / 기본 연차 정책 / 공휴일 ${holi.added}건(${holi.source})`);
+  console.log("  ✔ 구성원 15명 / 부서 5개 / 직책 5개 / 권한 — 휴가·정책·공휴일은 온보딩 체험으로 직접 설정");
 }

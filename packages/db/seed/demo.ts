@@ -291,7 +291,7 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
 
   // ── 8. 역할 부트스트랩 ────────────────────────────────────────────────────
   const [superAdminRole, orgHeadRole, hrAdminRole, defaultRole] = await Promise.all([
-    prisma.role.create({ data: { companyId: cid, name: "최고 관리자", type: "SYSTEM_SUPER_ADMIN", isSystem: true, description: "전사 권한 보유" }, select: { id: true } }),
+    prisma.role.create({ data: { companyId: cid, name: "최고 관리자", type: "SYSTEM_SUPER_ADMIN", isSystem: true, description: "전체 권한 보유" }, select: { id: true } }),
     prisma.role.create({ data: { companyId: cid, name: "조직장", type: "DYNAMIC_ORG_HEAD", isSystem: true, description: "조직장 직책 자동 매핑" }, select: { id: true } }),
     prisma.role.create({ data: { companyId: cid, name: "HR 관리자", type: "CUSTOM", isSystem: false, description: "인사·휴가 관리 권한" }, select: { id: true } }),
     prisma.role.create({ data: { companyId: cid, name: "기본", type: "DEFAULT", isSystem: true, description: "구성원 기본 역할" }, select: { id: true } }),
