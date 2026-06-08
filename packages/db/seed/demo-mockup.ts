@@ -27,8 +27,8 @@ async function bootstrapLeaveTypes(prisma: PrismaClient, companyId: string): Pro
     KR_STATUTORY_LEAVE_TYPES.filter((lt) => lt.isRequired).map((lt) =>
       prisma.leaveType.upsert({
         where: { companyId_key: { companyId, key: lt.key } },
-        create: { companyId, key: lt.key, name: lt.name, description: lt.description, isSystem: lt.isSystem, isRequired: lt.isRequired, grantMethod: lt.grantMethod, grantUnit: lt.grantUnit, grantAmount: lt.grantAmount ?? null, periodicCycle: lt.periodicCycle ?? null, paymentType: lt.paymentType, genderRestriction: lt.genderRestriction, evidenceRequirement: lt.evidenceRequirement },
-        update: { name: lt.name, description: lt.description },
+        create: { companyId, key: lt.key, name: lt.name, description: lt.description, isSystem: lt.isSystem, isRequired: lt.isRequired, grantMethod: lt.grantMethod, grantUnit: lt.grantUnit, grantAmount: lt.grantAmount ?? null, periodicCycle: lt.periodicCycle ?? null, paymentType: lt.paymentType, partialPayDays: lt.partialPayDays ?? null, deductOnHoliday: lt.deductOnHoliday ?? false, genderRestriction: lt.genderRestriction, evidenceRequirement: lt.evidenceRequirement },
+        update: { name: lt.name, description: lt.description, isSystem: lt.isSystem, isRequired: lt.isRequired, grantMethod: lt.grantMethod, grantUnit: lt.grantUnit, grantAmount: lt.grantAmount ?? null, paymentType: lt.paymentType, partialPayDays: lt.partialPayDays ?? null, deductOnHoliday: lt.deductOnHoliday ?? false, genderRestriction: lt.genderRestriction, evidenceRequirement: lt.evidenceRequirement },
         select: { id: true },
       }),
     ),

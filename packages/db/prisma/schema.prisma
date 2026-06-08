@@ -788,8 +788,10 @@ model LeaveType {
   useUnit              LeaveUseUnit            @default(DAY)
   // 시간차 사용 최소 단위(분) — useUnit = HOUR 일 때. null = 제한 없음
   hourUnitMinutes      Int?
-  // 일부 유급 % (paymentType = PARTIAL_PAID 일 때)
+  // 일부 유급 % (paymentType = PARTIAL_PAID 일 때) — 레거시
   partialPayPercent    Int?
+  // 일부 유급 일수 (Flex 방식: 유급으로 인정하는 일수. 예 출산전후 60일, 난임 2일)
+  partialPayDays       Int?
   // 휴가 기간에 휴일이 포함된 경우 휴일도 차감하는지
   deductOnHoliday      Boolean                 @default(false)
   // 주기 부여 옵션 — 반복 부여 주기 / 근속 시 부여 연수
