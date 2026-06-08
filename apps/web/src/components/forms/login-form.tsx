@@ -2,15 +2,19 @@
 
 import { useState, useActionState, useRef } from "react";
 import Link from "next/link";
-import { loginAction, type ActionState } from "@/lib/actions/auth";
+import { loginAction, demoLoginAction, type ActionState } from "@/lib/actions/auth";
 
 const initial: ActionState = { error: null };
+
+const demoBtnCls =
+  "w-full py-2.5 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-primary)] text-[13.5px] font-medium text-[var(--fg)] hover:bg-[var(--bg-secondary)] disabled:opacity-60 transition-colors";
 
 const inputCls =
   "w-full px-3.5 py-2.5 border border-[var(--border-strong)] rounded-lg bg-[var(--bg-primary)] text-[14px] placeholder:text-[var(--fg-subtle)] focus:outline-none focus:border-[var(--primary)] transition-colors";
 
 export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, formAction, isPending] = useActionState(loginAction, initial);
+  const [demoState, demoFormAction, isDemoPending] = useActionState(demoLoginAction, initial);
   const [step, setStep] = useState<"email" | "password">("email");
   const [email, setEmail] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
@@ -92,11 +96,28 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
       <button
         type="button" disabled
         className="flex items-center gap-2.5 w-full px-3.5 py-3 border border-[var(--border-strong)] rounded-lg bg-[var(--bg-primary)] text-[13.5px] font-medium opacity-50 cursor-not-allowed"
-        title="Google OAuth 설정 후 사용 가능합니다"
+        title="AxHub 연동 설정 후 사용 가능합니다"
       >
-        <span className="w-[18px] h-[18px] rounded-full grid place-items-center bg-white border border-[var(--border-strong)] text-[11px] font-bold" style={{ color: "#4285F4" }}>G</span>
-        Google로 계속하기
+        <span className="w-[18px] h-[18px] rounded-md grid place-items-center bg-[var(--primary)] text-[10px] font-bold text-white">A</span>
+        AxHub로 계속하기
       </button>
+
+      {/* 데모 체험 섹션 */}
+      <div className="pt-1 border-t border-[var(--border)]">
+        <p className="text-center text-[11.5px] text-[var(--fg-subtle)] mb-2.5">
+          계정 없이 관리자 권한으로 모든 기능을 체험해 보세요
+        </p>
+        <form action={demoFormAction}>
+          <button type="submit" disabled={isDemoPending} className={demoBtnCls}>
+            {isDemoPending ? "로그인 중…" : "데모 관리자로 체험 시작 →"}
+          </button>
+        </form>
+        {demoState.error && (
+          <p role="alert" className="mt-2 rounded-[10px] border border-[var(--destructive-50)] bg-[var(--destructive-50)] px-3 py-2 text-[13px] text-[var(--destructive)]">
+            {demoState.error}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

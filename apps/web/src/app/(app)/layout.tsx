@@ -9,6 +9,7 @@ import { NotificationBell } from "@/components/notification/notification-bell";
 import { CommandPalette } from "@/components/command-palette/command-palette";
 import { CommandPaletteTrigger } from "@/components/command-palette/command-palette-trigger";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { DemoBanner } from "@/components/demo/demo-banner";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -42,6 +43,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // 검색에서 전체 페이지 노출 여부 (관리자 권한). 일반 팀원은 공개 페이지만.
   const canSeeAllPages = employeeId ? await hasPermission(employeeId, "member.directory.manage") : false;
 
+  const isDemoUser = companyResult.ok && companyResult.data.companyCode === "DEMO-0000";
+
   const logoutAction = async () => {
     "use server";
     await signOut({ redirectTo: "/login" });
@@ -62,6 +65,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       {/* 메인 영역 */}
       <div className="main">
+        {isDemoUser && <DemoBanner />}
         {/* 탑바 */}
         <header className="topbar">
           {employeeId && <CommandPaletteTrigger />}

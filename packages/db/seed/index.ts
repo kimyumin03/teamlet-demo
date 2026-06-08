@@ -9,6 +9,7 @@ import { seedPermissions, PERMISSION_CATALOG } from "./permissions";
 import { KR_STATUTORY_HOLIDAYS } from "./holidays-kr";
 import { KR_STATUTORY_LEAVE_TYPES } from "./leave-types";
 import { seedDemoData } from "./demo";
+import { seedDemoMockup } from "./demo-mockup";
 
 async function main() {
   console.log("🌱 Teamlet 시드 시작");
@@ -24,7 +25,8 @@ async function main() {
   // 데모 시드 — production 제외
   if (process.env.NODE_ENV !== "production") {
     console.log("🎭 데모 시드 시작 (NODE_ENV !== production)");
-    await seedDemoData(prisma);
+    await seedDemoData(prisma);          // DEMO-0001: 개발 테스트용 (admin@teamlet.test)
+    await seedDemoMockup(prisma);        // DEMO-0000: 목업 시연용 (demo@teamlet.io)
   }
 
   console.log("✅ 시드 완료");

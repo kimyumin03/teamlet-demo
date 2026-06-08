@@ -3,7 +3,9 @@ import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { isPlatformAdminEmail } from "@/lib/platform-admin";
 import { hasPermission } from "@teamlet/modules/permission";
+import { getCompanyInfo } from "@teamlet/modules/tenancy";
 import { SettingsNav } from "@/components/settings/settings-nav";
+import { DemoBanner } from "@/components/demo/demo-banner";
 
 export default async function SettingsLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -17,13 +19,16 @@ export default async function SettingsLayout({ children }: { children: React.Rea
     .join("");
 
   const employeeId = session.user.employeeId;
-  const [canSeeCompany, canSeeOps, canSeeLeave] = employeeId
+  const [canSeeCompany, canSeeOps, canSeeLeave, companyResult] = employeeId
     ? await Promise.all([
         hasPermission(employeeId, "company.basic_info.read"),
         hasPermission(employeeId, "permission.role.manage"),
         hasPermission(employeeId, "leave.policy.manage"),
+        getCompanyInfo(employeeId),
       ])
-    : [false, false, false];
+    : [false, false, false, null];
+
+  const isDemoUser = !!companyResult && companyResult.ok && companyResult.data.companyCode === "DEMO-0000";
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--bg)]">
@@ -46,6 +51,7 @@ export default async function SettingsLayout({ children }: { children: React.Rea
 
       {/* 콘텐츠 */}
       <div className="flex-1 min-w-0 overflow-y-auto">
+        {isDemoUser && <DemoBanner />}
         {/* 상단 바 */}
         <header className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-primary)] px-6">
           <span className="text-[13px] font-semibold text-[var(--fg)]">설정</span>
