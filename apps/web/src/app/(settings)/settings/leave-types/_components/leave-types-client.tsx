@@ -73,11 +73,25 @@ const EMPLOYMENT_TYPES = [
   { value: "COMMISSIONED", label: "위촉직" },
 ];
 
-const PERIODIC_CYCLE_OPTS = [
-  { value: "monthly_from_hire", label: "입사 월부터 매월" },
-  { value: "annually_from_hire", label: "입사 연도부터 매년" },
-  { value: "annually_from_2nd", label: "2년 차부터 매년" },
-  { value: "annually_from_3rd", label: "3년 차부터 매년" },
+const PERIODIC_ANNUALLY_OPTS = [
+  { value: "annually_from_hire", label: "입사 연도부터" },
+  { value: "annually_from_2nd", label: "2년 차부터" },
+  { value: "annually_from_3rd", label: "3년 차부터" },
+  { value: "annually_from_4th", label: "4년 차부터" },
+  { value: "annually_from_5th", label: "5년 차부터" },
+];
+const PERIODIC_MONTHLY_OPTS = [
+  { value: "monthly_from_hire", label: "입사 월부터" },
+  { value: "monthly_from_2nd", label: "2개월 차부터" },
+  { value: "monthly_from_3rd", label: "3개월 차부터" },
+  { value: "monthly_from_4th", label: "4개월 차부터" },
+  { value: "monthly_from_5th", label: "5개월 차부터" },
+  { value: "monthly_from_6th", label: "6개월 차부터" },
+  { value: "monthly_from_7th", label: "7개월 차부터" },
+  { value: "monthly_from_8th", label: "8개월 차부터" },
+  { value: "monthly_from_9th", label: "9개월 차부터" },
+  { value: "monthly_from_10th", label: "10개월 차부터" },
+  { value: "monthly_from_11th", label: "11개월 차부터" },
 ];
 
 // 시간차 사용 단위 (useUnit = HOUR). "" = 제한 없음
@@ -98,8 +112,10 @@ type FormState = {
   grantMethod: LeaveGrantMethod;
   grantUnit: LeaveGrantUnit;
   grantAmount: string;
+  periodicType: "annually" | "monthly";
   periodicCycle: string;
   tenureYears: string;
+  tenureHireDateBased: boolean;
   paymentType: LeavePaymentType;
   partialPayPercent: string;
   useUnit: LeaveUseUnit;
@@ -120,8 +136,10 @@ function defaultForm(): FormState {
     grantMethod: "ON_REQUEST",
     grantUnit: "DAY",
     grantAmount: "1",
+    periodicType: "monthly",
     periodicCycle: "monthly_from_hire",
     tenureYears: "1",
+    tenureHireDateBased: false,
     paymentType: "PAID",
     partialPayPercent: "",
     useUnit: "DAY",
@@ -143,8 +161,10 @@ function typeToForm(t: LeaveTypeFullItem): FormState {
     grantMethod: t.grantMethod,
     grantUnit: t.grantUnit,
     grantAmount: t.grantAmount != null ? String(t.grantAmount) : "",
+    periodicType: (t.periodicCycle ?? "monthly_from_hire").startsWith("annually") ? "annually" : "monthly",
     periodicCycle: t.periodicCycle ?? "monthly_from_hire",
     tenureYears: t.tenureYears != null ? String(t.tenureYears) : "1",
+    tenureHireDateBased: false,
     paymentType: t.paymentType,
     partialPayPercent: t.partialPayPercent != null ? String(t.partialPayPercent) : "",
     useUnit: t.useUnit,
@@ -268,6 +288,7 @@ function LeaveTypeDialog({
             ccEmployeeIds: form.ccEmployeeIds,
           });
 
+
       if (res.ok) { onClose(); router.refresh(); }
       else setError(res.error.message);
     });
@@ -341,24 +362,72 @@ function LeaveTypeDialog({
               </div>
             </div>
 
-            {/* 반복 주기 (PERIODIC) */}
+            {/* 반복 주기 (PERIODIC) — 2단 선택: 매년/매월 → 세부 시점 */}
             {showPeriodicCycle && (
-              <Field label="반복 주기" desc="어떤 주기로 부여할지 설정해요.">
-                <select className={SELECT_CLS} value={form.periodicCycle} onChange={(e) => set("periodicCycle", e.target.value)}>
-                  {PERIODIC_CYCLE_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <div className="flex flex-col gap-2">
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--fg-muted)" }}>
+                  반복 주기 <span style={{ fontWeight: 400, color: "var(--fg-subtle)" }}>— 어떤 주기로 부여할지 설정해요.</span>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {(["annually", "monthly"] as const).map((type) => (
+                    <button key={type} type="button"
+                      onClick={() => {
+                        const next = type === "annually" ? "annually_from_hire" : "monthly_from_hire";
+                        setForm((f) => ({ ...f, periodicType: type, periodicCycle: next }));
+                        setIsDirty(true);
+                      }}
+                      style={{
+                        padding: "5px 14px", borderRadius: 999, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+                        border: `1.5px solid ${form.periodicType === type ? "var(--primary)" : "var(--border)"}`,
+                        background: form.periodicType === type ? "var(--primary-soft)" : "var(--bg-primary)",
+                        color: form.periodicType === type ? "var(--primary)" : "var(--fg-muted)",
+                      }}>
+                      {type === "annually" ? "매년 부여" : "매월 부여"}
+                    </button>
+                  ))}
+                </div>
+                <select className={SELECT_CLS}
+                  value={form.periodicCycle}
+                  onChange={(e) => set("periodicCycle", e.target.value)}>
+                  {(form.periodicType === "annually" ? PERIODIC_ANNUALLY_OPTS : PERIODIC_MONTHLY_OPTS).map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
                 </select>
-              </Field>
+                <p style={{ fontSize: 11.5, color: "var(--fg-subtle)" }}>
+                  {form.periodicType === "annually"
+                    ? "선택한 시점부터 매년 1월 1일에 휴가가 부여되고, 사용하지 않은 휴가는 12월 31일에 소멸돼요."
+                    : "선택한 시점부터 매월 1일에 휴가가 부여되고, 사용하지 않은 휴가는 말일에 소멸돼요."}
+                </p>
+              </div>
             )}
 
             {/* 근속 시점 (ON_TENURE) */}
             {showTenureYears && (
-              <Field label="부여 시점" desc="휴가를 부여할 근속 연수를 선택해요.">
-                <select className={SELECT_CLS} value={form.tenureYears} onChange={(e) => set("tenureYears", e.target.value)}>
-                  {[1,2,3,4,5,6,7,8,9,10].map((y) => (
-                    <option key={y} value={String(y)}>{y}년 근속 시</option>
-                  ))}
-                </select>
-              </Field>
+              <div className="flex flex-col gap-2">
+                <Field label="부여 시점" desc="휴가를 부여할 근속 시점을 선택해주세요.">
+                  <select className={SELECT_CLS} value={form.tenureYears} onChange={(e) => set("tenureYears", e.target.value)}>
+                    {[1,2,3,4,5,6,7,8,9,10].map((y) => (
+                      <option key={y} value={String(y)}>{y}년 근속 시</option>
+                    ))}
+                  </select>
+                </Field>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 2 }}>
+                  <div
+                    onClick={() => set("tenureHireDateBased", !form.tenureHireDateBased)}
+                    style={{
+                      width: 34, height: 19, borderRadius: 999, padding: 2, cursor: "pointer",
+                      background: form.tenureHireDateBased ? "var(--primary)" : "var(--border)",
+                      display: "flex", alignItems: "center", transition: "background 0.2s",
+                    }}>
+                    <div style={{
+                      width: 15, height: 15, borderRadius: "50%", background: "white",
+                      transform: form.tenureHireDateBased ? "translateX(15px)" : "translateX(0)",
+                      transition: "transform 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                    }} />
+                  </div>
+                  <span style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>입사일 기준</span>
+                </label>
+              </div>
             )}
 
             {/* 부여 단위 + 부여량 (MANUAL 제외) */}
@@ -593,7 +662,7 @@ export function LeaveTypesClient({
   const [isPending, startTransition] = useTransition();
 
   function handleDelete(t: LeaveTypeFullItem) {
-    if (t.isSystem) return;
+    if (t.isSystem || t.isRequired) return;
     if (!confirm(`"${t.name}" 휴가 종류를 삭제할까요?`)) return;
     startTransition(async () => {
       const res = await deleteLeaveTypeAction(t.id);
@@ -652,8 +721,8 @@ export function LeaveTypesClient({
                   className="rounded-md p-1.5 text-foreground-subtle hover:bg-background-secondary hover:text-foreground transition-colors">
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
-                <button onClick={() => handleDelete(t)} disabled={t.isSystem || isPending}
-                  title={t.isSystem ? "법정 휴가는 삭제할 수 없어요" : "삭제"}
+                <button onClick={() => handleDelete(t)} disabled={t.isSystem || t.isRequired || isPending}
+                  title={t.isSystem || t.isRequired ? "법정 필수 휴가는 삭제할 수 없어요" : "삭제"}
                   className="rounded-md p-1.5 text-foreground-subtle hover:bg-destructive-50 hover:text-destructive-600 transition-colors disabled:cursor-not-allowed disabled:opacity-30">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

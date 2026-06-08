@@ -192,6 +192,56 @@ export async function createLeavePolicy(
   return ok({ id: policy.id });
 }
 
+/**
+ * 기본 연차 정책 원클릭 생성 — 정책이 하나도 없는 회사를 위한 부트스트랩.
+ * teamlet 표준값(회계연도·월개근·반차·올림, 근로기준법 §60 호환)으로 isDefault 정책 1건 생성.
+ * 이미 연차 기본 정책이 있으면 그대로 반환(멱등). "연차" 휴가 유형이 선행 필요.
+ */
+export async function createDefaultLeavePolicy(
+  actorEmployeeId: string,
+): Promise<Result<{ id: string }>> {
+  try {
+    await assertPermission(actorEmployeeId, POLICY_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const emp = await prisma.employee.findUnique({
+    where: { id: actorEmployeeId },
+    select: { companyId: true },
+  });
+  if (!emp) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
+
+  const annualType = await prisma.leaveType.findFirst({
+    where: { companyId: emp.companyId, key: "annual", isActive: true },
+    select: { id: true },
+  });
+  if (!annualType) {
+    return err(errors.validation('먼저 "연차" 휴가 유형을 만들어 주세요.'));
+  }
+
+  // 이미 기본(연차) 정책이 있으면 중복 생성하지 않음
+  const existing = await prisma.leavePolicy.findFirst({
+    where: { companyId: emp.companyId, leaveTypeId: annualType.id, isDefault: true },
+    select: { id: true },
+  });
+  if (existing) return ok({ id: existing.id });
+
+  const policy = await prisma.leavePolicy.create({
+    data: {
+      companyId: emp.companyId,
+      name: "기본 연차 정책",
+      leaveTypeId: annualType.id,
+      isDefault: true,
+      isActive: true,
+      // 그 외 필드는 스키마 기본값(FISCAL_YEAR·MONTHLY_ON_ATTENDANCE·HALF_DAY·ROUND_UP_DAY)
+    },
+    select: { id: true },
+  });
+
+  return ok({ id: policy.id });
+}
+
 export async function updateLeavePolicy(
   actorEmployeeId: string,
   policyId: string,

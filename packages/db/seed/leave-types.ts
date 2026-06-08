@@ -117,7 +117,7 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   {
     key: "maternity_self",
     name: "산전후 - 본인",
-    description: "출산 전후 휴가 (90일, 유급)",
+    description: "출산 전후 휴가 (근로기준법 §74 — 총 90일, 출산 후 45일 이상 확보 / 최초 60일 유급)",
     isSystem: true,
     isRequired: true,
     grantMethod: "ON_REQUEST",
@@ -130,7 +130,7 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   {
     key: "maternity_premature",
     name: "산전후 - 미숙아",
-    description: "미숙아 출산 시 산전후 휴가 연장 (100일, 유급)",
+    description: "미숙아 출산 시 산전후 휴가 (근로기준법 §74 — 총 100일 / 최초 60일 유급, 2025.7 시행)",
     isSystem: true,
     isRequired: true,
     grantMethod: "ON_REQUEST",
@@ -143,7 +143,7 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   {
     key: "maternity_multiple",
     name: "산전후 - 본인 (다태아)",
-    description: "다태아 출산 전후 휴가 (120일, 유급)",
+    description: "다태아 출산 전후 휴가 (근로기준법 §74 — 총 120일, 출산 후 60일 이상 확보 / 최초 75일 유급)",
     isSystem: true,
     isRequired: true,
     grantMethod: "ON_REQUEST",
@@ -185,9 +185,9 @@ export const KR_STATUTORY_LEAVE_TYPES: LeaveTypeSeed[] = [
   {
     key: "compensatory",
     name: "보상",
-    description: "연장·야간·휴일 근로에 대한 보상 휴가 (관리자가 직접 부여)",
+    description: "연장·야간·휴일 근로 보상 (근로기준법 §57, 근로자대표 서면합의 / 통상 1.5배·휴일 8h초과 2배 시간 부여)",
     isSystem: true,
-    isRequired: false,
+    isRequired: true,
     grantMethod: "MANUAL",
     grantUnit: "HOUR",
     grantAmount: null,

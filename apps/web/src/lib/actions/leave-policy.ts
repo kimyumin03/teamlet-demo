@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import {
   listLeavePolicies,
   createLeavePolicy,
+  createDefaultLeavePolicy,
   updateLeavePolicy,
   deleteLeavePolicy,
   assignLeavePolicy,
@@ -34,6 +35,12 @@ export async function createLeavePolicyAction(
   if (!parsed.success)
     return { ok: false, error: { code: "VALIDATION", message: parsed.error.errors[0]?.message ?? "입력 오류" } };
   return toApiResponse(await createLeavePolicy(employeeId, parsed.data));
+}
+
+/** 기본 연차 정책 원클릭 생성 — 정책이 없는 회사 부트스트랩. 멱등. */
+export async function createDefaultLeavePolicyAction(): Promise<ApiResponse<{ id: string }>> {
+  const employeeId = await requireEmployee();
+  return toApiResponse(await createDefaultLeavePolicy(employeeId));
 }
 
 export async function updateLeavePolicyAction(

@@ -155,6 +155,7 @@ enum LeaveRequestStatus {
   APPROVED
   REJECTED
   CANCELLED
+  CANCEL_PENDING // 승인 완료 휴가의 취소 승인 대기 (approveOnCancel)
 }
 
 enum LeaveTxCategory {
@@ -366,6 +367,7 @@ model Company {
   appointments      Appointment[]
   announcements     Announcement[]
   approvalPolicies  ApprovalPolicy[]
+  bulkOperations    BulkOperation[]
   // 신청 승인 시 생성된 회사 역참조
   fromApplication CompanyApplication? @relation("CreatedCompany")
 
@@ -548,6 +550,7 @@ model Employee {
   leavePromotions         LeavePromotion[] @relation("EmployeeLeavePromotions")
   recognitionsSent        Recognition[]    @relation("RecognitionSender")
   recognitionsReceived    Recognition[]    @relation("RecognitionRecipient")
+  bulkOperations          BulkOperation[]
 
   @@unique([companyId, axhubExternalId])
   @@index([companyId, employmentStatus])
@@ -798,6 +801,9 @@ model LeaveType {
   // 승인·참조 설정 (맞춤 휴가 설정에서 지정 — 신청 시 자동 적용·고정)
   approverEmployeeId   String?                 // null = 승인 불필요
   ccEmployeeIds        String[]                @default([]) // 참조자
+  // 승인 요청 시점 — 등록 시 승인(기본) / 취소 시 승인(취소 승인 워크플로우)
+  approveOnRegister    Boolean                 @default(true)
+  approveOnCancel      Boolean                 @default(false)
   sortOrder            Int                     @default(0)
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
@@ -934,6 +940,10 @@ model LeaveTransaction {
   leaveType    LeaveType     @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
   leaveRequest LeaveRequest? @relation(fields: [leaveRequestId], references: [id])
   actor        Employee?     @relation("LeaveTransactionActor", fields: [actorId], references: [id])
+
+  /// 맞춤휴가 부여 건의 사용 가능 기간 (GRANT 트랜잭션 전용, null = 언제든 사용 가능)
+  usableFrom   DateTime?     @db.Date
+  usableUntil  DateTime?     @db.Date
 
   @@index([employeeId, leaveTypeId])
   @@index([leaveRequestId])
@@ -1511,4 +1521,65 @@ model FamilyMember {
 
   @@index([employeeId])
   @@map("family_members")
+}
+
+// ─────────────────────────────────────────────────────────────
+// 벌크 처리 인프라 (Anti-Pattern #11 — createMany 직접 호출 금지)
+// ─────────────────────────────────────────────────────────────
+
+enum BulkOperationType {
+  LEAVE_GRANT_IMPORT
+  LEAVE_USAGE_IMPORT
+  EMPLOYEE_CREATE
+}
+
+enum BulkOperationStatus {
+  PENDING
+  PROCESSING
+  DONE
+  PARTIAL
+  FAILED
+}
+
+enum BulkRowStatus {
+  PENDING
+  SUCCESS
+  SKIPPED
+  FAILED
+}
+
+model BulkOperation {
+  id          String              @id @default(cuid())
+  companyId   String
+  type        BulkOperationType
+  status      BulkOperationStatus @default(PENDING)
+  actorId     String
+  totalRows   Int                 @default(0)
+  successRows Int                 @default(0)
+  failedRows  Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  actor   Employee @relation(fields: [actorId], references: [id])
+  rows    BulkOperationRow[]
+
+  @@index([companyId, type])
+  @@index([actorId])
+  @@map("bulk_operations")
+}
+
+model BulkOperationRow {
+  id          String        @id @default(cuid())
+  operationId String
+  rowIndex    Int
+  rawData     Json
+  status      BulkRowStatus @default(PENDING)
+  error       String?
+  createdAt   DateTime      @default(now())
+
+  operation BulkOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+
+  @@index([operationId, rowIndex])
+  @@map("bulk_operation_rows")
 }

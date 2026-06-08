@@ -7,6 +7,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import type { LeavePolicyItem } from "@teamlet/modules/leave";
 import {
   createLeavePolicyAction,
+  createDefaultLeavePolicyAction,
   updateLeavePolicyAction,
   deleteLeavePolicyAction,
 } from "@/lib/actions/leave-policy";
@@ -609,6 +610,21 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees, 
 
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
 
+  // 기본 연차 정책 원클릭 생성 (정책이 0개일 때만 노출)
+  const [creatingDefault, setCreatingDefault] = useState(false);
+  const [defaultError, setDefaultError] = useState<string | null>(null);
+
+  function handleCreateDefault() {
+    setCreatingDefault(true);
+    setDefaultError(null);
+    startTransition(async () => {
+      const res = await createDefaultLeavePolicyAction();
+      setCreatingDefault(false);
+      if (!res.ok) { setDefaultError(res.error.message); return; }
+      router.refresh();
+    });
+  }
+
   async function handleBootstrap() {
     setBootstrapping(true);
     setBootstrapError(null);
@@ -658,9 +674,28 @@ export function LeavePoliciesClient({ initialPolicies, annualTypeId, employees, 
       {policies.length === 0 ? (
         <div style={{
           borderRadius: 14, border: "1px solid var(--border)", padding: "40px 24px",
-          textAlign: "center", fontSize: 13.5, color: "var(--fg-muted)",
+          textAlign: "center",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
         }}>
-          등록된 연차 정책이 없어요. 정책을 추가하고 구성원에게 배정하세요.
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--fg)" }}>등록된 연차 정책이 없어요</div>
+          <div style={{ fontSize: 12.5, color: "var(--fg-muted)", maxWidth: 360, lineHeight: 1.5 }}>
+            근로기준법 기준 <strong>기본 연차 정책</strong>을 한 번에 만들 수 있어요. 만든 뒤 세부 설정을 조정하거나 구성원에게 배정하세요.
+          </div>
+          {defaultError && (
+            <div style={{ fontSize: 12, color: "var(--destructive-600)", fontWeight: 600, marginTop: 2 }}>
+              {defaultError}
+            </div>
+          )}
+          <div style={{ marginTop: 12 }}>
+            <Button onClick={handleCreateDefault} disabled={!annualTypeId || creatingDefault || isPending}>
+              {creatingDefault ? "생성 중…" : "기본 정책 만들기"}
+            </Button>
+          </div>
+          {!annualTypeId && (
+            <div style={{ fontSize: 11.5, color: "var(--fg-subtle)", marginTop: 4 }}>
+              먼저 위에서 "연차 유형 자동 생성"을 진행해 주세요.
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

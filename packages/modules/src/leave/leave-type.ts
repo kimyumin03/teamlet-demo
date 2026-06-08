@@ -244,7 +244,7 @@ export async function deleteLeaveType(
     },
   });
   if (!leaveType) return err(errors.notFound("휴가 종류를 찾을 수 없어요"));
-  if (leaveType.isSystem) return err(errors.conflict("법정 휴가 종류는 삭제할 수 없어요. 비활성화만 가능해요."));
+  if (leaveType.isSystem || leaveType.isRequired) return err(errors.conflict("법정 필수 휴가는 삭제할 수 없어요. 비활성화만 가능해요."));
   if (leaveType._count.leaveBalances > 0) return err(errors.conflict("잔여 내역이 있는 휴가 종류는 삭제할 수 없어요."));
   if (leaveType._count.leavePolicies > 0) return err(errors.conflict("연결된 휴가 정책이 있어요. 정책을 먼저 삭제하세요."));
 

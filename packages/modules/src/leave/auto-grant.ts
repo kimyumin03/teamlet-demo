@@ -19,6 +19,7 @@ import { err, errors, ok, type Result } from "@teamlet/shared";
 import { recordAudit } from "../audit/index";
 import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
+import { completedMonthsSinceHire } from "./leave-date-utils";
 
 const POLICY_MANAGE = "leave.policy.manage";
 
@@ -46,16 +47,7 @@ function roundByRule(v: number, rule: DecimalRule): number {
  *     2025-01-31 입사 → 2025-02-28 = 1개월(말일 응당) / 2025-03-30 = 1개월
  *     2025-06-01 입사 → 2026-06-01 = 12개월(만 1년)
  */
-export function completedMonthsSinceHire(hireDate: Date, asOf: Date): number {
-  let months =
-    (asOf.getUTCFullYear() - hireDate.getUTCFullYear()) * 12 +
-    (asOf.getUTCMonth() - hireDate.getUTCMonth());
-  // asOf 월의 말일 (응당일 보정용)
-  const lastDayOfAsOfMonth = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() + 1, 0)).getUTCDate();
-  const anniversaryDay = Math.min(hireDate.getUTCDate(), lastDayOfAsOfMonth);
-  if (asOf.getUTCDate() < anniversaryDay) months -= 1;
-  return Math.max(0, months);
-}
+export { completedMonthsSinceHire } from "./leave-date-utils";
 
 /**
  * 한국 근로기준법 §60 기준 연차 일수.
