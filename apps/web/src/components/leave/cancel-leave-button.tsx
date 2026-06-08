@@ -12,7 +12,14 @@ export function CancelLeaveButton({ requestId }: { requestId: string }) {
   function handleCancel() {
     startTransition(async () => {
       const res = await cancelLeaveAction(requestId);
-      if (res.ok) router.refresh();
+      if (res.ok) {
+        if (res.data?.pendingApproval) {
+          alert("취소 승인을 요청했어요. 승인자가 확인하면 취소가 완료돼요.");
+        }
+        router.refresh();
+      } else {
+        alert(res.error.message);
+      }
     });
   }
 

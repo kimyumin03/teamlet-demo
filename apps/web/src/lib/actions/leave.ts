@@ -91,7 +91,7 @@ export async function rejectLeaveAction(
   return toApiResponse(result);
 }
 
-export async function cancelLeaveAction(requestId: string): Promise<ApiResponse<void>> {
+export async function cancelLeaveAction(requestId: string): Promise<ApiResponse<{ pendingApproval: boolean }>> {
   const employeeId = await requireEmployee();
   return toApiResponse(await cancelLeave(requestId, employeeId));
 }

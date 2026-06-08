@@ -23,6 +23,7 @@ const STATUS_CLS: Record<LeaveRequestItem["status"], string> = {
   APPROVED: "border-emerald-300 bg-emerald-50 text-emerald-700",
   REJECTED: "border-destructive bg-destructive-50 text-destructive",
   CANCELLED: "border-border bg-background-secondary text-foreground-subtle",
+  CANCEL_PENDING: "border-amber-300 bg-amber-50 text-amber-700",
 };
 const STATUS_LABEL: Record<LeaveRequestItem["status"], string> = {
   DRAFT: "임시저장",
@@ -30,6 +31,7 @@ const STATUS_LABEL: Record<LeaveRequestItem["status"], string> = {
   APPROVED: "승인",
   REJECTED: "반려",
   CANCELLED: "취소",
+  CANCEL_PENDING: "취소 대기",
 };
 
 function fmtDate(d: Date) {

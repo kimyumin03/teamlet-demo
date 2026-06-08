@@ -12,6 +12,7 @@ const STATUS_LABEL: Record<CompanyLeaveRequestItem["status"], string> = {
   APPROVED: "승인",
   REJECTED: "반려",
   CANCELLED: "취소",
+  CANCEL_PENDING: "취소 대기",
 };
 const STATUS_CLASS: Record<CompanyLeaveRequestItem["status"], string> = {
   DRAFT: "bg-background-secondary text-foreground-subtle",
@@ -19,6 +20,7 @@ const STATUS_CLASS: Record<CompanyLeaveRequestItem["status"], string> = {
   APPROVED: "bg-success-50 text-success-700",
   REJECTED: "bg-destructive-50 text-destructive-700",
   CANCELLED: "bg-background-secondary text-foreground-subtle",
+  CANCEL_PENDING: "bg-warning-50 text-warning-700",
 };
 
 const FILTER_TABS = [

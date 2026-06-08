@@ -365,6 +365,16 @@ export async function requestLeave(
 export async function finalizeLeaveFromApprovedDocument(
   documentId: string,
 ): Promise<void> {
+  // 취소 승인 결재 문서면 원 휴가를 취소 처리 (formData.cancelRequestId)
+  const doc = await prisma.formDocument.findUnique({
+    where: { id: documentId }, select: { formData: true },
+  });
+  const cancelReqId = extractCancelRequestId(doc?.formData);
+  if (cancelReqId) {
+    await finalizeCancelApproved(cancelReqId);
+    return;
+  }
+
   const req = await prisma.leaveRequest.findUnique({
     where: { formDocumentId: documentId },
     select: {
@@ -437,6 +447,19 @@ export async function finalizeLeaveFromApprovedDocument(
 export async function finalizeLeaveFromRejectedDocument(
   documentId: string,
 ): Promise<void> {
+  // 취소 승인 결재가 반려되면 원 휴가는 APPROVED 로 복귀 (휴가를 못 쓰게 되는 상황 방지)
+  const doc = await prisma.formDocument.findUnique({
+    where: { id: documentId }, select: { formData: true },
+  });
+  const cancelReqId = extractCancelRequestId(doc?.formData);
+  if (cancelReqId) {
+    await prisma.leaveRequest.updateMany({
+      where: { id: cancelReqId, status: "CANCEL_PENDING" },
+      data: { status: "APPROVED" },
+    });
+    return;
+  }
+
   const req = await prisma.leaveRequest.findUnique({
     where: { formDocumentId: documentId },
     select: { id: true, status: true },
@@ -611,12 +634,18 @@ export async function listCompanyLeaveRequests(
 export async function cancelLeave(
   requestId: string,
   employeeId: string,
-): Promise<Result<void>> {
+): Promise<Result<{ pendingApproval: boolean }>> {
   const req = await prisma.leaveRequest.findUnique({
     where: { id: requestId },
     select: {
-      employeeId: true, leaveTypeId: true, days: true, status: true, startDate: true, formDocumentId: true,
-      leaveType: { select: { key: true, grantMethod: true } },
+      employeeId: true, leaveTypeId: true, days: true, status: true,
+      startDate: true, endDate: true, formDocumentId: true,
+      leaveType: {
+        select: {
+          key: true, grantMethod: true, name: true,
+          approveOnCancel: true, approverEmployeeId: true, ccEmployeeIds: true,
+        },
+      },
     },
   });
   if (!req) return err(errors.notFound("휴가 신청을 찾을 수 없어요"));
@@ -624,6 +653,69 @@ export async function cancelLeave(
   if (!["PENDING", "APPROVED"].includes(req.status))
     return err(errors.validation("취소할 수 없는 상태예요"));
 
+  // 승인 완료 휴가 + 취소 승인 정책 + 승인자 지정 → 취소 승인 요청(즉시 취소하지 않음)
+  if (req.status === "APPROVED" && req.leaveType.approveOnCancel && req.leaveType.approverEmployeeId) {
+    const approverId = req.leaveType.approverEmployeeId;
+    const me = await prisma.employee.findUnique({
+      where: { id: employeeId }, select: { companyId: true, name: true },
+    });
+    if (!me) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
+
+    const startStr = req.startDate.toISOString().slice(0, 10);
+    const endStr = req.endDate.toISOString().slice(0, 10);
+    const cc = req.leaveType.ccEmployeeIds.filter((id) => id !== approverId);
+
+    const created = await prisma.$transaction(async (tx) => {
+      const doc = await tx.formDocument.create({
+        data: {
+          companyId: me.companyId,
+          authorId: employeeId,
+          title: `휴가 취소 신청 — ${req.leaveType.name} ${startStr}${endStr !== startStr ? `~${endStr}` : ""}`,
+          kind: "LEAVE_REQUEST",
+          formData: {
+            cancelRequestId: requestId,
+            leaveTypeName: req.leaveType.name,
+            startDate: startStr,
+            endDate: endStr,
+            days: Number(req.days),
+            reason: "휴가 취소 요청",
+          },
+          status: "IN_PROGRESS",
+        },
+        select: { id: true },
+      });
+      await tx.approvalLine.create({
+        data: { documentId: doc.id, step: 1, approverId, status: "PENDING" },
+      });
+      if (cc.length > 0) {
+        await tx.documentCcRecipient.createMany({
+          data: cc.map((eid) => ({ documentId: doc.id, employeeId: eid })),
+          skipDuplicates: true,
+        });
+      }
+      await tx.leaveRequest.update({
+        where: { id: requestId }, data: { status: "CANCEL_PENDING" },
+      });
+      return { docId: doc.id };
+    });
+
+    // 승인자 알림 (트랜잭션 밖 — 알림 실패가 취소 요청을 무효화하지 않음)
+    await createNotification({
+      companyId: me.companyId,
+      recipientEmployeeId: approverId,
+      category: "APPROVAL",
+      eventKey: `leave_cancel:${requestId}`,
+      title: "휴가 취소 승인 요청",
+      body: `${me.name}님이 ${req.leaveType.name} 취소를 요청했어요.`,
+      deepLink: `/workflow/documents/${created.docId}`,
+      relatedTargetType: "LeaveRequest",
+      relatedTargetId: requestId,
+    }).catch(() => { /* 알림 실패 무시 */ });
+
+    return ok({ pendingApproval: true });
+  }
+
+  // 그 외(결재 중 철회 / 즉시 취소 정책) → 즉시 취소 + 잔여 복원
   const year = req.startDate.getFullYear();
   const wasApproved = req.status === "APPROVED";
   const days = Number(req.days);
@@ -672,5 +764,45 @@ export async function cancelLeave(
       : []),
   ]);
 
-  return ok(undefined);
+  return ok({ pendingApproval: false });
+}
+
+/** 취소 승인 결재가 통과됐을 때 — 원 휴가를 취소하고 잔여 복원. 멱등(CANCEL_PENDING 일 때만). */
+async function finalizeCancelApproved(requestId: string): Promise<void> {
+  const req = await prisma.leaveRequest.findUnique({
+    where: { id: requestId },
+    select: {
+      id: true, employeeId: true, leaveTypeId: true, days: true, status: true, startDate: true,
+      leaveType: { select: { key: true, grantMethod: true } },
+    },
+  });
+  if (!req || req.status !== "CANCEL_PENDING") return;
+
+  const year = req.startDate.getFullYear();
+  const days = Number(req.days);
+  const grantsOnRequest = !isPreGranted(req.leaveType.key, req.leaveType.grantMethod);
+  const txCategory = leaveTxCategory(req.leaveType.key);
+
+  await prisma.$transaction([
+    prisma.leaveRequest.update({ where: { id: req.id }, data: { status: "CANCELLED", reviewedAt: new Date() } }),
+    prisma.leaveTransaction.create({
+      data: {
+        employeeId: req.employeeId, leaveTypeId: req.leaveTypeId,
+        category: txCategory, txType: "ADJUST", days, reason: "휴가 취소 복원(승인)", leaveRequestId: req.id,
+      },
+    }),
+    prisma.leaveBalance.update({
+      where: { employeeId_leaveTypeId_year: { employeeId: req.employeeId, leaveTypeId: req.leaveTypeId, year } },
+      data: { usedDays: { decrement: days }, ...(grantsOnRequest && { grantedDays: { decrement: days } }) },
+    }),
+  ]);
+}
+
+/** FormDocument.formData 에서 취소 요청 원본 ID 추출 (취소 결재 문서 판별). */
+function extractCancelRequestId(formData: unknown): string | undefined {
+  if (formData && typeof formData === "object" && !Array.isArray(formData)) {
+    const v = (formData as Record<string, unknown>).cancelRequestId;
+    if (typeof v === "string") return v;
+  }
+  return undefined;
 }
