@@ -41,7 +41,7 @@ export default async function PostingDetailPage({
   return (
     <div className="flex h-full flex-col">
       {/* 헤더 */}
-      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-5">
+      <div className="shrink-0 px-8 pt-7 pb-3">
         <Link
           href="/recruit"
           className="mb-3 inline-flex items-center gap-1 text-[12px] text-foreground-subtle hover:text-foreground transition-colors"
@@ -51,10 +51,10 @@ export default async function PostingDetailPage({
           </svg>
           채용 목록
         </Link>
-        <div className="flex items-start justify-between gap-4">
+        <div className="page-h" style={{ marginBottom: 0 }}>
           <div>
-            <h1 className="text-[22px] font-bold leading-tight tracking-tight">{posting.title}</h1>
-            <p className="mt-0.5 text-[13px] text-foreground-muted">
+            <h1 className="h-title">{posting.title}</h1>
+            <p className="h-sub mt-1.5">
               담당자 {posting.managerName} · 후보자 {posting.candidates.length}명
             </p>
           </div>
@@ -66,7 +66,7 @@ export default async function PostingDetailPage({
       </div>
 
       {/* 본문 */}
-      <div className="flex-1 overflow-auto px-6 py-6">
+      <div className="flex-1 overflow-auto px-8 py-6">
         {posting.description && (
           <div className="mb-6 rounded-[14px] border border-border bg-background-primary p-5">
             <p className="whitespace-pre-wrap text-[13px] text-foreground">{posting.description}</p>

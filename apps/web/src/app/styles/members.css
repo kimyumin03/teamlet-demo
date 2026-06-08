@@ -1,8 +1,8 @@
 /* members.css — 구성원 디렉터리 · 프로필 드로어 · 초대 마법사 */
 
 /* 레이아웃: 조직 트리 + 본문 */
-.mbr-wrap { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-width: 0; overflow: hidden; }
-.mbr-tree { border-right: 1px solid var(--border); padding: 18px 12px; overflow-y: auto; height: calc(100vh - 49px); background: var(--bg-primary); }
+.mbr-wrap { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-width: 0; overflow: hidden; height: 100%; }
+.mbr-tree { border-right: 1px solid var(--border); padding: 18px 12px; overflow-y: auto; height: 100%; background: var(--bg-primary); }
 .mbr-tree-h { font-size: 10.5px; font-weight: 600; color: var(--fg-subtle); text-transform: uppercase; letter-spacing: 0.06em; padding: 0 8px 8px; }
 .mbr-tree-item { display: flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--fg); cursor: pointer; white-space: nowrap; }
 .mbr-tree-item:hover { background: var(--bg-secondary); }
@@ -12,7 +12,7 @@
 .mbr-tree-item .ct { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; color: var(--fg-subtle); background: var(--bg-tertiary); border-radius: 999px; padding: 1px 7px; }
 .mbr-tree-item.active .ct { background: var(--bg-primary); }
 
-.mbr-main { padding: 28px 32px 40px; overflow-y: auto; min-width: 0; }
+.mbr-main { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
 /* 툴바: 상태 필터 + 검색 + 뷰토글 */
 .mbr-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 18px 0 14px; flex-wrap: wrap; }
@@ -116,4 +116,3 @@
 .iw-csv-preview-h { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; background: var(--bg-secondary); font-size: 12.5px; font-weight: 700; border-bottom: 1px solid var(--border); }
 .iw-csv-preview-h span { font-size: 11px; font-weight: 500; color: var(--success-700); }
 
-.app.dense .mbr-main { padding: 20px 24px 32px; }

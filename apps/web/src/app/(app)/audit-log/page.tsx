@@ -91,15 +91,15 @@ export default async function AuditLogPage({
   return (
     <div className="flex h-full flex-col">
       {/* 헤더 */}
-      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-5">
-        <h1 className="text-[22px] font-bold leading-tight tracking-tight">감사 로그</h1>
-        <p className="mt-0.5 text-[13px] text-foreground-muted">
+      <div className="shrink-0 px-8 pt-7 pb-3">
+        <h1 className="h-title">감사 로그</h1>
+        <p className="h-sub mt-1.5">
           회사 내 활동 이력 · 총 {total.toLocaleString()}건
         </p>
       </div>
 
       {/* 본문 */}
-      <div className="flex-1 overflow-auto px-6 py-6">
+      <div className="flex-1 overflow-auto px-8 pb-10">
         {/* 필터 바 */}
         <div className="mb-4 flex flex-wrap gap-2">
           <form method="get" action="/audit-log" className="flex">

@@ -108,7 +108,7 @@ export default async function DocumentDetailPage({
   return (
     <div className="flex h-full flex-col">
       {/* 헤더 */}
-      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-5">
+      <div className="shrink-0 px-8 pt-7 pb-3">
         <Link
           href="/workflow"
           className="mb-3 inline-flex items-center gap-1 text-[12px] text-foreground-subtle hover:text-foreground transition-colors"
@@ -127,8 +127,8 @@ export default async function DocumentDetailPage({
             {STATUS_LABEL[doc.status]}
           </span>
         </div>
-        <h1 className="text-[22px] font-bold leading-tight tracking-tight">{doc.title}</h1>
-        <p className="mt-0.5 text-[13px] text-foreground-muted">
+        <h1 className="h-title">{doc.title}</h1>
+        <p className="h-sub mt-1.5">
           {doc.authorName} · {formatDateTime(doc.createdAt)}
         </p>
       </div>

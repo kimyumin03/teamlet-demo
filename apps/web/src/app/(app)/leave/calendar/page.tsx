@@ -84,11 +84,11 @@ export default async function LeaveCalendarPage({
   return (
     <div className="flex h-full flex-col">
       {/* 헤더 */}
-      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-5">
-        <div className="flex items-start justify-between gap-4">
+      <div className="shrink-0 px-8 pt-7 pb-3">
+        <div className="page-h" style={{ marginBottom: 0 }}>
           <div>
-            <h1 className="text-[22px] font-bold leading-tight tracking-tight">휴가 캘린더</h1>
-            <p className="mt-0.5 text-[13px] text-foreground-muted">내 휴가와 공휴일을 월별로 확인해요</p>
+            <h1 className="h-title">휴가 캘린더</h1>
+            <p className="h-sub mt-1.5">내 휴가와 공휴일을 월별로 확인해요</p>
           </div>
           <Link
             href="/leave"
@@ -100,7 +100,7 @@ export default async function LeaveCalendarPage({
       </div>
 
       {/* 본문 */}
-      <div className="flex-1 overflow-auto px-6 py-6">
+      <div className="flex-1 overflow-auto px-8 pb-10">
         <div className="mx-auto max-w-5xl flex flex-col gap-4">
 
           {/* 월 이동 */}

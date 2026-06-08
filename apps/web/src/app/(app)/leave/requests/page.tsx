@@ -32,7 +32,7 @@ export default async function LeaveRequestsPage() {
   return (
     <div className="flex h-full flex-col">
       {/* 헤더 */}
-      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-5">
+      <div className="shrink-0 px-8 pt-7 pb-3">
         <Link
           href="/leave"
           className="mb-3 inline-flex items-center gap-1 text-[12px] text-foreground-subtle hover:text-foreground transition-colors"
@@ -42,17 +42,17 @@ export default async function LeaveRequestsPage() {
           </svg>
           내 휴가
         </Link>
-        <div className="flex items-start justify-between gap-4">
+        <div className="page-h" style={{ marginBottom: 0 }}>
           <div>
-            <h1 className="text-[22px] font-bold leading-tight tracking-tight">휴가 승인</h1>
-            <p className="mt-0.5 text-[13px] text-foreground-muted">대기 중인 신청 {requests.length}건</p>
+            <h1 className="h-title">휴가 승인</h1>
+            <p className="h-sub mt-1.5">대기 중인 신청 {requests.length}건</p>
           </div>
           <GrantLeaveButton employees={employees} leaveTypes={leaveTypes} />
         </div>
       </div>
 
       {/* 본문 */}
-      <div className="flex-1 overflow-auto px-6 py-6">
+      <div className="flex-1 overflow-auto px-8 pb-10">
         <div className="mx-auto max-w-2xl flex flex-col gap-3">
           {!result.ok && (
             <p role="alert" className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-4 py-3 text-[13px] text-destructive">

@@ -29,12 +29,12 @@ export default async function OrgChartPage() {
   return (
     <div className="flex h-full flex-col">
       {/* 헤더 */}
-      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-5">
-        <h1 className="text-[22px] font-bold leading-tight tracking-tight">조직도</h1>
+      <div className="shrink-0 px-8 pt-7 pb-3">
+        <h1 className="h-title">조직도</h1>
       </div>
 
       {/* 탭 */}
-      <div className="shrink-0 border-b border-border px-6">
+      <div className="shrink-0 border-b border-border px-8">
         <nav className="flex gap-0">
           <Link
             href="/members"
@@ -52,7 +52,7 @@ export default async function OrgChartPage() {
       </div>
 
       {/* 본문 */}
-      <div className="flex-1 overflow-auto px-6 py-6">
+      <div className="flex-1 overflow-auto px-8 py-6">
         {noAccess ? (
           <div className="flex flex-col items-center gap-2 py-20 text-center">
             <p className="text-[14px] font-medium text-foreground">조직도를 볼 권한이 없어요</p>

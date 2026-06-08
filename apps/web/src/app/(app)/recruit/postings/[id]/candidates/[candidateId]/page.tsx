@@ -45,7 +45,7 @@ export default async function CandidateDetailPage({
   return (
     <div className="flex h-full flex-col">
       {/* 헤더 */}
-      <div className="shrink-0 border-b border-border bg-background-primary px-6 py-5">
+      <div className="shrink-0 px-8 pt-7 pb-3">
         <Link
           href={`/recruit/postings/${postingId}`}
           className="mb-3 inline-flex items-center gap-1 text-[12px] text-foreground-subtle hover:text-foreground transition-colors"
@@ -56,10 +56,10 @@ export default async function CandidateDetailPage({
           {c.posting.title}
         </Link>
 
-        <div className="flex items-start justify-between gap-4">
+        <div className="page-h" style={{ marginBottom: 0 }}>
           <div>
-            <h1 className="text-[22px] font-bold leading-tight tracking-tight">{c.name}</h1>
-            <p className="mt-0.5 text-[13px] text-foreground-muted">{c.email}</p>
+            <h1 className="h-title">{c.name}</h1>
+            <p className="h-sub mt-1.5">{c.email}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <span className={`rounded-[5px] border px-2 py-0.5 font-mono text-[11px] font-semibold ${RESULT_CLS[c.result]}`}>
@@ -75,7 +75,7 @@ export default async function CandidateDetailPage({
       </div>
 
       {/* 본문 */}
-      <div className="flex-1 overflow-auto px-6 py-6">
+      <div className="flex-1 overflow-auto px-8 py-6">
         <div className="mx-auto max-w-2xl flex flex-col gap-4">
 
           {/* 기본 정보 */}

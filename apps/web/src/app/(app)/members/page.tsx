@@ -91,34 +91,12 @@ export default async function MembersPage({
   const departments = departmentsResult.ok ? departmentsResult.data : [];
   const positions = positionsResult.ok ? positionsResult.data : [];
 
-  // KPI stats
+  // 헤더 요약 통계
   const employedCount = allEmployees.filter(
     (e) => e.employmentStatus === "ACTIVE" || e.employmentStatus === "PROBATION" || e.employmentStatus === "SECONDED",
   ).length;
   const onLeaveCount = allEmployees.filter((e) => e.employmentStatus === "ON_LEAVE").length;
   const scheduledCount = allEmployees.filter((e) => e.employmentStatus === "SCHEDULED").length;
-  const fullTimeCount = allEmployees.filter(
-    (e) => (e.employmentStatus === "ACTIVE" || e.employmentStatus === "PROBATION") && e.employmentType === "FULL_TIME",
-  ).length;
-  const contractCount = allEmployees.filter(
-    (e) => (e.employmentStatus === "ACTIVE" || e.employmentStatus === "PROBATION") && e.employmentType === "CONTRACT",
-  ).length;
-  const now = new Date();
-  const newHiresCount = allEmployees.filter((e) => {
-    if (!e.hireDate) return false;
-    const d = new Date(e.hireDate);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  }).length;
-  // 온보딩 완료 = 입사 후 30일 이상 경과
-  const onboardedCount = allEmployees.filter((e) => {
-    if (!e.hireDate) return false;
-    const diff = (now.getTime() - new Date(e.hireDate).getTime()) / 86400000;
-    return diff >= 30 && (e.employmentStatus === "ACTIVE" || e.employmentStatus === "PROBATION");
-  }).length;
-  // 역할 없는 구성원 (일반 권한 미배정)
-  const noRoleCount = allEmployees.filter(
-    (e) => !e.roleName && (e.employmentStatus === "ACTIVE" || e.employmentStatus === "PROBATION"),
-  ).length;
 
   const filtered = allEmployees.filter((e) => {
     if (selected === UNASSIGNED && e.departmentId) return false;
@@ -153,160 +131,138 @@ export default async function MembersPage({
       />
 
       <div className="mbr-main">
-      {pendingMembers.length > 0 && <PendingJoinPanel items={pendingMembers} />}
+        {/* 고정: 대기 중인 가입 신청 */}
+        {pendingMembers.length > 0 && (
+          <div className="shrink-0">
+            <PendingJoinPanel items={pendingMembers} />
+          </div>
+        )}
 
-      {/* 헤더 */}
-      <div className="page-h">
-        <div>
-          <h1 className="h-title">구성원</h1>
-          <div className="h-sub">
-            전체 {allEmployees.length}명
-            {employedCount > 0 && ` · 재직 ${employedCount}`}
-            {onLeaveCount > 0 && ` · 휴직 ${onLeaveCount}`}
-            {scheduledCount > 0 && ` · 입사예정 ${scheduledCount}`}
+        {/* 고정: 헤더 */}
+        <div className="shrink-0 px-8 pt-7 pb-3">
+          <div className="page-h" style={{ marginBottom: 0 }}>
+            <div>
+              <h1 className="h-title">구성원</h1>
+              <div className="h-sub">
+                전체 {allEmployees.length}명
+                {employedCount > 0 && ` · 재직 ${employedCount}`}
+                {onLeaveCount > 0 && ` · 휴직 ${onLeaveCount}`}
+                {scheduledCount > 0 && ` · 입사예정 ${scheduledCount}`}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <div className="vtog">
+                <Link href={listHref} className={`v${view === "list" ? " active" : ""}`}>
+                  <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+                  리스트
+                </Link>
+                <Link href={orgHref} className={`v${view === "org" ? " active" : ""}`}>
+                  <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></svg>
+                  조직도
+                </Link>
+              </div>
+              <AddPositionButton />
+              <AddDepartmentButton departments={departments} />
+              <AddMemberButton
+                departments={departments}
+                positions={positions}
+                defaultDepartmentId={selected && selected !== UNASSIGNED ? selected : null}
+              />
+            </div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {/* 뷰 토글 */}
-          <div className="vtog">
-            <Link href={listHref} className={`v${view === "list" ? " active" : ""}`}>
-              <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-              리스트
-            </Link>
-            <Link href={orgHref} className={`v${view === "org" ? " active" : ""}`}>
-              <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></svg>
-              조직도
-            </Link>
-          </div>
-          <AddPositionButton />
-          <AddDepartmentButton departments={departments} />
-          <AddMemberButton
-            departments={departments}
-            positions={positions}
-            defaultDepartmentId={selected && selected !== UNASSIGNED ? selected : null}
-          />
-        </div>
-      </div>
 
-      {/* KPI 카드 4개 */}
-      <div className="kpis">
-        <div className="kpi">
-          <span className="lbl">재직</span>
-          <span className="val num">{employedCount}<small>명</small></span>
-          <span className="delta">정규 {fullTimeCount} · 계약 {contractCount}</span>
+        {/* 고정: 필터 바 */}
+        <div className="shrink-0 px-8 pb-3">
+          <Suspense>
+            <MembersFilterBar initialQ={query} />
+          </Suspense>
         </div>
-        <div className="kpi">
-          <span className="lbl">이번달 입사</span>
-          <span className="val num">{newHiresCount}<small>명</small></span>
-          <span className="delta">
-            {newHiresCount > 0
-              ? `온보딩 완료 ${Math.min(onboardedCount, newHiresCount)} / ${newHiresCount}`
-              : `${now.getMonth() + 1}월 신규 없음`}
-          </span>
-        </div>
-        <div className="kpi">
-          <span className="lbl">휴직</span>
-          <span className="val num">{onLeaveCount}<small>명</small></span>
-          <span className="delta">{scheduledCount > 0 ? `입사예정 ${scheduledCount}명` : "입사예정 없음"}</span>
-        </div>
-        <div className={`kpi${noRoleCount > 0 ? " cta" : ""}`}>
-          <span className="lbl">권한 미배정</span>
-          <span className="val num">{noRoleCount}<small>명</small></span>
-          <span className="delta">
-            {noRoleCount > 0 ? "역할 배정 필요 →" : "모두 배정됨"}
-          </span>
-        </div>
-      </div>
 
-      {/* 필터 바 */}
-      <div className="filters" style={{ marginBottom: "14px" }}>
-        <Suspense>
-          <MembersFilterBar initialQ={query} />
-        </Suspense>
-      </div>
-
-      {/* 콘텐츠 */}
-      {view === "org" ? (
-        <div style={{ padding: "8px 0" }}>
-          {departments.length === 0 ? (
+        {/* 스크롤: 구성원 목록 */}
+        <div className="flex-1 overflow-auto px-8 pb-10">
+          {view === "org" ? (
+            <>
+              {departments.length === 0 ? (
+                <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--fg-muted)" }}>
+                  <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "6px" }}>등록된 부서가 없어요</div>
+                  <div style={{ fontSize: "12.5px" }}>부서를 먼저 추가해 주세요.</div>
+                </div>
+              ) : (
+                <OrgTree departments={departments} employees={orgEmployees} />
+              )}
+            </>
+          ) : filtered.length === 0 ? (
             <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--fg-muted)" }}>
-              <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "6px" }}>등록된 부서가 없어요</div>
-              <div style={{ fontSize: "12.5px" }}>부서를 먼저 추가해 주세요.</div>
+              <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "6px" }}>
+                {query ? "검색 결과가 없어요" : "구성원이 없어요"}
+              </div>
+              <div style={{ fontSize: "12.5px" }}>
+                {query ? "다른 키워드로 검색해 보세요." : "우측 상단 '구성원 추가'로 등록할 수 있어요."}
+              </div>
             </div>
           ) : (
-            <OrgTree departments={departments} employees={orgEmployees} />
+            <>
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th style={{ width: "32px" }}><span className="cb-box" /></th>
+                    <th style={{ width: "22%" }}>이름</th>
+                    <th>사번</th>
+                    <th>이메일</th>
+                    <th>조직 · 직책</th>
+                    <th>입사일</th>
+                    <th>근로유형</th>
+                    <th>상태</th>
+                    <th>권한</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((emp) => (
+                    <tr key={emp.id} style={emp.employmentStatus === "RESIGNED" ? { opacity: 0.5 } : undefined}>
+                      <td><span className="cb-box" /></td>
+                      <td>
+                        <Link href={`/members/${emp.id}`} className="ppl" style={{ textDecoration: "none" }}>
+                          <div className="av">{emp.name.slice(-2)}</div>
+                          <div>
+                            <div className="n">{emp.name}</div>
+                            <div className="m" style={{ fontSize: "11.5px" }}>{emp.companyEmail ?? emp.departmentName ?? "—"}</div>
+                          </div>
+                        </Link>
+                      </td>
+                      <td><span className="sn">{emp.employeeNumber ?? "—"}</span></td>
+                      <td>
+                        <span style={{ fontSize: "12.5px", color: "var(--fg-muted)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                          {emp.companyEmail ?? "—"}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="role-cell">
+                          <div className="r">{emp.departmentName ?? "—"}</div>
+                          {emp.positionName && <div className="o">{emp.positionName}</div>}
+                        </div>
+                      </td>
+                      <td><span className="sn">{formatHireDate(emp.hireDate)}</span></td>
+                      <td><span className="tag">{EMP_TYPE_LABEL[emp.employmentType] ?? "—"}</span></td>
+                      <td><span className={`st ${STATUS_CLS[emp.employmentStatus]}`}>{STATUS_LABEL[emp.employmentStatus]}</span></td>
+                      <td>
+                        {emp.roleName ? (
+                          <span className="tag adm">{emp.roleName}</span>
+                        ) : (
+                          <span className="tag" style={{ color: "var(--fg-subtle)" }}>일반</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div style={{ marginTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
+                <span>{filtered.length}명 표시{filtered.length !== allEmployees.length && ` (전체 ${allEmployees.length}명)`}</span>
+                <span>1 – {filtered.length}</span>
+              </div>
+            </>
           )}
         </div>
-      ) : filtered.length === 0 ? (
-        <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--fg-muted)" }}>
-          <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--fg)", marginBottom: "6px" }}>
-            {query ? "검색 결과가 없어요" : "구성원이 없어요"}
-          </div>
-          <div style={{ fontSize: "12.5px" }}>
-            {query ? "다른 키워드로 검색해 보세요." : "우측 상단 '구성원 추가'로 등록할 수 있어요."}
-          </div>
-        </div>
-      ) : (
-        <>
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th style={{ width: "32px" }}><span className="cb-box" /></th>
-                <th style={{ width: "22%" }}>이름</th>
-                <th>사번</th>
-                <th>이메일</th>
-                <th>조직 · 직책</th>
-                <th>입사일</th>
-                <th>근로유형</th>
-                <th>상태</th>
-                <th>권한</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((emp) => (
-                <tr key={emp.id} style={emp.employmentStatus === "RESIGNED" ? { opacity: 0.5 } : undefined}>
-                  <td><span className="cb-box" /></td>
-                  <td>
-                    <Link href={`/members/${emp.id}`} className="ppl" style={{ textDecoration: "none" }}>
-                      <div className="av">{emp.name.slice(-2)}</div>
-                      <div>
-                        <div className="n">{emp.name}</div>
-                        <div className="m" style={{ fontSize: "11.5px" }}>{emp.companyEmail ?? emp.departmentName ?? "—"}</div>
-                      </div>
-                    </Link>
-                  </td>
-                  <td><span className="sn">{emp.employeeNumber ?? "—"}</span></td>
-                  <td>
-                    <span style={{ fontSize: "12.5px", color: "var(--fg-muted)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
-                      {emp.companyEmail ?? "—"}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="role-cell">
-                      <div className="r">{emp.departmentName ?? "—"}</div>
-                      {emp.positionName && <div className="o">{emp.positionName}</div>}
-                    </div>
-                  </td>
-                  <td><span className="sn">{formatHireDate(emp.hireDate)}</span></td>
-                  <td><span className="tag">{EMP_TYPE_LABEL[emp.employmentType] ?? "—"}</span></td>
-                  <td><span className={`st ${STATUS_CLS[emp.employmentStatus]}`}>{STATUS_LABEL[emp.employmentStatus]}</span></td>
-                  <td>
-                    {emp.roleName ? (
-                      <span className="tag adm">{emp.roleName}</span>
-                    ) : (
-                      <span className="tag" style={{ color: "var(--fg-subtle)" }}>일반</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div style={{ marginTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
-            <span>{filtered.length}명 표시{filtered.length !== allEmployees.length && ` (전체 ${allEmployees.length}명)`}</span>
-            <span>1 – {filtered.length}</span>
-          </div>
-        </>
-      )}
       </div>
     </div>
   );
