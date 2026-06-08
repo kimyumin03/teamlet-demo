@@ -8,6 +8,7 @@ import {
   createLeaveTypeAction,
   updateLeaveTypeAction,
   deleteLeaveTypeAction,
+  bootstrapLeaveTypesAction,
 } from "@/lib/actions/leave-type";
 import type { LeaveTypeFullItem } from "@teamlet/modules/leave";
 import { RecipientPickerRow, type PickerEmployee, type PickerDepartment } from "@/components/common/recipient-picker";
@@ -678,6 +679,18 @@ export function LeaveTypesClient({
     });
   }
 
+  const [statBootstrapping, setStatBootstrapping] = useState(false);
+  function handleBootstrapStatutory() {
+    if (!confirm("법정의무휴가(연차·출산전후·배우자출산·난임·가족돌봄 등)를 일괄 등록할까요? 이미 등록된 휴가는 건너뜁니다.")) return;
+    setStatBootstrapping(true);
+    startTransition(async () => {
+      const res = await bootstrapLeaveTypesAction();
+      setStatBootstrapping(false);
+      if (res.ok) router.refresh();
+      else alert(res.error ?? "법정의무휴가 등록에 실패했어요");
+    });
+  }
+
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
@@ -685,9 +698,14 @@ export function LeaveTypesClient({
           <h3 className="text-[15px] font-bold text-foreground">휴가 종류</h3>
           <p className="mt-0.5 text-[12.5px] text-foreground-muted">법정 종류는 삭제할 수 없어요. 비활성화만 가능합니다.</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-1.5 h-3.5 w-3.5" /> 맞춤 휴가 추가
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={handleBootstrapStatutory} disabled={statBootstrapping || isPending}>
+            {statBootstrapping ? "등록 중…" : "법정의무휴가 추가"}
+          </Button>
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> 맞춤 휴가 추가
+          </Button>
+        </div>
       </div>
 
       {types.length === 0 ? (
