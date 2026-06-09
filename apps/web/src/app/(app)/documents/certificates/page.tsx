@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { listMyCertificates } from "@teamlet/modules/document";
+import { listMyCertificates, listCertificateTemplates } from "@teamlet/modules/document";
 import { listEmployees } from "@teamlet/modules/employee";
+import { hasPermission } from "@teamlet/modules/permission";
 import { IssueCertificateButton } from "@/components/document/issue-certificate-button";
 
 export const dynamic = "force-dynamic";
@@ -13,14 +14,21 @@ const TYPE_TAG = { EMPLOYMENT: "tag ok", CAREER: "tag wfh" } as const;
 export default async function CertificatesPage() {
   const session = await auth();
   if (!session?.user?.employeeId) redirect("/login");
+  const employeeId = session.user.employeeId;
 
-  const [certResult, empResult] = await Promise.all([
-    listMyCertificates(session.user.employeeId),
-    listEmployees(session.user.employeeId),
+  const canManage = await hasPermission(employeeId, "document.certificate.manage");
+
+  const [certResult, empResult, tplResult] = await Promise.all([
+    listMyCertificates(employeeId),
+    canManage ? listEmployees(employeeId) : Promise.resolve(null),
+    listCertificateTemplates(employeeId),
   ]);
 
   const certs = certResult.ok ? certResult.data : [];
-  const employees = empResult.ok ? empResult.data : [];
+  const employees = canManage && empResult?.ok
+    ? empResult.data
+    : [{ id: employeeId, name: session.user.name ?? "나" }];
+  const templates = tplResult.ok ? tplResult.data : [];
 
   return (
     <div className="page-body">
@@ -34,14 +42,38 @@ export default async function CertificatesPage() {
         ← 문서·증명서
       </Link>
 
-      {/* 헤더 */}
       <div className="page-h">
         <div>
           <h1 className="h-title">증명서 발급</h1>
-          <div className="h-sub">재직·경력증명서를 발급하고 인쇄할 수 있어요</div>
+          <div className="h-sub">회사 공용 문서를 발급할 수 있어요</div>
         </div>
-        <IssueCertificateButton employees={employees} selfEmployeeId={session.user.employeeId} />
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {canManage && (
+            <Link href="/documents/certificates/settings" className="btn btn-outline sm">
+              종류 설정
+            </Link>
+          )}
+          <IssueCertificateButton
+            employees={employees}
+            selfEmployeeId={employeeId}
+            templates={templates}
+          />
+        </div>
       </div>
+
+      {canManage && templates.length === 0 && (
+        <div style={{
+          margin: "0 0 16px", padding: "12px 16px", borderRadius: 10,
+          background: "var(--bg-warn, #fffbeb)", border: "1px solid var(--border-warn, #fde68a)",
+          fontSize: "13px", color: "var(--fg-warn, #92400e)",
+        }}>
+          아직 등록된 증명서 종류가 없어요.{" "}
+          <Link href="/documents/certificates/settings" style={{ fontWeight: 600, color: "inherit" }}>
+            종류 설정
+          </Link>
+          에서 먼저 증명서 종류를 추가해주세요.
+        </div>
+      )}
 
       <div className="sec-divider">
         발급 이력<span className="ct">{certs.length}</span><span className="line" />

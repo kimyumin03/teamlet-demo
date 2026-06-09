@@ -1,9 +1,9 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors } from "@teamlet/shared";
 import type { Result } from "@teamlet/shared";
-import { catchDomainErr } from "../permission/_actor";
+import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
-import type { CertificateIssueItem, CertificateDetail, IssueCertificateInput } from "./types";
+import type { CertificateIssueItem, CertificateDetail, IssueCertificateInput, CertificateTemplateItem, CreateCertificateTemplateInput } from "./types";
 
 const CERTIFICATE_MANAGE = "document.certificate.manage";
 
@@ -14,6 +14,81 @@ function generateIssueNumber(type: string): string {
   const rand = Math.floor(Math.random() * 9000) + 1000;
   return `${prefix}-${ymd}-${rand}`;
 }
+
+// ── 템플릿 관리 (관리자 전용) ────────────────────────────────────────────
+
+/** 회사에 등록된 증명서 종류 목록 — 모든 직원 열람 가능 (발급 선택용) */
+export async function listCertificateTemplates(
+  employeeId: string,
+): Promise<Result<CertificateTemplateItem[]>> {
+  const actor = await loadActor(employeeId);
+  if (!actor) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
+
+  const templates = await prisma.certificateTemplate.findMany({
+    where: { companyId: actor.companyId, isActive: true },
+    select: { id: true, name: true, certType: true, fileUrl: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+  });
+
+  return ok(templates.map((t) => ({ id: t.id, name: t.name, certType: t.certType, fileUrl: t.fileUrl })));
+}
+
+/** 증명서 종류 등록 — document.certificate.manage 필요 */
+export async function createCertificateTemplate(
+  actorId: string,
+  input: CreateCertificateTemplateInput,
+): Promise<Result<CertificateTemplateItem>> {
+  const actor = await loadActor(actorId);
+  if (!actor) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
+
+  try {
+    await assertPermission(actorId, CERTIFICATE_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  if (!input.name.trim()) return err(errors.validation("종류 이름을 입력해주세요"));
+
+  if (!input.fileUrl.trim()) return err(errors.validation("파일 URL을 입력해주세요"));
+
+  const t = await prisma.certificateTemplate.create({
+    data: { companyId: actor.companyId, name: input.name.trim(), certType: input.certType, fileUrl: input.fileUrl.trim() },
+    select: { id: true, name: true, certType: true, fileUrl: true },
+  });
+
+  return ok({ id: t.id, name: t.name, certType: t.certType, fileUrl: t.fileUrl });
+}
+
+/** 증명서 종류 삭제(비활성화) — document.certificate.manage 필요 */
+export async function deleteCertificateTemplate(
+  actorId: string,
+  templateId: string,
+): Promise<Result<void>> {
+  try {
+    await assertPermission(actorId, CERTIFICATE_MANAGE);
+  } catch (e) {
+    return catchDomainErr(e);
+  }
+
+  const actor = await loadActor(actorId);
+  if (!actor) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
+
+  const template = await prisma.certificateTemplate.findUnique({
+    where: { id: templateId },
+    select: { companyId: true },
+  });
+  if (!template || template.companyId !== actor.companyId)
+    return err(errors.notFound("증명서 종류를 찾을 수 없어요"));
+
+  await prisma.certificateTemplate.update({
+    where: { id: templateId },
+    data: { isActive: false },
+  });
+
+  return ok(undefined);
+}
+
+// ── 발급 이력 ────────────────────────────────────────────────────────────
 
 export async function listMyCertificates(employeeId: string): Promise<Result<CertificateIssueItem[]>> {
   const issues = await prisma.certificateIssue.findMany({
@@ -39,12 +114,15 @@ export async function getCertificate(employeeId: string, issueId: string): Promi
       id: true, type: true, issueNumber: true, purpose: true, createdAt: true,
       snapshotData: true,
       employee: { select: { name: true, id: true } },
-      issuer: { select: { name: true } },
+      issuer: { select: { name: true, id: true } },
     },
   });
 
   if (!issue) return err(errors.notFound("증명서를 찾을 수 없어요"));
-  if (issue.employee.id !== employeeId) return err(errors.forbidden("본인 증명서만 조회할 수 있어요"));
+  // 대상자 본인 또는 발급자(관리자) 조회 허용
+  const isTarget = issue.employee.id === employeeId;
+  const isIssuer = issue.issuer.id === employeeId;
+  if (!isTarget && !isIssuer) return err(errors.forbidden("본인 증명서 또는 직접 발급한 증명서만 조회할 수 있어요"));
 
   return ok({
     id: issue.id, type: issue.type, issueNumber: issue.issueNumber, purpose: issue.purpose,
@@ -53,25 +131,36 @@ export async function getCertificate(employeeId: string, issueId: string): Promi
   });
 }
 
+// ── 발급 ────────────────────────────────────────────────────────────────
+
 export async function issueCertificate(
   issuerId: string,
   input: IssueCertificateInput,
-): Promise<Result<{ id: string; issueNumber: string }>> {
-  try {
-    await assertPermission(issuerId, CERTIFICATE_MANAGE);
-  } catch (e) {
-    return catchDomainErr(e);
+): Promise<Result<{ id: string; issueNumber: string; fileUrl: string }>> {
+  // 본인 발급 = 권한 불필요 / 타인 발급 = document.certificate.manage 필요
+  const isSelf = input.employeeId === issuerId;
+  if (!isSelf) {
+    try {
+      await assertPermission(issuerId, CERTIFICATE_MANAGE);
+    } catch (e) {
+      return catchDomainErr(e);
+    }
   }
 
   const issuer = await prisma.employee.findUnique({ where: { id: issuerId }, select: { companyId: true, name: true } });
   if (!issuer) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
 
+  // 템플릿 조회 — 같은 회사 소속 + 활성 상태 검증
+  const template = await prisma.certificateTemplate.findUnique({
+    where: { id: input.templateId },
+    select: { companyId: true, certType: true, name: true, isActive: true, fileUrl: true },
+  });
+  if (!template || !template.isActive || template.companyId !== issuer.companyId)
+    return err(errors.notFound("등록된 증명서 종류를 찾을 수 없어요. 관리자에게 문의하세요."));
+
   const target = await prisma.employee.findUnique({
     where: { id: input.employeeId },
-    select: {
-      companyId: true, name: true, hireDate: true, isActive: true,
-      departmentId: true, positionId: true,
-    },
+    select: { companyId: true, name: true, hireDate: true, isActive: true, departmentId: true, positionId: true },
   });
   if (!target) return err(errors.notFound("대상 직원을 찾을 수 없어요"));
   if (target.companyId !== issuer.companyId) return err(errors.forbidden("같은 회사 직원만 발급할 수 있어요"));
@@ -83,7 +172,7 @@ export async function issueCertificate(
     target.positionId ? prisma.position.findUnique({ where: { id: target.positionId }, select: { name: true } }) : null,
   ]);
 
-  const issueNumber = generateIssueNumber(input.type);
+  const issueNumber = generateIssueNumber(template.certType);
   const snapshotData = {
     name: target.name,
     departmentName: dept?.name ?? null,
@@ -91,13 +180,14 @@ export async function issueCertificate(
     hiredAt: target.hireDate?.toISOString() ?? null,
     isActive: target.isActive,
     issuedAt: new Date().toISOString(),
+    templateName: template.name,
   };
 
   const issue = await prisma.certificateIssue.create({
     data: {
       employeeId: input.employeeId,
       issuerId,
-      type: input.type,
+      type: template.certType,
       issueNumber,
       purpose: input.purpose.trim(),
       snapshotData,
@@ -105,5 +195,5 @@ export async function issueCertificate(
     select: { id: true, issueNumber: true },
   });
 
-  return ok({ id: issue.id, issueNumber: issue.issueNumber });
+  return ok({ id: issue.id, issueNumber: issue.issueNumber, fileUrl: template.fileUrl });
 }

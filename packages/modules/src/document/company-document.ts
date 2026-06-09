@@ -5,7 +5,6 @@ import { catchDomainErr } from "../permission/_actor";
 import { assertPermission, hasPermission } from "../permission/assert";
 import type { CompanyDocumentItem, CreateCompanyDocumentInput } from "./types";
 
-const ARCHIVE_READ = "document.company_archive.read";
 const ARCHIVE_MANAGE = "document.company_archive.manage";
 
 export async function listCompanyDocuments(employeeId: string): Promise<Result<CompanyDocumentItem[]>> {
@@ -13,7 +12,7 @@ export async function listCompanyDocuments(employeeId: string): Promise<Result<C
   if (!emp) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
 
   // 문서함 관리 권한자는 비공개 문서까지, 일반 직원은 공개 문서만
-  const canSeeAll = await hasPermission(employeeId, ARCHIVE_READ);
+  const canSeeAll = await hasPermission(employeeId, ARCHIVE_MANAGE);
 
   const docs = await prisma.companyDocument.findMany({
     where: {

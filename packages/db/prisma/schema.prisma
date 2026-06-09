@@ -368,6 +368,7 @@ model Company {
   announcements     Announcement[]
   approvalPolicies  ApprovalPolicy[]
   bulkOperations    BulkOperation[]
+  certificateTemplates CertificateTemplate[]
   // 신청 승인 시 생성된 회사 역참조
   fromApplication CompanyApplication? @relation("CreatedCompany")
 
@@ -1295,6 +1296,24 @@ model CertificateIssue {
 
   @@index([employeeId])
   @@map("certificate_issues")
+}
+
+/// 회사가 등록한 증명서 종류. 관리자(document.certificate.manage)가 등록 → 직원이 선택해 발급.
+/// 미등록 상태에서는 발급 목록이 비어 있음(기본값 없음).
+model CertificateTemplate {
+  id        String          @id @default(cuid())
+  companyId String
+  name      String
+  certType  CertificateType
+  fileUrl   String
+  isActive  Boolean         @default(true)
+  sortOrder Int             @default(0)
+  createdAt DateTime        @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, isActive])
+  @@map("certificate_templates")
 }
 
 // ─────────────────────────────────────────────────────────────

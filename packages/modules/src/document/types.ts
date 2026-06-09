@@ -33,6 +33,19 @@ export type CreateCompanyDocumentInput = {
 
 export type IssueCertificateInput = {
   employeeId: string;
-  type: CertificateType;
+  templateId: string;
   purpose: string;
+};
+
+export type CertificateTemplateItem = {
+  id: string;
+  name: string;
+  certType: CertificateType;
+  fileUrl: string;
+};
+
+export type CreateCertificateTemplateInput = {
+  name: string;
+  certType: CertificateType;
+  fileUrl: string;
 };
