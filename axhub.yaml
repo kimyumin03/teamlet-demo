@@ -1,9 +1,0 @@
-app:
-  slug: teamlet
-  name: teamlet
-framework: nextjs
-target: auto
-deploy:
-  method: docker
-  port: 3000
-  commands: []
