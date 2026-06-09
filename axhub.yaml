@@ -1,10 +1,10 @@
-app:
-  slug: teamlet
-  name: teamlet
-framework: docker
-target: auto
-deploy:
-  method: docker
-  dockerfile: Dockerfile
+version: axhub/v1
+name: teamlet
+runtime:
   port: 3000
-  commands: []
+  health_path: /api/health
+build:
+  strategy: auto
+  framework: docker
+  deploy_method: docker
+  dockerfile: Dockerfile
