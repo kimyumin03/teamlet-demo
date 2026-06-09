@@ -4,7 +4,6 @@ app:
   name: teamlet
 build:
   framework: nextjs
-  dockerfile: Dockerfile
 runtime:
   port: 3000
   health_path: /api/auth/session
