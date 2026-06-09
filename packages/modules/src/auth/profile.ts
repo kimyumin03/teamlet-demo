@@ -54,6 +54,18 @@ export async function updateUserProfile(
     },
   });
 
+  // 연결된 Employee 레코드에도 phone 동기화
+  const membership = await prisma.userCompanyMembership.findFirst({
+    where: { userId, status: "ACTIVE", employeeId: { not: null } },
+    select: { employeeId: true },
+  });
+  if (membership?.employeeId) {
+    await prisma.employee.update({
+      where: { id: membership.employeeId },
+      data: { phone: parsed.data.phone || null },
+    });
+  }
+
   return ok(undefined);
 }
 

@@ -56,15 +56,13 @@ const BUSINESS_NUMBER = "000-00-00000";
 const DEFAULT_ROLE_KEYS = [
   "member.directory.read",
   "leave.balance.read",
-  "workflow.document.read",
   "company.basic_info.read",
 ];
 
 const ORG_HEAD_ROLE_KEYS = [
   "member.directory.read",
-  "member.hr_info.read",
   "leave.balance.read",
-  "workflow.document.read",
+  "workflow.template.read",
 ];
 
 /** hireDate 기준 연차일수 (근속 1년 미만=11일, 이후 1년마다 +1, 최대 25일) */
@@ -313,7 +311,7 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
     });
 
     // HR 관리자 → 인사/휴가 관리 권한
-    const hrKeys = ["member.directory.read", "member.hr_info.read", "leave.balance.read", "leave.balance.manage", "workflow.document.read", "workflow.document.manage", "company.basic_info.read"];
+    const hrKeys = ["member.directory.read", "member.directory.manage", "leave.balance.read", "leave.balance.manage", "leave.policy.read", "company.basic_info.read"];
     const hrPerms = allPerms.filter((p) => hrKeys.includes(p.key));
     await prisma.rolePermission.createMany({
       data: hrPerms.map((p) => ({ roleId: hrAdminRole.id, permissionId: p.id, enabled: true, scopeType: p.hasScope ? "ALL" : null })),

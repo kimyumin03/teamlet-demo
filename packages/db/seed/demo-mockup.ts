@@ -4,7 +4,7 @@
  *
  * ┌──────────────────────────────────────────────────────────────┐
  * │ 체험 계정                                                     │
- * │   demo@teamlet.io  →  한지민 / 경영지원팀 팀장 (최고 관리자)  │
+ * │   demo@teamlet.io  →  김관리 / 경영지원팀 팀장 (최고 관리자)  │
  * │                       비밀번호: Demo1234!                     │
  * │                                                              │
  * │ 온보딩 체험 — DB 는 구성원·조직·권한만(깨끗한 신규 회사).     │
@@ -46,7 +46,7 @@ export async function seedDemoMockup(prisma: PrismaClient): Promise<void> {
   // ── 1. 체험 계정 (demo@teamlet.io) ────────────────────────────
   const demoUser = await prisma.user.upsert({
     where: { email: DEMO_EMAIL },
-    create: { email: DEMO_EMAIL, name: "한지민", passwordHash: adminPw, emailVerified: true },
+    create: { email: DEMO_EMAIL, name: "김관리", passwordHash: adminPw, emailVerified: true },
     update: {},
     select: { id: true },
   });
@@ -77,7 +77,7 @@ export async function seedDemoMockup(prisma: PrismaClient): Promise<void> {
   ]);
 
   // ── 5. 직원 15명 (전원 여기서 생성 — 계정 연결은 6번에서) ────────
-  // index 12 (한지민) = demo@teamlet.io 연결 대상 (최고 관리자)
+  // index 12 (김관리) = demo@teamlet.io 연결 대상 (최고 관리자)
   const roster: Array<{ name: string; hireDate: Date; deptId: string; posId: string }> = [
     { name: "강태준", hireDate: new Date("2019-05-01T00:00:00.000Z"), deptId: finDept.id,    posId: ceoPos.id    }, // 0  대표이사 (계정 없음)
     { name: "최영수", hireDate: new Date("2020-09-01T00:00:00.000Z"), deptId: devDept.id,    posId: leadPos.id   }, // 1
@@ -91,7 +91,7 @@ export async function seedDemoMockup(prisma: PrismaClient): Promise<void> {
     { name: "조민서", hireDate: new Date("2023-08-01T00:00:00.000Z"), deptId: mktDept.id,    posId: memberPos.id }, // 9
     { name: "송유진", hireDate: new Date("2020-03-02T00:00:00.000Z"), deptId: hrDept.id,     posId: leadPos.id   }, // 10
     { name: "오채원", hireDate: new Date("2022-05-16T00:00:00.000Z"), deptId: hrDept.id,     posId: memberPos.id }, // 11
-    { name: "한지민", hireDate: new Date("2020-07-01T00:00:00.000Z"), deptId: finDept.id,    posId: leadPos.id   }, // 12 ← demo@teamlet.io
+    { name: "김관리", hireDate: new Date("2020-07-01T00:00:00.000Z"), deptId: finDept.id,    posId: leadPos.id   }, // 12 ← demo@teamlet.io
     { name: "임도현", hireDate: new Date("2023-04-03T00:00:00.000Z"), deptId: finDept.id,    posId: memberPos.id }, // 13
     { name: "권승우", hireDate: new Date("2021-10-01T00:00:00.000Z"), deptId: devDept.id,    posId: seniorPos.id }, // 14
   ];
@@ -105,10 +105,10 @@ export async function seedDemoMockup(prisma: PrismaClient): Promise<void> {
     ),
   );
 
-  // index 12 = 한지민 (최고 관리자 / demo@teamlet.io 연결)
+  // index 12 = 김관리 (최고 관리자 / demo@teamlet.io 연결)
   const adminEmp = createdEmps[12]!;
 
-  // ── 6. 멤버십 (demo@teamlet.io → 한지민) ────────────────────────
+  // ── 6. 멤버십 (demo@teamlet.io → 김관리) ────────────────────────
   await prisma.userCompanyMembership.create({
     data: { userId: demoUser.id, companyId: cid, employeeId: adminEmp.id, status: "ACTIVE", joinPath: "APPLICATION" },
   });
@@ -143,7 +143,7 @@ export async function seedDemoMockup(prisma: PrismaClient): Promise<void> {
       data: allPerms.map((p) => ({ roleId: superAdminRole.id, permissionId: p.id, enabled: true, scopeType: p.hasScope ? "ALL" : null })),
       skipDuplicates: true,
     });
-    const defaultKeys = ["member.directory.read", "leave.balance.read", "workflow.document.read", "company.basic_info.read"];
+    const defaultKeys = ["member.directory.read", "leave.balance.read", "company.basic_info.read"];
     const defPerms = allPerms.filter((p) => defaultKeys.includes(p.key));
     await prisma.rolePermission.createMany({
       data: defPerms.map((p) => ({ roleId: defaultRole.id, permissionId: p.id, enabled: true, scopeType: p.hasScope ? "ALL" : null })),
@@ -164,6 +164,6 @@ export async function seedDemoMockup(prisma: PrismaClient): Promise<void> {
   //   "법정공휴일 자동등록"·"연차 자동부여"·휴가 신청). 로그아웃 시 원상복구(별도 동적 처리).
 
   console.log(`  ✔ 목업 회사 생성 (DEMO-0000): ${cid}`);
-  console.log(`  ✔ 체험 계정: ${DEMO_EMAIL} / ${DEMO_PW} → 한지민 (경영지원팀 팀장, 최고 관리자)`);
+  console.log(`  ✔ 체험 계정: ${DEMO_EMAIL} / ${DEMO_PW} → 김관리 (경영지원팀 팀장, 최고 관리자)`);
   console.log("  ✔ 구성원 15명 / 부서 5개 / 직책 5개 / 권한 — 휴가·정책·공휴일은 온보딩 체험으로 직접 설정");
 }
