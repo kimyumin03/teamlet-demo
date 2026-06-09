@@ -25,9 +25,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Prisma Client 생성 → packages/db/generated/client (gitignore 되어 빌드 컨텍스트에 없을 수 있음)
 RUN pnpm --filter @teamlet/db generate
-# standalone 출력은 webpack 빌드에서만 생성됨 (turbopack 프로덕션 빌드는 미지원)
 RUN pnpm --filter web build:standalone
 
 FROM base AS runner

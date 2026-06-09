@@ -1,0 +1,10 @@
+app:
+  slug: teamlet
+  name: teamlet
+framework: docker
+target: auto
+deploy:
+  method: docker
+  dockerfile: Dockerfile
+  port: 3000
+  commands: []
