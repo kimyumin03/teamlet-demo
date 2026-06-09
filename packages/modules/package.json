@@ -20,7 +20,8 @@
     "./security": "./src/security/index.ts",
     "./notification": "./src/notification/index.ts",
     "./announcement": "./src/announcement/index.ts",
-    "./recognition": "./src/recognition/index.ts"
+    "./recognition": "./src/recognition/index.ts",
+    "./demo": "./src/demo/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

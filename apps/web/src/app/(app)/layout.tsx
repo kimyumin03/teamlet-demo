@@ -10,6 +10,7 @@ import { CommandPalette } from "@/components/command-palette/command-palette";
 import { CommandPaletteTrigger } from "@/components/command-palette/command-palette-trigger";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { DemoBanner } from "@/components/demo/demo-banner";
+import { resetDemoMockup } from "@teamlet/modules/demo";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -47,6 +48,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const logoutAction = async () => {
     "use server";
+    if (isDemoUser) {
+      // 체험 종료 시 DEMO-0000 원상복구 (구성원·조직·권한만 남기고 전부 비움)
+      try {
+        await resetDemoMockup();
+      } catch (e) {
+        console.error("[demo-reset] 원복 실패 — 로그아웃은 진행:", e);
+      }
+    }
     await signOut({ redirectTo: "/login" });
   };
 
