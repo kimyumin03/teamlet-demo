@@ -62,6 +62,7 @@ export function LeaveStatusView({
 }) {
   const [selectedId, setSelectedId] = useState<string>(rows[0]?.employeeId ?? "");
   const [deptFilter, setDeptFilter] = useState("");
+  const [genderFilter, setGenderFilter] = useState<"" | "MALE" | "FEMALE">("") ;
   const [sortBy, setSortBy] = useState<"remaining_asc" | "name">("remaining_asc");
 
   const departments = useMemo(
@@ -72,6 +73,7 @@ export function LeaveStatusView({
   const filtered = useMemo(() => {
     let result = rows;
     if (deptFilter) result = result.filter((r) => r.departmentName === deptFilter);
+    if (genderFilter) result = result.filter((r) => r.gender === genderFilter);
     if (sortBy === "remaining_asc") {
       result = [...result].sort((a, b) => {
         const ra = annualOf(a)?.remainingDays ?? 999;
@@ -105,6 +107,21 @@ export function LeaveStatusView({
             >
               <option value="">조직 · 전체</option>
               {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <svg className="pointer-events-none absolute right-2 h-3 w-3 text-foreground-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          </div>
+
+          <div className="relative inline-flex items-center">
+            <select
+              value={genderFilter}
+              onChange={(e) => setGenderFilter(e.target.value as typeof genderFilter)}
+              className={chipClass}
+            >
+              <option value="">성별 · 전체</option>
+              <option value="MALE">남성</option>
+              <option value="FEMALE">여성</option>
             </select>
             <svg className="pointer-events-none absolute right-2 h-3 w-3 text-foreground-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />

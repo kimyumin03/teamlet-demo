@@ -1,5 +1,8 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
+import { hasPermission } from "../permission/assert";
+
+const DIRECTORY_MANAGE = "member.directory.manage";
 
 /**
  * 인정·피드백 — 개인 간 메시지(공용 아님).
@@ -70,6 +73,36 @@ export async function listReceivedRecognitions(employeeId: string): Promise<Rece
   } catch {
     return [];
   }
+}
+
+/**
+ * 받은 인정·피드백 삭제.
+ * 수신자 본인 또는 member.directory.manage 권한자만 삭제 가능.
+ */
+export async function deleteRecognition(
+  actorId: string,
+  recognitionId: string,
+): Promise<Result<void>> {
+  const row = await prisma.recognition.findUnique({
+    where: { id: recognitionId },
+    select: { recipientId: true, companyId: true },
+  });
+  if (!row) return err(errors.notFound("메시지를 찾을 수 없어요"));
+
+  const actor = await prisma.employee.findUnique({
+    where: { id: actorId },
+    select: { companyId: true },
+  });
+  if (!actor || actor.companyId !== row.companyId)
+    return err(errors.forbidden("권한이 없어요"));
+
+  const isRecipient = row.recipientId === actorId;
+  const isAdmin = await hasPermission(actorId, DIRECTORY_MANAGE);
+  if (!isRecipient && !isAdmin)
+    return err(errors.forbidden("수신자 본인 또는 관리자만 삭제할 수 있어요"));
+
+  await prisma.recognition.delete({ where: { id: recognitionId } });
+  return ok(undefined);
 }
 
 /** 받은 인정·피드백 읽음 처리 (탭 진입 시). */

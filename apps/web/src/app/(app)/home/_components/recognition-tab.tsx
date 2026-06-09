@@ -1,5 +1,6 @@
 import type { ReceivedRecognition } from "@teamlet/modules/recognition";
 import { MarkRecognitionsRead } from "./mark-recognitions-read";
+import { DeleteRecognitionButton } from "./delete-recognition-button";
 
 /**
  * 인정·피드백 — 개인화 영역(공용 아님).
@@ -38,7 +39,7 @@ export function RecognitionTab({ items = [] }: { items?: ReceivedRecognition[] }
           {items.map((r) => {
             const meta = KIND_META[r.kind];
             return (
-              <article key={r.id} className={`rounded-[12px] border border-border bg-background-primary p-4 ${!r.isRead ? "ring-1 ring-primary/20" : ""}`}>
+              <article key={r.id} className={`group rounded-[12px] border border-border bg-background-primary p-4 ${!r.isRead ? "ring-1 ring-primary/20" : ""}`}>
                 <div className="mb-2 flex items-center gap-2">
                   <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${meta.cls}`}>
                     {meta.emoji} {meta.label}
@@ -46,6 +47,7 @@ export function RecognitionTab({ items = [] }: { items?: ReceivedRecognition[] }
                   <span className="text-[12.5px] font-medium text-foreground">{r.senderName}님이 보냄</span>
                   {!r.isRead && <span className="h-1.5 w-1.5 rounded-full bg-primary" title="새 메시지" />}
                   <span className="ml-auto text-[11px] text-foreground-subtle">{formatRelative(r.createdAt)}</span>
+                  <DeleteRecognitionButton id={r.id} />
                 </div>
                 <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-foreground">{r.message}</p>
               </article>

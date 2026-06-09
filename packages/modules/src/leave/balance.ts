@@ -8,12 +8,21 @@ import type { GrantLeaveInput, LeaveBalanceSummary, LeaveTypeItem, CompanyLeaveB
 const ADJUST_EXECUTE = "leave.adjust.execute";
 const BALANCE_MANAGE = "leave.balance.manage";
 
+/** hireDate 기준 만 근속연수 (연 단위 절사) */
+function calcTenureYears(hireDate: Date): number {
+  const now = new Date();
+  let years = now.getFullYear() - hireDate.getFullYear();
+  const monthDiff = now.getMonth() - hireDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < hireDate.getDate())) years--;
+  return Math.max(0, years);
+}
+
 export async function listLeaveTypes(
   employeeId: string,
 ): Promise<Result<LeaveTypeItem[]>> {
   const emp = await prisma.employee.findUnique({
     where: { id: employeeId },
-    select: { companyId: true },
+    select: { companyId: true, gender: true, hireDate: true },
   });
   if (!emp) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
 
@@ -24,19 +33,73 @@ export async function listLeaveTypes(
       grantMethod: true, grantUnit: true, paymentType: true, evidenceRequirement: true,
       approverEmployeeId: true, ccEmployeeIds: true,
       approver: { select: { name: true } },
+      genderRestriction: true,
+      periodicCycle: true,
+      tenureYears: true,
     },
     orderBy: { sortOrder: "asc" },
   });
 
+  const tenureYears = emp.hireDate ? calcTenureYears(emp.hireDate) : 0;
+
+  // 성별 + 근속 필터
+  // - 성별: 구성원 성별이 지정돼 있으면 맞지 않는 휴가 종류 제외 (미기입·OTHER = 전부 노출)
+  // - 근속: ON_TENURE 휴가는 tenureYears 이상 근속한 경우에만 노출
+  const filtered = types.filter((t) => {
+    if (t.genderRestriction !== "ALL") {
+      if (emp.gender && emp.gender !== "OTHER" && t.genderRestriction !== emp.gender) return false;
+    }
+    if (t.grantMethod === "ON_TENURE" && t.tenureYears != null) {
+      if (tenureYears < t.tenureYears) return false;
+    }
+    return true;
+  });
+
   // 고정 참조자 이름 일괄 조회 (확인화면 verbatim 문구용)
-  const allCcIds = [...new Set(types.flatMap((t) => t.ccEmployeeIds))];
+  const allCcIds = [...new Set(filtered.flatMap((t) => t.ccEmployeeIds))];
   const ccEmps = allCcIds.length
     ? await prisma.employee.findMany({ where: { id: { in: allCcIds } }, select: { id: true, name: true } })
     : [];
   const ccNameMap = new Map(ccEmps.map((e) => [e.id, e.name]));
 
+  // ON_REQUEST with grantAmount → 현재 주기(월/연) 사용량 계산
+  // 사전 부여(연차·ON_HIRE·ON_TENURE·MANUAL)가 아닌 것 + grantAmount 있는 것만 집계
+  const now = new Date();
+  const cappedTypes = filtered.filter(
+    (t) =>
+      t.key !== "annual" &&
+      t.grantMethod !== "ON_HIRE" &&
+      t.grantMethod !== "ON_TENURE" &&
+      t.grantMethod !== "MANUAL" &&
+      t.grantAmount != null,
+  );
+  const periodicUsageMap = new Map<string, number>();
+  if (cappedTypes.length > 0) {
+    await Promise.all(
+      cappedTypes.map(async (t) => {
+        const monthly = !!t.periodicCycle && t.periodicCycle.startsWith("monthly");
+        const winStart = monthly
+          ? new Date(now.getFullYear(), now.getMonth(), 1)
+          : new Date(`${now.getFullYear()}-01-01`);
+        const winEnd = monthly
+          ? new Date(now.getFullYear(), now.getMonth() + 1, 1)
+          : new Date(`${now.getFullYear() + 1}-01-01`);
+        const agg = await prisma.leaveRequest.aggregate({
+          where: {
+            employeeId,
+            leaveTypeId: t.id,
+            status: { in: ["PENDING", "APPROVED"] },
+            startDate: { gte: winStart, lt: winEnd },
+          },
+          _sum: { days: true },
+        });
+        periodicUsageMap.set(t.id, Number(agg._sum.days ?? 0));
+      }),
+    );
+  }
+
   return ok(
-    types.map((t) => ({
+    filtered.map((t) => ({
       id: t.id,
       name: t.name,
       key: t.key,
@@ -48,6 +111,8 @@ export async function listLeaveTypes(
       approverEmployeeId: t.approverEmployeeId,
       approverName: t.approver?.name ?? null,
       ccNames: t.ccEmployeeIds.map((id) => ccNameMap.get(id)).filter((n): n is string => !!n),
+      periodicCycle: t.periodicCycle,
+      periodicUsed: periodicUsageMap.get(t.id) ?? null,
     })),
   );
 }
@@ -140,6 +205,7 @@ export async function listCompanyLeaveBalances(
       name: true,
       employeeNumber: true,
       hireDate: true,
+      gender: true,
       department: { select: { name: true } },
       position: { select: { name: true } },
       leaveBalances: {
@@ -158,6 +224,7 @@ export async function listCompanyLeaveBalances(
       departmentName: emp.department?.name ?? null,
       positionName: emp.position?.name ?? null,
       hireDate: emp.hireDate,
+      gender: emp.gender,
       balances: leaveTypes.map((lt) => {
         const bal = emp.leaveBalances.find((b) => b.leaveTypeId === lt.id);
         const granted = bal ? Number(bal.grantedDays) : 0;

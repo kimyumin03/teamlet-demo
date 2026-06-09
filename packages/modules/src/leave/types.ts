@@ -55,6 +55,10 @@ export type LeaveTypeItem = {
   approverName: string | null;
   /** 고정 참조자 이름 (확인화면 "OOO님, OOO님에게 승인·참조를 요청해요" verbatim) */
   ccNames: string[];
+  /** 한도 집계 주기 (monthly_* → 월 한도, null → 연 한도) */
+  periodicCycle: string | null;
+  /** 현재 주기(월/연) 사용량 — ON_REQUEST with grantAmount 일 때만 채워짐, 그 외 null */
+  periodicUsed: number | null;
 };
 
 export type PendingLeaveRequestItem = {
@@ -109,6 +113,7 @@ export type CompanyLeaveBalanceRow = {
   departmentName: string | null;
   positionName: string | null;
   hireDate: Date | null;
+  gender: "MALE" | "FEMALE" | "OTHER" | null;
   balances: {
     leaveTypeId: string;
     leaveTypeKey: string;

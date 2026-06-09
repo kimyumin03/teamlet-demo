@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { sendRecognition, markRecognitionsRead, type RecognitionKindValue } from "@teamlet/modules/recognition";
+import { sendRecognition, markRecognitionsRead, deleteRecognition, type RecognitionKindValue } from "@teamlet/modules/recognition";
 import { toApiResponse, type ApiResponse } from "@teamlet/shared";
 import { auth } from "@/auth";
 
@@ -24,4 +24,9 @@ export async function sendRecognitionAction(input: {
 export async function markRecognitionsReadAction(): Promise<ApiResponse<void>> {
   const employeeId = await requireEmployee();
   return toApiResponse(await markRecognitionsRead(employeeId));
+}
+
+export async function deleteRecognitionAction(recognitionId: string): Promise<ApiResponse<void>> {
+  const employeeId = await requireEmployee();
+  return toApiResponse(await deleteRecognition(employeeId, recognitionId));
 }

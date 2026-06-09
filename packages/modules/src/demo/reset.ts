@@ -186,7 +186,7 @@ async function seedMockupCompany(adminPwHash: string): Promise<void> {
       })),
       skipDuplicates: true,
     });
-    const defaultKeys = ["member.directory.read", "leave.balance.read", "workflow.document.read", "company.basic_info.read"];
+    const defaultKeys = ["member.directory.read", "leave.balance.read", "company.basic_info.read"];
     const defPerms = allPerms.filter((p) => defaultKeys.includes(p.key));
     await prisma.rolePermission.createMany({
       data: defPerms.map((p) => ({

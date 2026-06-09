@@ -184,10 +184,25 @@ export async function requestLeave(
 
   const leaveType = await prisma.leaveType.findUnique({
     where: { id: leaveTypeId },
-    select: { isActive: true, name: true, companyId: true, key: true, grantMethod: true, grantAmount: true, periodicCycle: true },
+    select: { isActive: true, name: true, companyId: true, key: true, grantMethod: true, grantAmount: true, periodicCycle: true, ccEmployeeIds: true, tenureYears: true },
   });
   if (!leaveType?.isActive || leaveType.companyId !== employee.companyId) {
     return err(errors.validation("비활성 휴가 종류예요"));
+  }
+
+  // 근속 잠금 — ON_TENURE 휴가는 지정 근속연수 미달 시 신청 불가
+  if (leaveType.grantMethod === "ON_TENURE" && leaveType.tenureYears != null) {
+    const emp = await prisma.employee.findUnique({ where: { id: employeeId }, select: { hireDate: true } });
+    const hire = emp?.hireDate;
+    if (hire) {
+      const now = new Date();
+      let years = now.getFullYear() - hire.getFullYear();
+      const m = now.getMonth() - hire.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < hire.getDate())) years--;
+      if (Math.max(0, years) < leaveType.tenureYears) {
+        return err(errors.validation(`${leaveType.name}은(는) ${leaveType.tenureYears}년 근속 후 사용할 수 있어요`));
+      }
+    }
   }
   const grantsOnRequest = !isPreGranted(leaveType.key, leaveType.grantMethod);
   const txCategory = leaveTxCategory(leaveType.key);
@@ -286,6 +301,13 @@ export async function requestLeave(
       await tx.approvalLine.create({
         data: { documentId: doc.id, step: 1, approverId: approverId!, status: "PENDING" },
       });
+      const ccIds = leaveType.ccEmployeeIds.filter((id) => id !== approverId);
+      if (ccIds.length > 0) {
+        await tx.documentCcRecipient.createMany({
+          data: ccIds.map((eid) => ({ documentId: doc.id, employeeId: eid })),
+          skipDuplicates: true,
+        });
+      }
     }
     const leaveStatus = needsApproval ? "PENDING" : "APPROVED";
     const req = await tx.leaveRequest.create({
@@ -334,7 +356,7 @@ export async function requestLeave(
     return { reqId: req.id, docId: doc.id };
   });
 
-  // 승인자에게 결재 요청 알림 (트랜잭션 밖 — 알림 실패가 신청을 취소시키지 않음)
+  // 승인자·CC 알림 (트랜잭션 밖 — 알림 실패가 신청을 취소시키지 않음)
   if (needsApproval && approverId) {
     const submitter = await prisma.employee.findUnique({
       where: { id: employeeId },
@@ -352,6 +374,21 @@ export async function requestLeave(
         relatedTargetType: "LeaveRequest",
         relatedTargetId: created.reqId,
       }).catch(() => { /* 알림 실패 무시 */ });
+
+      const ccIds = leaveType.ccEmployeeIds.filter((id) => id !== approverId);
+      for (const ccId of ccIds) {
+        createNotification({
+          companyId: submitter.companyId,
+          recipientEmployeeId: ccId,
+          category: "APPROVAL",
+          eventKey: `leave_request_cc:${created.reqId}`,
+          title: "참조 휴가 신청",
+          body: `${submitter.name}님이 ${leaveType.name} 휴가를 신청했어요.`,
+          deepLink: `/workflow/documents/${created.docId}`,
+          relatedTargetType: "LeaveRequest",
+          relatedTargetId: created.reqId,
+        }).catch(() => { /* 알림 실패 무시 */ });
+      }
     }
   }
 
@@ -385,6 +422,7 @@ export async function finalizeLeaveFromApprovedDocument(
       status: true,
       startDate: true,
       leaveType: { select: { name: true, key: true, grantMethod: true } },
+      employee: { select: { companyId: true } },
     },
   });
   if (!req || req.status !== "PENDING") return;
@@ -438,6 +476,24 @@ export async function finalizeLeaveFromApprovedDocument(
       update: { usedDays: { increment: days }, ...(grantsOnRequest && { grantedDays: { increment: days } }) },
     }),
   ]);
+
+  // 신청자 알림 — 실패해도 상태 업데이트는 보존
+  try {
+    const mm = req.startDate.getUTCMonth() + 1;
+    const dd = req.startDate.getUTCDate();
+    await createNotification({
+      companyId: req.employee.companyId,
+      recipientEmployeeId: req.employeeId,
+      category: "LEAVE",
+      eventKey: "leave.request.approved",
+      title: `${req.leaveType.name} 신청이 승인됐어요`,
+      body: `${mm}월 ${dd}일 신청한 ${days}일이 승인됐어요.`,
+      deepLink: "/leave?tab=history",
+      relatedTargetType: "LeaveRequest",
+    });
+  } catch (e) {
+    console.error("[leave] 승인 알림 실패:", e);
+  }
 }
 
 /**
@@ -462,7 +518,15 @@ export async function finalizeLeaveFromRejectedDocument(
 
   const req = await prisma.leaveRequest.findUnique({
     where: { formDocumentId: documentId },
-    select: { id: true, status: true },
+    select: {
+      id: true,
+      status: true,
+      employeeId: true,
+      days: true,
+      startDate: true,
+      leaveType: { select: { name: true } },
+      employee: { select: { companyId: true } },
+    },
   });
   if (!req || req.status !== "PENDING") return;
 
@@ -470,6 +534,24 @@ export async function finalizeLeaveFromRejectedDocument(
     where: { id: req.id },
     data: { status: "REJECTED", reviewedAt: new Date() },
   });
+
+  // 신청자 알림 — 실패해도 상태 업데이트는 보존
+  try {
+    const mm = req.startDate.getUTCMonth() + 1;
+    const dd = req.startDate.getUTCDate();
+    await createNotification({
+      companyId: req.employee.companyId,
+      recipientEmployeeId: req.employeeId,
+      category: "LEAVE",
+      eventKey: "leave.request.rejected",
+      title: `${req.leaveType.name} 신청이 반려됐어요`,
+      body: `${mm}월 ${dd}일 신청한 ${Number(req.days)}일이 반려됐어요. 반려 사유를 확인해 주세요.`,
+      deepLink: "/leave?tab=history",
+      relatedTargetType: "LeaveRequest",
+    });
+  } catch (e) {
+    console.error("[leave] 반려 알림 실패:", e);
+  }
 }
 
 export async function approveLeave(
@@ -699,7 +781,7 @@ export async function cancelLeave(
       return { docId: doc.id };
     });
 
-    // 승인자 알림 (트랜잭션 밖 — 알림 실패가 취소 요청을 무효화하지 않음)
+    // 승인자·CC 알림 (트랜잭션 밖 — 알림 실패가 취소 요청을 무효화하지 않음)
     await createNotification({
       companyId: me.companyId,
       recipientEmployeeId: approverId,
@@ -711,6 +793,20 @@ export async function cancelLeave(
       relatedTargetType: "LeaveRequest",
       relatedTargetId: requestId,
     }).catch(() => { /* 알림 실패 무시 */ });
+
+    for (const ccId of cc) {
+      createNotification({
+        companyId: me.companyId,
+        recipientEmployeeId: ccId,
+        category: "APPROVAL",
+        eventKey: `leave_cancel_cc:${requestId}`,
+        title: "참조 휴가 취소 신청",
+        body: `${me.name}님이 ${req.leaveType.name} 취소를 신청했어요.`,
+        deepLink: `/workflow/documents/${created.docId}`,
+        relatedTargetType: "LeaveRequest",
+        relatedTargetId: requestId,
+      }).catch(() => { /* 알림 실패 무시 */ });
+    }
 
     return ok({ pendingApproval: true });
   }

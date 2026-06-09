@@ -25,6 +25,17 @@ export function grantLabel(t: LeaveTypeItem, balance?: LeaveBalanceSummary): str
   }
 }
 
+/** 한도 집계 주기가 월 단위인지 */
+export function isMonthlyCycle(c: string | null): boolean {
+  return !!c && c.startsWith("monthly");
+}
+
+/** ON_REQUEST with grantAmount — 잔여 계산 가능한 타입인지 */
+export function periodicRemaining(t: LeaveTypeItem): number | null {
+  if (t.grantAmount == null || t.periodicUsed == null) return null;
+  return t.grantAmount - t.periodicUsed;
+}
+
 /* ── 시간 유틸 ──────────────────────────── */
 const TIME_OPTIONS = (() => {
   const opts: { value: string; label: string }[] = [];
@@ -145,7 +156,14 @@ export function RequestDialog({
     unit === "afternoon" ? "오후 반차" : "시간차";
 
   function handleNext() {
-    if (computedDays > 0) setStep("confirm");
+    if (computedDays <= 0) return;
+    const rem = periodicRemaining(leaveType);
+    if (rem !== null && computedDays > rem) {
+      setError(`사용 가능 일수를 초과했어요. (${isMonthlyCycle(leaveType.periodicCycle) ? "이번 달" : "올해"} 잔여 ${rem}일)`);
+      return;
+    }
+    setError(null);
+    setStep("confirm");
   }
 
   // 날짜별 상세 일정 구성 — 상세편집 우선, 없으면 균일(단일 단위 / 다일 종일)
@@ -189,7 +207,13 @@ export function RequestDialog({
         <div style={{ width: 28, height: 28, borderRadius: 7, background: "var(--bg-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🏖</div>
         <div style={{ flex: 1 }}>
           <span style={{ fontWeight: 700, fontSize: 14.5 }}>{leaveType.name}</span>
-          <span style={{ fontSize: 12, color: "var(--fg-muted)", marginLeft: 8 }}>사용 가능 · {payLabel}</span>
+          <span style={{ fontSize: 12, color: "var(--fg-muted)", marginLeft: 8 }}>
+            {(() => {
+              const rem = periodicRemaining(leaveType);
+              if (rem !== null) return `잔여 ${rem}일 · ${payLabel}`;
+              return `사용 가능 · ${payLabel}`;
+            })()}
+          </span>
         </div>
         <button
           onClick={onClose}
@@ -523,7 +547,10 @@ export function LeaveTypeCards({
         <div className="types-grid">
           {pageTypes.map((t) => {
             const balance = balanceMap.get(t.id);
-            const isExhausted = balance && balance.remainingDays <= 0 && balance.grantedDays > 0;
+            const rem = periodicRemaining(t);
+            const isExhausted =
+              (balance && balance.remainingDays <= 0 && balance.grantedDays > 0) ||
+              (rem !== null && rem <= 0);
             return (
               <button key={t.id} type="button" onClick={() => setSelected(t)}
                 className={`type${isExhausted ? " na" : ""}`}
@@ -552,6 +579,13 @@ export function LeaveTypeCards({
                       {balance.remainingDays}<small>/ {balance.grantedDays + balance.adjustedDays}일</small>
                     </div>
                     <div className="s">사용 {balance.usedDays}일</div>
+                  </>
+                ) : rem !== null ? (
+                  <>
+                    <div className="vt num" style={{ color: rem <= 0 ? "var(--fg-subtle)" : undefined }}>
+                      {rem}<small>/ {t.grantAmount}일</small>
+                    </div>
+                    <div className="s">{isMonthlyCycle(t.periodicCycle) ? "이번 달 잔여" : "올해 잔여"}</div>
                   </>
                 ) : (
                   <div className="s" style={{ marginTop: 6, fontSize: 12, color: "var(--fg-muted)" }}>

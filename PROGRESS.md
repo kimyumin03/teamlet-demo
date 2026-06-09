@@ -323,15 +323,106 @@
 - 조정내역/재직·퇴직자 정산 내역 화면 구현 (6d 메뉴 아직 준비중 상태)
 - AxHub 로그인 OAuth 연동 (AxHub 인프라 준비 후)
 
+## 2026-06-09 세션 — 연차 엔진 점검 + 휴가 카드 개선 + 성별 필터
+
+**완료 (타입체크 통과)**
+
+### #10 연차 부여 엔진 점검
+- 분석 완료: `monthlyGrantRule`·`decimalRule`·`smartPromotionEnabled` 실제 엔진 반영 확인
+- 미연동 확인: `grantMode(HIRE_DATE)`·`annualFirstYearRule`·`annualExpiryMode`·`carryoverMaxDays` 저장만 됨 (소멸·이월은 별도 작업 예정)
+- ✅ **촉진 알림** (`promotion-engine.ts`): `LeavePromotion` 생성 즉시 LEAVE 카테고리 알림 발송 — 연차/월차1차/2차 구분, 소멸일·잔여일 포함, deepLink `/leave?tab=plan`. 알림 실패 시 촉진 레코드는 보존.
+
+### 휴가 카드 ON_REQUEST 잔여일 표시
+- `LeaveTypeItem`에 `periodicCycle`·`periodicUsed` 추가
+- `listLeaveTypes`: ON_REQUEST+grantAmount 있는 타입의 현재 주기(월/연) 사용량 집계 → `periodicUsed` 반환
+- 카드 표시: `잔여 X / Y일` + `"이번 달 잔여"` / `"올해 잔여"` (사전부여와 동일 스타일)
+- 신청 모달 헤더: 잔여일 있으면 `"잔여 X일 · 유급"` 표시
+- 클라이언트 초과 검사: `다음` 버튼 클릭 시 잔여 초과 즉시 오류
+
+### 성별 필터
+- `listLeaveTypes`: 직원 gender 조회 추가 → `genderRestriction` 맞지 않는 타입 제외 (미기입·OTHER = 전부 노출)
+
+## 2026-06-09 세션2 — 권한 체계 재정립 + HR 시스템 결함 수정
+
+**완료 (타입체크 통과, 모듈+웹 전체 클린)**
+
+### A. 권한 카탈로그 재정립 (방안 B — 현실 기반 정리)
+- `packages/db/seed/permissions.ts` 전면 재작성: 45+ 키 → **24개 실사용 키** (assertPermission 실제 검증 키만 수록)
+  - **제거**: `company.documents.*`(잘못된 키), `member.hr_info.*`·`member.salary_contract.*`·`member.personal_info.*`(미구현), `leave.type.*`(leave.policy.manage로 통합), `workflow.document.*`·`workflow.approval_policy.*`(dead), `settings.login_policy.*`·`notification.policy.*`·`integration.axhub.sync`(미구현), `tenancy.join_request.manage`·`tenancy.invite.execute`(guard 없음)
+  - **유지**: 24개 — company(4)·member.directory(2)·leave(5)·workflow.template(2)·recruit(4)·document(2)·permission.role(2)·settings.company_security(2)·audit.log.read(1)
+  - `seedPermissions()` 프루닝 추가: DB에서 카탈로그 외 dead 권한+RolePermission 자동 삭제 (`pnpm db:seed` 재실행 시 정리)
+- `packages/modules/src/permission/bootstrap.ts`: `ORG_HEAD_DEFAULT_KEYS` dead 키 교체 (`member.hr_info.read`·`workflow.document.read` → `workflow.template.read`)
+- 데모·목업 시드 dead 키 교체: `demo.ts`(DEFAULT/ORG_HEAD/HR keys), `demo-mockup.ts`, `demo/reset.ts`
+- `packages/modules/src/document/company-document.ts`: `ARCHIVE_READ`(dead) → `ARCHIVE_MANAGE` 로 `canSeeAll` 체크 수정
+
+### B. HR 시스템 결함 수정 (Matt Pocock 감사 → 실개발자 관점)
+**시스템 감사 결과 발견 → 즉시 수정:**
+
+1. **휴가 승인·반려 알림 누락** (`leave/request.ts`):
+   - `finalizeLeaveFromApprovedDocument`: 트랜잭션 후 신청자에 LEAVE 알림 (`leave.request.approved`) 추가
+   - `finalizeLeaveFromRejectedDocument`: 반려 시 신청자에 LEAVE 알림 (`leave.request.rejected`) 추가 (반려 사유 확인 deepLink 포함). select 확장(`employeeId`·`days`·`startDate`·`leaveType.name`·`employee.companyId`)
+
+2. **공지 댓글 삭제 관리자 권한 없음** (`announcement/comment.ts`):
+   - `deleteComment`: 작성자 OR `company.announcement.manage` 권한자 허용 (`hasPermission` 체크 추가)
+
+3. **인정·피드백 삭제 기능 없음** (`recognition/index.ts` + 액션 + UI):
+   - `deleteRecognition(actorId, recognitionId)`: 수신자 본인 OR `member.directory.manage` 권한자만 삭제
+   - `deleteRecognitionAction` 추가 (`apps/web/src/lib/actions/recognition.ts`)
+   - `DeleteRecognitionButton` 클라이언트 컴포넌트 신규 (`home/_components/delete-recognition-button.tsx`): 호버 시 노출(group), confirm 확인 후 삭제+router.refresh
+   - `RecognitionTab`: `group` 클래스 + `DeleteRecognitionButton` 배치
+
+**미수정 (후속 큐에 보존):** 공지 타임스탬프 기반 읽음 처리, HR 휴가 종류별 잔여(Task H), 워크플로우 제출 문서 전체 조회
+
+## 2026-06-09 세션3 — 알림 CC 완성 + 홈 개선 + 근속 잠금 + 성별 필터
+
+**완료 (타입체크 통과, 모듈+웹 전체 클린)**
+
+### B. 알림 전반 재점검 — CC 참조자 알림 누락 수정
+- **`leave/request.ts` — `requestLeave`**: leaveType 쿼리에 `ccEmployeeIds` 추가 + 트랜잭션에 `DocumentCcRecipient` 생성 + 승인자 알림 블록에 CC 알림 루프 추가 (`leave_request_cc:{reqId}`)
+- **`leave/request.ts` — `cancelLeave`**: 승인자 알림 블록 아래 CC 알림 루프 추가 (`leave_cancel_cc:{requestId}`)
+- (B의 나머지인 `workflow/approval.ts`, `workflow/document.ts` CC 알림은 이전 세션에서 완료)
+
+### D. 홈 공지 "이번 주 새 글" 달력 주 기준
+- `news-tab.tsx` — `isThisWeek`: rolling 7일 → 월요일 00:00 기준 달력 주 (한국 업무 주 기준)
+
+### E. 홈 피드 공지 탭 뱃지 제거
+- `home-tabs.tsx` — "회사 소식" 탭의 `announcementCount` 뱃지 제거 + `announcementCount` prop 제거
+- `page.tsx` — `HomeTabs`에서 `announcementCount={unreadCount}` prop 제거
+- (최신 2개 노출은 이전 세션에서 이미 구현됨)
+
+### F. 맞춤휴가 근속 잠금/해금
+- `balance.ts` — `calcTenureYears(hireDate)` 함수 추가 (만 근속연수 절사) + `listLeaveTypes` 직원 `hireDate` 조회 + `ON_TENURE` 타입의 `tenureYears` 조건 필터 추가 (미충족 시 목록에서 제외)
+- `request.ts` — `requestLeave` 진입 시 `ON_TENURE` 타입 근속 미충족 오류 반환 (`tenureYears`년 근속 후 사용 가능 메시지)
+
+### H. HR 휴가관리 성별 필터
+- `types.ts` — `CompanyLeaveBalanceRow`에 `gender: "MALE" | "FEMALE" | "OTHER" | null` 추가
+- `balance.ts` — `listCompanyLeaveBalances` 직원 `gender` 조회 + 매핑에 포함
+- `leave-status-view.tsx` — `genderFilter` state + 필터 로직 + "성별 · 전체 / 남성 / 여성" 셀렉트 UI (부서 필터 옆)
+
 ## 현재 위치
 
-- **Phase**: 휴가 완성 로드맵 구현 완료 → 런타임 검증 단계
+- **Phase**: 후속 점검 큐 A·B·D·E·F·H 완료 → C·G 잔류
 - **브랜치**: `main`
 - **원격**: `https://github.com/kimyumin03/Teamlet.git`
-- **마지막 세션**: 2026-06-08 휴가 #5·#6 + BulkOperation 스키마 + AxHub 로그인 UI
+- **마지막 세션**: 2026-06-09 CC 알림 완성 + 홈 탭 뱃지 제거 + 주간 카운트 기준 수정 + 근속 잠금 + 성별 필터
 - **dev 서버**: `http://localhost:3001` (포트 3001 고정)
 - **스키마**: db push 적용됨 (LeaveTransaction usableFrom/Until, BulkOperation/Row 신규)
+- **DB seed**: `pnpm db:seed` 재실행 시 dead 권한 자동 정리됨 (seedPermissions 프루닝)
+- **소멸·이월**: `annualExpiryMode`·`carryoverMaxDays` 미연동 — Task G에서 처리 예정
 - **AxHub 연동 예정**: 향후 AxHub 구성원·회사 데이터를 teamlet에 sync 예정. `sync_locked_fields` 우회 금지.
+
+## 후속 점검 큐 (잔류)
+
+| # | 영역 | 내용 |
+|---|---|---|
+| ✅ A | **권한** | 권한 체계 전반 재정립 완료 (세션2) |
+| ✅ B | **알림** | 알림 CC 참조자 누락 수정 완료 (세션2·3) |
+| C | **문서·증명서** | 개인화 처리 필요. 발급 시나리오 검증 (최고관리자 등록 증명서 → 개인 발급 구조) |
+| ✅ D | **홈 공지** | "이번 주 새 글" 달력 주 기준 수정 완료 |
+| ✅ E | **홈 피드** | 공지 탭 뱃지 제거 완료 |
+| ✅ F | **맞춤휴가 잠금** | `ON_TENURE` 근속 미충족 시 목록 제외 + requestLeave 가드 완료 |
+| G | **이월/소멸 엔진 분리** | carryover(이월)와 expiration(소멸)이 `processLeaveExpiry` 안에 혼재 → 엔진 분리 후 `annualExpiryMode`·`carryoverMaxDays` 정책 설정대로 재개발. `grantMode` HIRE_DATE 반영도 함께. |
+| ✅ H | **휴가관리 성별 필터** | HR 휴가관리 보유현황 탭 성별 필터 완료 |
 
 ## 다음 작업 후보 (Flex 비교 검토 2026-05-21 반영)
 

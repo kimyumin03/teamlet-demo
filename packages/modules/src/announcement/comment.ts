@@ -1,6 +1,9 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
+import { hasPermission } from "../permission/assert";
 import type { CommentItem } from "./types";
+
+const ANNOUNCEMENT_MANAGE = "company.announcement.manage";
 
 export async function listComments(
   employeeId: string,
@@ -83,8 +86,10 @@ export async function deleteComment(
   if (!emp || emp.companyId !== row.announcement.companyId)
     return err(errors.forbidden("권한이 없어요"));
 
-  if (row.authorId !== employeeId)
-    return err(errors.forbidden("본인 댓글만 삭제할 수 있어요"));
+  const isAuthor = row.authorId === employeeId;
+  const isManager = await hasPermission(employeeId, ANNOUNCEMENT_MANAGE);
+  if (!isAuthor && !isManager)
+    return err(errors.forbidden("본인 댓글 또는 관리자만 삭제할 수 있어요"));
 
   await prisma.announcementComment.delete({ where: { id: commentId } });
   return ok(undefined);

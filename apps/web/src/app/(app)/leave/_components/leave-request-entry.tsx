@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@teamlet/ui";
 import type { LeaveTypeItem, LeaveBalanceSummary } from "@teamlet/modules/leave";
-import { RequestDialog, grantLabel } from "./leave-type-cards";
+import { RequestDialog, grantLabel, periodicRemaining, isMonthlyCycle } from "./leave-type-cards";
 
 /**
  * 상단 "휴가 신청" 진입 — 종류 선택(세부) → 등록 2단계.
@@ -39,7 +39,10 @@ export function LeaveRequestEntry({
           <div className="types-grid">
             {leaveTypes.map((t) => {
               const balance = balanceMap.get(t.id);
-              const isExhausted = balance && balance.remainingDays <= 0 && balance.grantedDays > 0;
+              const rem = periodicRemaining(t);
+              const isExhausted =
+                (balance && balance.remainingDays <= 0 && balance.grantedDays > 0) ||
+                (rem !== null && rem <= 0);
               return (
                 <button
                   key={t.id}
@@ -60,6 +63,13 @@ export function LeaveRequestEntry({
                         {balance.remainingDays}<small>/ {balance.grantedDays + balance.adjustedDays}일</small>
                       </div>
                       <div className="s">사용 {balance.usedDays}일</div>
+                    </>
+                  ) : rem !== null ? (
+                    <>
+                      <div className="vt num" style={{ color: rem <= 0 ? "var(--fg-subtle)" : undefined }}>
+                        {rem}<small>/ {t.grantAmount}일</small>
+                      </div>
+                      <div className="s">{isMonthlyCycle(t.periodicCycle) ? "이번 달 잔여" : "올해 잔여"}</div>
                     </>
                   ) : (
                     <div className="s" style={{ marginTop: 6, fontSize: 12, color: "var(--fg-muted)" }}>

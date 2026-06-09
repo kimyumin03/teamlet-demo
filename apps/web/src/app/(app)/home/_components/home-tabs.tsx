@@ -5,12 +5,10 @@ import Link from "next/link";
 export function HomeTabs({
   activeTab,
   pendingCount,
-  announcementCount,
   recognitionUnread = 0,
 }: {
   activeTab: string;
   pendingCount: number;
-  announcementCount: number;
   recognitionUnread?: number;
 }) {
   return (
@@ -20,7 +18,6 @@ export function HomeTabs({
       </Link>
       <Link href="/home?tab=news" className={`tab${activeTab === "news" ? " active" : ""}`}>
         회사 소식
-        {announcementCount > 0 && <span className="count">{announcementCount}</span>}
       </Link>
       <Link href="/home?tab=recognition" className={`tab${activeTab === "recognition" ? " active" : ""}`}>
         인정·피드백

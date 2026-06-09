@@ -7,6 +7,7 @@
  */
 import { prisma } from "@teamlet/db";
 import type { LeavePromotionType } from "@teamlet/db";
+import { createNotification } from "../notification/index";
 
 export type PromotionRunResult = {
   companyId: string;
@@ -113,7 +114,7 @@ export async function runSmartPromotionForCompany(companyId: string): Promise<Pr
           );
 
           if (isSameOrBefore(triggerDate, today) && isSameOrBefore(today, expiryDate)) {
-            await upsertPromotion(emp.id, currentYear, "ANNUAL", expiryDate, result);
+            await upsertPromotion(emp.id, companyId, currentYear, "ANNUAL", expiryDate, result);
           }
         } else if (isMonthly && tenureMonths < 12) {
           // ── 월차 촉진 ──
@@ -126,7 +127,7 @@ export async function runSmartPromotionForCompany(companyId: string): Promise<Pr
             settings.monthly1stPromotionOffsetDays,
           );
           if (isSameOrBefore(trigger1, today) && isSameOrBefore(today, expiryDate) && tenureMonths <= 9) {
-            await upsertPromotion(emp.id, currentYear, "MONTHLY_1ST", expiryDate, result);
+            await upsertPromotion(emp.id, companyId, currentYear, "MONTHLY_1ST", expiryDate, result);
           }
 
           // 2차: 10~11번째 월차 (tenure >= 9개월)
@@ -136,7 +137,7 @@ export async function runSmartPromotionForCompany(companyId: string): Promise<Pr
             settings.monthly2ndPromotionOffsetDays,
           );
           if (isSameOrBefore(trigger2, today) && isSameOrBefore(today, expiryDate) && tenureMonths >= 9) {
-            await upsertPromotion(emp.id, currentYear, "MONTHLY_2ND", expiryDate, result);
+            await upsertPromotion(emp.id, companyId, currentYear, "MONTHLY_2ND", expiryDate, result);
           }
         }
       } catch (e) {
@@ -150,6 +151,7 @@ export async function runSmartPromotionForCompany(companyId: string): Promise<Pr
 
 async function upsertPromotion(
   employeeId: string,
+  companyId: string,
   year: number,
   promotionType: LeavePromotionType,
   expiryDate: Date,
@@ -182,6 +184,26 @@ async function upsertPromotion(
     data: { employeeId, year, promotionType, targetDays, expiryDate, status: "REQUESTED" },
   });
   result.created++;
+
+  // 구성원 알림 — 실패해도 촉진 생성은 보존
+  try {
+    const mm = expiryDate.getUTCMonth() + 1;
+    const dd = expiryDate.getUTCDate();
+    const typeLabel = promotionType === "ANNUAL" ? "연차" : "월차";
+    const stageLabel = promotionType === "MONTHLY_2ND" ? " (2차)" : promotionType === "MONTHLY_1ST" ? " (1차)" : "";
+    await createNotification({
+      companyId,
+      recipientEmployeeId: employeeId,
+      category: "LEAVE",
+      eventKey: `leave.promotion.${promotionType.toLowerCase()}`,
+      title: `${typeLabel} 사용 촉진 요청${stageLabel}`,
+      body: `소멸 예정 ${typeLabel} ${targetDays}일이 있어요. ${mm}월 ${dd}일까지 사용 계획을 제출해 주세요.`,
+      deepLink: "/leave?tab=plan",
+      relatedTargetType: "LeavePromotion",
+    });
+  } catch (e) {
+    console.error(`[promotion-engine] 알림 발송 실패 emp=${employeeId}:`, e);
+  }
 }
 
 /**

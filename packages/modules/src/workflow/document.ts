@@ -3,6 +3,7 @@ import { ok, err, errors, type Result } from "@teamlet/shared";
 import type { CreateDocumentInput, DocumentListItem, PendingApprovalItem, DocumentDetail, CcDocumentItem } from "./types";
 import type { FieldDef } from "./template";
 import { resolveApprovalSteps } from "./approval-policy";
+import { createNotification } from "../notification/index";
 
 export async function getDocument(
   employeeId: string,
@@ -136,6 +137,43 @@ export async function createDocument(
 
     return created;
   });
+
+  // 결재자·참조자 알림 (실패해도 문서 생성은 보존)
+  try {
+    // step-1 결재자 알림
+    const firstApproverId = approverIds[0];
+    if (firstApproverId) {
+      await createNotification({
+        companyId: input.companyId,
+        recipientEmployeeId: firstApproverId,
+        category: "APPROVAL",
+        eventKey: "workflow.approval.requested",
+        title: `결재 요청이 도착했어요`,
+        body: `"${input.title}" 문서의 결재를 요청했어요.`,
+        deepLink: "/workflow?tab=pending",
+        relatedTargetType: "FormDocument",
+      });
+    }
+    // CC 참조자 알림 (문서 생성 시점)
+    for (const ccId of uniqueCc) {
+      try {
+        await createNotification({
+          companyId: input.companyId,
+          recipientEmployeeId: ccId,
+          category: "APPROVAL",
+          eventKey: "workflow.document.cc",
+          title: `참조 문서가 등록됐어요`,
+          body: `"${input.title}" 문서에 참조자로 등록됐어요.`,
+          deepLink: "/workflow?tab=cc",
+          relatedTargetType: "FormDocument",
+        });
+      } catch {
+        // 개별 실패 무시
+      }
+    }
+  } catch (e) {
+    console.error("[document] 결재 요청 알림 실패:", e);
+  }
 
   return ok(doc);
 }

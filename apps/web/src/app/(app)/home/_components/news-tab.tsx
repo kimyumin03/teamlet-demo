@@ -3,8 +3,13 @@ import { MarkAnnouncementsRead } from "@/components/announcement/mark-announceme
 import { AnnouncementPagedList } from "./announcement-paged-list";
 
 function isThisWeek(d: Date) {
-  const now = Date.now();
-  return now - new Date(d).getTime() < 7 * 24 * 60 * 60 * 1000;
+  const now = new Date();
+  // 월요일 00:00 기준 주 시작 (한국 업무 주 기준)
+  const daysSinceMonday = (now.getDay() + 6) % 7;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysSinceMonday);
+  weekStart.setHours(0, 0, 0, 0);
+  return new Date(d) >= weekStart;
 }
 
 export function NewsTab({

@@ -134,7 +134,6 @@ export default async function HomePage({
         <HomeTabs
           activeTab={activeTab}
           pendingCount={pending.length}
-          announcementCount={unreadCount}
           recognitionUnread={recogUnread}
         />
 
