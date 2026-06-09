@@ -265,8 +265,24 @@ function LeaveTypeDialog({
   const router = useRouter();
   const isEdit = !!initial;
   const isSystem = initial?.isSystem ?? false;
+  const isRequired = initial?.isRequired ?? false;
+  // 법정 필수 휴가이고 가이드가 있으면 핵심 필드(부여방법·급여·성별 등)를 법령값으로 고정
+  const isLocked = isRequired && !!(initial && guide[initial.key]);
 
-  const [form, setForm] = useState<FormState>(() => initial ? typeToForm(initial) : defaultForm());
+  const [form, setForm] = useState<FormState>(() => {
+    const base = initial ? typeToForm(initial) : defaultForm();
+    const g = (initial?.isRequired && guide[initial.key]) ? guide[initial.key] : null;
+    if (g) {
+      base.grantMethod = g.grantMethod;
+      base.grantUnit = g.grantUnit;
+      base.grantAmount = g.grantAmount != null ? String(g.grantAmount) : base.grantAmount;
+      base.paymentType = g.paymentType;
+      base.partialPayDays = g.partialPayDays != null ? String(g.partialPayDays) : "";
+      base.genderRestriction = g.genderRestriction;
+      base.deductOnHoliday = g.deductOnHoliday;
+    }
+    return base;
+  });
   const [key, setKey] = useState(initial?.key ?? "");
   const [extraOpen, setExtraOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -367,6 +383,14 @@ function LeaveTypeDialog({
             {isEdit && initial && guide[initial.key] && (
               <GuideBox name={initial.name} guide={guide[initial.key]!} form={form} />
             )}
+            {isLocked && (
+              <div style={{ display:"flex", alignItems:"flex-start", gap:8, padding:"10px 12px", borderRadius:10, background:"var(--bg-secondary)", border:"1px solid var(--border)" }}>
+                <Lock size={13} style={{ color:"var(--fg-muted)", marginTop:2, flexShrink:0 }} />
+                <p style={{ fontSize:12, color:"var(--fg-muted)", lineHeight:1.5, margin:0 }}>
+                  법정의무휴가는 <strong>부여 방법·급여·성별 제한</strong> 등 핵심 정책이 법령값으로 고정됩니다. 이름·설명·증명 자료·승인 설정은 변경할 수 있어요.
+                </p>
+              </div>
+            )}
             {/* 이름 + key */}
             <Field label="이름">
               <input className={INPUT_CLS} placeholder="예: 병가, 경조사" value={form.name}
@@ -398,12 +422,13 @@ function LeaveTypeDialog({
               <div style={{ marginBottom: 8, fontSize: 11, fontWeight: 600, color: "var(--fg-subtle)", letterSpacing: "0.04em" }}>조건에 따라 부여</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
                 {(["ON_REQUEST", "ON_OTHER_EXHAUSTED", "MANUAL", "ON_HIRE"] as const).map((m) => (
-                  <button key={m} type="button" onClick={() => set("grantMethod", m)}
+                  <button key={m} type="button" onClick={() => !isLocked && set("grantMethod", m)} disabled={isLocked}
                     style={{
                       padding: "5px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 600,
                       border: `1.5px solid ${form.grantMethod === m ? "var(--primary)" : "var(--border)"}`,
                       background: form.grantMethod === m ? "var(--primary-soft)" : "var(--bg-primary)",
-                      color: form.grantMethod === m ? "var(--primary)" : "var(--fg-muted)", cursor: "pointer",
+                      color: form.grantMethod === m ? "var(--primary)" : "var(--fg-muted)",
+                      cursor: isLocked ? "not-allowed" : "pointer", opacity: isLocked ? 0.7 : 1,
                     }}>
                     {GRANT_METHOD_LABEL[m]}
                   </button>
@@ -412,12 +437,13 @@ function LeaveTypeDialog({
               <div style={{ marginBottom: 6, fontSize: 11, fontWeight: 600, color: "var(--fg-subtle)", letterSpacing: "0.04em" }}>주기 단위로 부여</div>
               <div style={{ display: "flex", gap: 6 }}>
                 {(["PERIODIC", "ON_TENURE"] as const).map((m) => (
-                  <button key={m} type="button" onClick={() => set("grantMethod", m)}
+                  <button key={m} type="button" onClick={() => !isLocked && set("grantMethod", m)} disabled={isLocked}
                     style={{
                       padding: "5px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 600,
                       border: `1.5px solid ${form.grantMethod === m ? "var(--primary)" : "var(--border)"}`,
                       background: form.grantMethod === m ? "var(--primary-soft)" : "var(--bg-primary)",
-                      color: form.grantMethod === m ? "var(--primary)" : "var(--fg-muted)", cursor: "pointer",
+                      color: form.grantMethod === m ? "var(--primary)" : "var(--fg-muted)",
+                      cursor: isLocked ? "not-allowed" : "pointer", opacity: isLocked ? 0.7 : 1,
                     }}>
                     {GRANT_METHOD_LABEL[m]}
                   </button>
@@ -497,7 +523,7 @@ function LeaveTypeDialog({
             {form.grantMethod !== "MANUAL" && (
               <div className="grid grid-cols-2 gap-3">
                 <Field label="부여 단위">
-                  <select className={SELECT_CLS} value={form.grantUnit} onChange={(e) => set("grantUnit", e.target.value as LeaveGrantUnit)}>
+                  <select className={SELECT_CLS} value={form.grantUnit} onChange={(e) => set("grantUnit", e.target.value as LeaveGrantUnit)} disabled={isLocked || isPending}>
                     {(Object.keys(GRANT_UNIT_LABEL) as LeaveGrantUnit[]).map((v) => (
                       <option key={v} value={v}>{GRANT_UNIT_LABEL[v]}</option>
                     ))}
@@ -508,7 +534,8 @@ function LeaveTypeDialog({
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       <input type="number" min={0} step={0.5} className={INPUT_CLS}
                         placeholder="1" value={form.grantAmount}
-                        onChange={(e) => set("grantAmount", e.target.value)} />
+                        onChange={(e) => set("grantAmount", e.target.value)}
+                        disabled={isLocked || isPending} />
                       <span style={{ fontSize: 12, color: "var(--fg-muted)", whiteSpace: "nowrap" }}>
                         {form.grantUnit === "DAY" ? "일" : form.grantUnit === "HOUR" ? "시간" : "분"}
                       </span>
@@ -551,7 +578,7 @@ function LeaveTypeDialog({
             {/* 급여 지급 유무 */}
             <Field label="급여 지급 유무" desc="이 휴가의 급여 기준을 선택해요.">
               <select className={SELECT_CLS} value={form.paymentType}
-                onChange={(e) => set("paymentType", e.target.value as LeavePaymentType)}>
+                onChange={(e) => set("paymentType", e.target.value as LeavePaymentType)} disabled={isLocked || isPending}>
                 {(Object.keys(PAYMENT_LABEL) as LeavePaymentType[]).map((v) => (
                   <option key={v} value={v}>{PAYMENT_LABEL[v]}</option>
                 ))}
@@ -561,7 +588,8 @@ function LeaveTypeDialog({
                   <span style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>며칠을 유급으로 인정할까요?</span>
                   <input type="number" min={0} className={INPUT_CLS} style={{ width: 80 }}
                     placeholder="0" value={form.partialPayDays}
-                    onChange={(e) => set("partialPayDays", e.target.value)} />
+                    onChange={(e) => set("partialPayDays", e.target.value)}
+                    disabled={isLocked || isPending} />
                   <span style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>일</span>
                 </div>
               )}
@@ -602,7 +630,7 @@ function LeaveTypeDialog({
                   {/* 성별 */}
                   <Field label="사용 가능 성별" desc="선택한 성별의 구성원에게만 휴가가 보여져요.">
                     <select className={SELECT_CLS} value={form.genderRestriction}
-                      onChange={(e) => set("genderRestriction", e.target.value as LeaveGenderRestriction)}>
+                      onChange={(e) => set("genderRestriction", e.target.value as LeaveGenderRestriction)} disabled={isLocked || isPending}>
                       {(Object.keys(GENDER_LABEL) as LeaveGenderRestriction[]).map((v) => (
                         <option key={v} value={v}>{GENDER_LABEL[v]}</option>
                       ))}
@@ -650,7 +678,7 @@ function LeaveTypeDialog({
                   {/* 휴일 차감 */}
                   <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
                     <div
-                      onClick={() => set("deductOnHoliday", !form.deductOnHoliday)}
+                      onClick={() => !isLocked && set("deductOnHoliday", !form.deductOnHoliday)}
                       style={{
                         width: 40, height: 22, borderRadius: 999, padding: 2, cursor: "pointer",
                         background: form.deductOnHoliday ? "var(--primary)" : "var(--border)",
