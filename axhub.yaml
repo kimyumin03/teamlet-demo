@@ -1,9 +1,7 @@
 app:
   slug: teamlet
   name: teamlet
-deploy:
-  method: docker
-  port: 3000
-  commands: []
 build:
   dockerfile: Dockerfile
+deploy:
+  port: 3000
