@@ -1,6 +1,7 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors } from "@teamlet/shared";
 import type { Result } from "@teamlet/shared";
+import { recordAudit } from "../audit/index";
 import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
 import type { CertificateIssueItem, CertificateDetail, IssueCertificateInput, CertificateTemplateItem, CreateCertificateTemplateInput } from "./types";
@@ -56,6 +57,17 @@ export async function createCertificateTemplate(
     select: { id: true, name: true, certType: true, fileUrl: true },
   });
 
+  await recordAudit({
+    companyId: actor.companyId,
+    actorUserId: actor.userId,
+    activityType: "document",
+    eventType: "CREATE",
+    targetType: "CertificateTemplate",
+    targetId: t.id,
+    targetLabel: t.name,
+    description: `증명서 종류 등록: ${t.name}`,
+  });
+
   return ok({ id: t.id, name: t.name, certType: t.certType, fileUrl: t.fileUrl });
 }
 
@@ -75,7 +87,7 @@ export async function deleteCertificateTemplate(
 
   const template = await prisma.certificateTemplate.findUnique({
     where: { id: templateId },
-    select: { companyId: true },
+    select: { companyId: true, name: true },
   });
   if (!template || template.companyId !== actor.companyId)
     return err(errors.notFound("증명서 종류를 찾을 수 없어요"));
@@ -83,6 +95,17 @@ export async function deleteCertificateTemplate(
   await prisma.certificateTemplate.update({
     where: { id: templateId },
     data: { isActive: false },
+  });
+
+  await recordAudit({
+    companyId: actor.companyId,
+    actorUserId: actor.userId,
+    activityType: "document",
+    eventType: "DELETE",
+    targetType: "CertificateTemplate",
+    targetId: templateId,
+    targetLabel: template.name,
+    description: `증명서 종류 삭제: ${template.name}`,
   });
 
   return ok(undefined);
@@ -94,7 +117,7 @@ export async function listMyCertificates(employeeId: string): Promise<Result<Cer
   const issues = await prisma.certificateIssue.findMany({
     where: { employeeId },
     select: {
-      id: true, type: true, issueNumber: true, purpose: true, createdAt: true,
+      id: true, type: true, issueNumber: true, purpose: true, createdAt: true, fileUrl: true,
       employee: { select: { name: true } },
       issuer: { select: { name: true } },
     },
@@ -104,6 +127,7 @@ export async function listMyCertificates(employeeId: string): Promise<Result<Cer
   return ok(issues.map((i) => ({
     id: i.id, type: i.type, issueNumber: i.issueNumber, purpose: i.purpose,
     createdAt: i.createdAt, employeeName: i.employee.name, issuerName: i.issuer.name,
+    fileUrl: i.fileUrl,
   })));
 }
 
@@ -112,7 +136,7 @@ export async function getCertificate(employeeId: string, issueId: string): Promi
     where: { id: issueId },
     select: {
       id: true, type: true, issueNumber: true, purpose: true, createdAt: true,
-      snapshotData: true,
+      snapshotData: true, fileUrl: true,
       employee: { select: { name: true, id: true } },
       issuer: { select: { name: true, id: true } },
     },
@@ -127,6 +151,7 @@ export async function getCertificate(employeeId: string, issueId: string): Promi
   return ok({
     id: issue.id, type: issue.type, issueNumber: issue.issueNumber, purpose: issue.purpose,
     createdAt: issue.createdAt, employeeName: issue.employee.name, issuerName: issue.issuer.name,
+    fileUrl: issue.fileUrl,
     snapshotData: issue.snapshotData as Record<string, unknown>,
   });
 }
@@ -147,7 +172,10 @@ export async function issueCertificate(
     }
   }
 
-  const issuer = await prisma.employee.findUnique({ where: { id: issuerId }, select: { companyId: true, name: true } });
+  const issuer = await prisma.employee.findUnique({
+    where: { id: issuerId },
+    select: { companyId: true, name: true, membership: { select: { userId: true } } },
+  });
   if (!issuer) return err(errors.notFound("직원 정보를 찾을 수 없어요"));
 
   // 템플릿 조회 — 같은 회사 소속 + 활성 상태 검증
@@ -191,8 +219,20 @@ export async function issueCertificate(
       issueNumber,
       purpose: input.purpose.trim(),
       snapshotData,
+      fileUrl: template.fileUrl,
     },
     select: { id: true, issueNumber: true },
+  });
+
+  await recordAudit({
+    companyId: issuer.companyId,
+    actorUserId: issuer.membership?.userId ?? null,
+    activityType: "document",
+    eventType: "CREATE",
+    targetType: "CertificateIssue",
+    targetId: issue.id,
+    targetLabel: `${target.name} · ${template.name}`,
+    description: `증명서 발급: ${template.name} → ${target.name} (${issueNumber})`,
   });
 
   return ok({ id: issue.id, issueNumber: issue.issueNumber, fileUrl: template.fileUrl });

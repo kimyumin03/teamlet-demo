@@ -18,6 +18,7 @@ export type CertificateIssueItem = {
   createdAt: Date;
   employeeName: string;
   issuerName: string;
+  fileUrl: string | null;
 };
 
 export type CertificateDetail = CertificateIssueItem & {

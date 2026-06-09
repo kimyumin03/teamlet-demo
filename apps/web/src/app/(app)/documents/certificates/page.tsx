@@ -105,9 +105,20 @@ export default async function CertificatesPage() {
                 <td><span className="sn">{cert.issueNumber}</span></td>
                 <td><span className="sn">{cert.createdAt.toLocaleDateString("ko-KR")}</span></td>
                 <td style={{ textAlign: "right" }}>
-                  <Link href={`/documents/certificates/${cert.id}`} className="btn btn-outline sm">
-                    인쇄
-                  </Link>
+                  {cert.fileUrl ? (
+                    <a
+                      href={cert.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-outline sm"
+                    >
+                      다운로드
+                    </a>
+                  ) : (
+                    <Link href={`/documents/certificates/${cert.id}`} className="btn btn-outline sm">
+                      인쇄
+                    </Link>
+                  )}
                 </td>
               </tr>
             ))}

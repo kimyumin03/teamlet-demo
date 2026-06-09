@@ -1289,6 +1289,7 @@ model CertificateIssue {
   issueNumber  String          @unique
   purpose      String
   snapshotData Json
+  fileUrl      String?         // 발급 시점 템플릿 파일 스냅샷 (이력 재다운로드용). legacy 발급분은 null
   createdAt    DateTime        @default(now())
 
   employee Employee @relation("IssuedCertificates", fields: [employeeId], references: [id])
