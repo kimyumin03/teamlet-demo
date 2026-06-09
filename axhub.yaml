@@ -1,8 +1,10 @@
+name: teamlet
 app:
   slug: teamlet
   name: teamlet
 build:
   framework: nextjs
   dockerfile: Dockerfile
-deploy:
+runtime:
   port: 3000
+  health_path: /api/auth/session
