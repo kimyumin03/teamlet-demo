@@ -1,5 +1,5 @@
 import { prisma } from "@teamlet/db";
-import { ok, err, errors, type Result } from "@teamlet/shared";
+import { ok, err, errors, type Result, computeAnnualExpiryDate, computeMonthlyExpiryDate } from "@teamlet/shared";
 import { catchDomainErr, loadActor } from "../permission/_actor";
 import { assertPermission } from "../permission/assert";
 import { getEffectivePermissions } from "../permission/effective";
@@ -308,29 +308,37 @@ export async function processLeaveExpiry(
     // 휴가유형에 맞는 소멸 모드/유예 선택 (연차 vs 월차)
     const isAnnual = bal.leaveType.key === "annual";
     const expiryMode = isAnnual ? p.annualExpiryMode : p.monthlyExpiryMode;
-    const graceMonths = isAnnual ? p.annualGraceMonths : p.monthlyGraceMonths;
+    // 유예 개월수 — 1년에 **추가**되는 기간(없으면 0). 이전 구현은 grace 가 12개월을 대체하는 버그가 있었음.
+    const graceMonths = (isAnnual ? p.annualGraceMonths : p.monthlyGraceMonths) ?? 0;
 
     // 정책이 "소멸 안 함"이면 소멸/이월 모두 건너뜀
     if (expiryMode === "NONE") continue;
 
-    // 유효 소멸 개월수: 유예 설정 있으면 그 개월수, 없으면 부여/입사 1년 후(12)
-    const effectiveMonths = graceMonths ?? p.expiryMonths ?? 12;
-
-    // 소멸 기준일 계산
-    let expiryDate: Date;
-    if (grantMode === "HIRE_DATE" && bal.employee.hireDate) {
-      const hd = new Date(bal.employee.hireDate);
-      expiryDate = new Date(hd);
-      expiryDate.setFullYear(year);
-      expiryDate.setMonth(expiryDate.getMonth() + effectiveMonths);
+    // 소멸 기준일 — 연차는 부여일(grantMode)+1년, 월차는 항상 입사일 기준(모드별 분기).
+    let expiryDate: Date | null;
+    if (isAnnual) {
+      expiryDate = computeAnnualExpiryDate({
+        year,
+        grantMode,
+        fiscalStartMonth,
+        hireDate: bal.employee.hireDate,
+        graceMonths,
+      });
+    } else if (bal.employee.hireDate) {
+      expiryDate = computeMonthlyExpiryDate({
+        mode: expiryMode as "HIRE_DATE_1Y" | "HIRE_DATE_1Y_FISCAL",
+        hireDate: bal.employee.hireDate,
+        fiscalStartMonth,
+        graceMonths,
+      });
     } else {
-      // FISCAL_YEAR: 회계연도 시작월 + effectiveMonths
-      expiryDate = new Date(year, fiscalStartMonth - 1 + effectiveMonths, 1);
+      expiryDate = null; // 월차인데 입사일 미상 → 소멸 판단 불가, 보존
     }
 
-    if (now < expiryDate) continue;
+    if (!expiryDate || now < expiryDate) continue;
 
-    const carryover = carryoverMaxDays ? Math.min(remaining, Number(carryoverMaxDays)) : 0;
+    // 이월은 **연차 전용**(월차는 이월 없이 전액 소멸). carryoverMaxDays 한도까지 다음 해로 이월.
+    const carryover = isAnnual && carryoverMaxDays ? Math.min(remaining, Number(carryoverMaxDays)) : 0;
     const expireAmount = remaining - carryover;
 
     const ops = [];
@@ -356,7 +364,7 @@ export async function processLeaveExpiry(
             category: "ADJUSTMENT",
             txType: "EXPIRE",
             days: -expireAmount,
-            reason: `${year}년 연차 소멸`,
+            reason: `${year}년 ${isAnnual ? "연차" : "월차"} 소멸`,
             actorId: actorEmployeeId,
           },
         }),
