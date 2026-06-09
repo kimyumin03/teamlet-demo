@@ -1,9 +1,9 @@
-name: teamlet
 app:
   slug: teamlet
   name: teamlet
-build:
-  framework: nextjs
-runtime:
+framework: docker
+target: auto
+deploy:
+  method: docker
   port: 3000
-  health_path: /api/auth/session
+  commands: []
