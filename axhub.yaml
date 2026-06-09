@@ -1,7 +1,12 @@
+version: 1
 app:
-  slug: teamlet
-  name: teamlet
+    name: teamlet
+    slug: teamlet
+    subdomain: teamlet
+runtime:
+    port: 3000
+    health_check: /api/auth/session
 build:
-  dockerfile: Dockerfile
+    dockerfile: Dockerfile
 deploy:
-  port: 3000
+    target: auto
