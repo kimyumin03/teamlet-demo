@@ -65,17 +65,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       {/* 메인 영역 */}
       <div className="main">
-        {isDemoUser && <DemoBanner />}
-        {/* 탑바 */}
-        <header className="topbar">
-          {employeeId && <CommandPaletteTrigger />}
-          {employeeId && <CommandPalette isAdmin={canSeeAllPages} />}
-          <div className="top-actions">
-            {employeeId && (
-              <NotificationBell items={notifications} unreadCount={unreadCount} />
-            )}
-          </div>
-        </header>
+        {/* 상단 고정 영역 (DEMO 배너 + 탑바) — main 그리드 row 1(auto)로 묶어
+            배너 유무에 따라 탑바가 1fr 로 늘어나지 않게 한다 */}
+        <div>
+          {isDemoUser && <DemoBanner />}
+          {/* 탑바 */}
+          <header className="topbar">
+            {employeeId && <CommandPaletteTrigger />}
+            {employeeId && <CommandPalette isAdmin={canSeeAllPages} />}
+            <div className="top-actions">
+              {employeeId && (
+                <NotificationBell items={notifications} unreadCount={unreadCount} />
+              )}
+            </div>
+          </header>
+        </div>
 
         {/* 페이지 콘텐츠 */}
         <main style={{ minHeight: 0, overflowY: "auto" }}>{children}</main>
