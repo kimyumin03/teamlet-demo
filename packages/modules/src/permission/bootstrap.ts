@@ -14,12 +14,11 @@ import { prisma } from "@teamlet/db";
 import type { RoleType } from "@teamlet/db";
 import { errors } from "@teamlet/shared";
 
-// Flex 조직장 기본 권한 — DEPARTMENT scope로 자동 부여
+// 조직장 기본 권한 — DEPARTMENT scope로 자동 부여
 const ORG_HEAD_DEFAULT_KEYS = [
   "member.directory.read",
-  "member.hr_info.read",
   "leave.balance.read",
-  "workflow.document.read",
+  "workflow.template.read",
 ];
 
 export type BootstrapResult = {

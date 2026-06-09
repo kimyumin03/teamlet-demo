@@ -21,7 +21,7 @@ export default async function SettingsLayout({ children }: { children: React.Rea
   const employeeId = session.user.employeeId;
   const [canSeeCompany, canSeeOps, canSeeLeave, companyResult] = employeeId
     ? await Promise.all([
-        hasPermission(employeeId, "company.basic_info.read"),
+        hasPermission(employeeId, "company.basic_info.manage"),
         hasPermission(employeeId, "permission.role.manage"),
         hasPermission(employeeId, "leave.policy.manage"),
         getCompanyInfo(employeeId),

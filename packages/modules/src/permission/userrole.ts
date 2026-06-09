@@ -74,6 +74,16 @@ export async function assignRole(
     return err(errors.conflict("이미 부여된 역할이에요"));
   }
 
+  // 새 역할 부여 전 기존 활성 역할 전부 비활성화 (DYNAMIC_ORG_HEAD 제외) — 교체 의미론
+  await prisma.userRole.updateMany({
+    where: {
+      employeeId: targetEmployeeId,
+      isActive: true,
+      role: { type: { not: "DYNAMIC_ORG_HEAD" } },
+    },
+    data: { isActive: false },
+  });
+
   const userRole = existing
     ? await prisma.userRole.update({
         where: { id: existing.id },

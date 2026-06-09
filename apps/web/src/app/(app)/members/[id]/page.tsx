@@ -5,7 +5,7 @@ import { listAppointments } from "@teamlet/modules/appointment";
 import { listPositions } from "@teamlet/modules/position";
 import { listEmployeeLeaveHistory } from "@teamlet/modules/leave";
 import { listEmployeeDocuments } from "@teamlet/modules/workflow";
-import { listRoles } from "@teamlet/modules/permission";
+import { listRoles, hasPermission } from "@teamlet/modules/permission";
 import { listCareerHistories, listEducationHistories, listFamilyMembers } from "@teamlet/modules/employee";
 import { auth } from "@/auth";
 import { ProfileShell } from "./_components/profile-shell";
@@ -33,6 +33,7 @@ export default async function MemberDetailPage({
   const [
     empResult, deptResult, posResult, leaveResult, workflowResult,
     rolesResult, apptResult, careerResult, educationResult, familyResult,
+    canManageEmployee,
   ] = await Promise.all([
     getEmployee(session.user.employeeId, id),
     listDepartments(session.user.employeeId),
@@ -44,6 +45,7 @@ export default async function MemberDetailPage({
     listCareerHistories(session.user.employeeId, id),
     listEducationHistories(session.user.employeeId, id),
     listFamilyMembers(session.user.employeeId, id),
+    hasPermission(session.user.employeeId, "member.directory.manage"),
   ]);
 
   if (!empResult.ok) {
@@ -70,6 +72,7 @@ export default async function MemberDetailPage({
       educationItems={educationResult.ok ? educationResult.data : []}
       familyItems={familyResult.ok ? familyResult.data : []}
       initialTab={initialTab}
+      canManageEmployee={canManageEmployee}
     />
   );
 }

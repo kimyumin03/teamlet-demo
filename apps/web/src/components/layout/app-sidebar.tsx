@@ -45,6 +45,9 @@ const NAV_ADMIN: NavItem[] = [
   { href: "/members", label: "구성원", icon: "users" },
   { href: "/workflow", label: "워크플로우", icon: "workflow", attnBadge: true },
   { href: "/hr/leave", label: "휴가 관리", icon: "calendar" },
+];
+
+const NAV_SETTINGS: NavItem[] = [
   { href: "/settings/profile", label: "설정", icon: "settings" },
 ];
 
@@ -56,6 +59,7 @@ export function AppSidebar({
   logoutAction,
   pendingCount,
   employeeId,
+  isAdmin = false,
 }: {
   userName: string;
   userEmail: string;
@@ -64,6 +68,7 @@ export function AppSidebar({
   logoutAction: () => Promise<void>;
   pendingCount?: number;
   employeeId?: string;
+  isAdmin?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -120,16 +125,23 @@ export function AppSidebar({
         {NAV_WORKSPACE.map(renderItem)}
       </nav>
 
-      {/* 인사 관리 (관리자) */}
+      {/* 인사 관리 (관리자만) */}
+      {isAdmin && (
+        <nav className="nav-group">
+          <div className="nav-label admin">
+            인사 관리
+            <span className="nav-admin-tag" title="인사 관리자 권한">
+              <Icon name="lock" size={10} />
+              관리자
+            </span>
+          </div>
+          {NAV_ADMIN.map(renderItem)}
+        </nav>
+      )}
+
+      {/* 설정 (모든 사용자) */}
       <nav className="nav-group">
-        <div className="nav-label admin">
-          인사 관리
-          <span className="nav-admin-tag" title="인사 관리자 권한">
-            <Icon name="lock" size={10} />
-            관리자
-          </span>
-        </div>
-        {NAV_ADMIN.map(renderItem)}
+        {NAV_SETTINGS.map(renderItem)}
       </nav>
 
       {/* 하단 사용자 */}

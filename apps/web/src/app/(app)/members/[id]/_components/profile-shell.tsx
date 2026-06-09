@@ -92,6 +92,7 @@ type TabKey = "info" | "appointment" | "roles";
 export function ProfileShell({
   emp, appointments, leaveHistory, workflowDocs, assignableRoles,
   careerItems, educationItems, familyItems, departments, positions, initialTab,
+  canManageEmployee = false,
 }: {
   emp: EmployeeDetail;
   appointments: AppointmentItem[];
@@ -104,6 +105,7 @@ export function ProfileShell({
   departments: DepartmentNode[];
   positions: PositionItem[];
   initialTab: TabKey;
+  canManageEmployee?: boolean;
 }) {
   const [tab, setTab] = useState<TabKey>(initialTab);
   const annualBalance = emp.leaveBalances.find(b => b.leaveTypeName.includes("연차"));
@@ -147,7 +149,7 @@ export function ProfileShell({
                 </span>
               </div>
             </div>
-            {emp.isActive && (
+            {emp.isActive && canManageEmployee && (
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
                 {!emp.hasLinkedAccount && <InviteLinkButton employeeId={emp.id} />}
                 <EditMemberButton employee={emp} />
@@ -297,7 +299,7 @@ export function ProfileShell({
                   현재 · {emp.departmentName ?? "미배정"} {emp.positionName ? `/ ${emp.positionName}` : ""}
                 </div>
               </div>
-              {emp.isActive && (
+              {emp.isActive && canManageEmployee && (
                 <RegisterAppointmentButton
                   employeeId={emp.id}
                   currentDepartmentId={emp.departmentId}

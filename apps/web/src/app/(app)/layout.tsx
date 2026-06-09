@@ -43,6 +43,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const pendingCount = pendingResult.ok ? pendingResult.data.length : 0;
   // 검색에서 전체 페이지 노출 여부 (관리자 권한). 일반 팀원은 공개 페이지만.
   const canSeeAllPages = employeeId ? await hasPermission(employeeId, "member.directory.manage") : false;
+  // 사이드바 인사 관리 섹션 노출 여부
+  const isAdmin = canSeeAllPages;
 
   const isDemoUser = companyResult.ok && companyResult.data.companyCode === "DEMO-0000";
 
@@ -70,6 +72,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         pendingCount={pendingCount}
         logoutAction={logoutAction}
         employeeId={employeeId ?? undefined}
+        isAdmin={isAdmin}
       />
 
       {/* 메인 영역 */}
