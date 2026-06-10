@@ -5,6 +5,6 @@ runtime:
   health_path: /api/health
 build:
   strategy: auto
-  framework: nextjs
+  framework: docker
   deploy_method: docker
   dockerfile: Dockerfile
