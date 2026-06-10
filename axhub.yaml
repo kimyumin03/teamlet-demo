@@ -10,3 +10,38 @@ env:
   required:
     - name: DATABASE_URL
       scope: runtime
+    - name: AUTH_SECRET
+      scope: runtime
+    - name: REDIS_URL
+      scope: runtime
+  optional:
+    - name: AUTH_URL
+      scope: runtime
+    - name: ANTHROPIC_API_KEY
+      scope: runtime
+    - name: GOOGLE_CLIENT_ID
+      scope: runtime
+    - name: GOOGLE_CLIENT_SECRET
+      scope: runtime
+    - name: S3_ENDPOINT
+      scope: runtime
+    - name: S3_BUCKET
+      scope: runtime
+    - name: S3_ACCESS_KEY
+      scope: runtime
+    - name: S3_SECRET_KEY
+      scope: runtime
+    - name: RESEND_API_KEY
+      scope: runtime
+    - name: EMAIL_FROM
+      scope: runtime
+    - name: DATA_GO_KR_SERVICE_KEY
+      scope: runtime
+    - name: SYSTEM_ADMIN_EMAILS
+      scope: runtime
+    - name: AXHUB_ENABLED
+      scope: runtime
+    - name: AXHUB_API_URL
+      scope: runtime
+    - name: AXHUB_API_KEY
+      scope: runtime
