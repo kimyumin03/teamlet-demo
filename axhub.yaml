@@ -1,10 +1,10 @@
 version: axhub/v1
-name: teamlet
+name: teamlet-hr
 runtime:
   port: 3000
   health_path: /api/health
 build:
   strategy: auto
-  framework: docker
+  framework: nextjs
   deploy_method: docker
   dockerfile: Dockerfile
