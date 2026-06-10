@@ -4,8 +4,10 @@
 // Phase 2~8 도메인은 하단 주석 placeholder (docs/03 참조).
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../generated/client"
+  provider      = "prisma-client-js"
+  output        = "../generated/client"
+  // 로컬(Windows/macOS=native) + 컨테이너(alpine=linux-musl-openssl-3.0.x) 양쪽 엔진 생성
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 generator kysely {

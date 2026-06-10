@@ -16,6 +16,7 @@ export const authConfig = {
       const mfaPending = !!(auth?.user as Record<string, unknown> | undefined)?.mfaPending;
 
       const isPublic =
+        pathname === "/api/health" ||
         pathname === "/login" ||
         pathname === "/signup" ||
         pathname === "/admin-key" ||
