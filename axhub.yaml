@@ -4,7 +4,9 @@ runtime:
   port: 3000
   health_path: /api/health
 build:
-  strategy: auto
-  framework: node
   deploy_method: docker
   dockerfile: Dockerfile
+env:
+  required:
+    - name: DATABASE_URL
+      scope: runtime
