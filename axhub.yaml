@@ -5,6 +5,6 @@ runtime:
   health_path: /api/health
 build:
   strategy: auto
-  framework: docker
+  framework: node
   deploy_method: docker
   dockerfile: Dockerfile
