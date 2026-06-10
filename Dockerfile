@@ -29,6 +29,8 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+# axhub 빌드 인스턴스 메모리 한계(~1-2GB) 대응 — 힙 상한을 명시해 GC 적극화, OOM-kill 회피
+ENV NODE_OPTIONS=--max-old-space-size=1740
 
 RUN pnpm --filter @teamlet/db generate
 RUN pnpm --filter web build:standalone
