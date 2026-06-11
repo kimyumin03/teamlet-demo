@@ -3,6 +3,31 @@
 > 세션 시작 시 이 파일을 먼저 읽고, 작업이 끝나면 **다음에 할 일** 섹션을 업데이트하세요.
 > 상세 스펙은 `CLAUDE.md` + `/docs` 참조.
 
+> 🚀 **2026-06-10 axhub Docker 배포 정합 (실측 검증 완료)**
+> - **GitHub 연결 해법**: OAuth 콜백(state_invalid) 우회 → `axhub github accounts list`로 installation_id 확보 후 `axhub deploy git configure --installation-id <id> --repo <r> --branch main --state <connect로 즉시 발급> --execute`. 브라우저 세션 불필요.
+> - **Docker 빌드 3대 버그 해결** (전부 로컬 `docker build` + 컨테이너 기동 실측):
+>   1. **prisma: not found** — pnpm 모노레포는 패키지별 `node_modules/.bin`에 바이너리 둠. `COPY --from=deps /app/node_modules`(루트만)로는 유실 → Dockerfile에서 install을 **builder 단계 내부**로 통합(매니페스트 먼저 COPY→install→소스 COPY 순서로 캐싱 유지). 참조용 `docker/Dockerfile.web`도 같은 버그 보유(미사용).
+>   2. **alpine openssl** — `apk add libc6-compat openssl` + schema.prisma `binaryTargets=["native","linux-musl-openssl-3.0.x"]`.
+>   3. **헬스체크 307** — 미들웨어가 `/api/health`를 `/login`으로 리다이렉트 → `auth.config.ts` isPublic에 `/api/health` 추가(200 OK 확인).
+>   - apps/worker/package.json도 deps COPY 누락분 추가.
+> - **클라우드 인프라**: Neon(PostgreSQL) + Upstash(Redis) 무료플랜. env(DATABASE_URL/REDIS_URL/AUTH_SECRET) 등록 완료.
+> - **현재 앱**: id `023427ff-3082-4544-8a15-a7957442344c`, slug `teamlet-hr-v4`, URL `teamlet-hr.jocodingax.axhub.ai`, deploy_method=docker, tier=M. commit `8944642` 배포 진행 중.
+> - ⚠️ **남은 검증**: 배포 성공 후 Neon DB에 Prisma 마이그레이션 적용 필요(`prisma migrate deploy`). 시드(권한카탈로그/공휴일/법정휴가)도.
+> - GitHub repo = `kimyumin03/teamlet-demo` (origin), installation_id `139284575`.
+
+> 🔍 **2026-06-10 AxHub 연동 방향 (보류 — 배포 우선, 배포 완료 후 착수)**
+> - axhub에서 회사(tenant)/구성원(member) 데이터 받아서 teamlet에 적용하는 AxHub Adapter 구현
+> - axhub 데이터 구조 파악 완료:
+>   - Tenant: `id / name / slug / icon_url / admin_email` → teamlet `Company`
+>   - Member: `user.id / user.email / user.name / user.avatar_url / role / is_active` → teamlet `Employee`
+>   - CLI 명령: `axhub members list`, `axhub tenants get`으로 실제 데이터 조회 확인
+> - **다음에 구현할 것** (우선순위 순):
+>   1. `AxHubEmployeeDirectory.ts` — `AXHUB_API_KEY`로 members fetch → BulkOperation 파이프라인 연결 (`packages/modules/src/integrations/axhub/`)
+>   2. `syncLockedFields` UI 차단 로직 (axhub 관리 필드 수기 편집 차단)
+>   3. `/api/webhooks/axhub/employee-changed` — 변경 시 자동 동기화
+>   4. 최초 연결 플로우 (axhub tenant → teamlet Company 자동 생성, 설정 페이지)
+> - axhub 앱은 현재 삭제 상태 (배포는 CLI GitHub 연결 문제 해소 후 재시도)
+
 > 🎭 **2026-06-08 데모 모드 구현 완료**
 > - `packages/db/seed/demo.ts` 전면 확장: 부서 5개·직책 5개·직원 13명(계정 3명+직원전용 10명)·휴가종류 3종(연차/병가/경조사)·결재이력 다양화(PENDING/APPROVED/REJECTED)
 > - `demoLoginAction` 서버 액션 추가(`apps/web/src/lib/actions/auth.ts`)
