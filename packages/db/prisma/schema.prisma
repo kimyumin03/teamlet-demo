@@ -8,6 +8,8 @@ generator client {
   output        = "../generated/client"
   // 로컬(Windows/macOS=native) + 컨테이너(alpine=linux-musl-openssl-3.0.x) 양쪽 엔진 생성
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  // axhub 런타임은 외부 5432 TCP 차단 → Neon serverless 드라이버 어댑터(443/WS)로 우회
+  previewFeatures = ["driverAdapters"]
 }
 
 generator kysely {

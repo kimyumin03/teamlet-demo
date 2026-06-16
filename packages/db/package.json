@@ -21,14 +21,18 @@
     "seed": "tsx seed/index.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@prisma/adapter-neon": "6.19.3",
     "@prisma/client": "^6.1.0",
     "kysely": "^0.27.5",
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@teamlet/config": "workspace:*",
     "@types/node": "^22.10.2",
     "@types/pg": "^8.11.10",
+    "@types/ws": "^8.18.1",
     "prisma": "^6.1.0",
     "prisma-kysely": "^1.8.0",
     "tsx": "^4.19.2",
