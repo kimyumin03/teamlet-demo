@@ -41,6 +41,14 @@ const nextConfig: NextConfig = {
     "@teamlet/modules",
     "@teamlet/db",
   ],
+  // 마지막 OOM 레버 — webpack 코드 압축(Terser) 비활성화.
+  //   압축은 대형 AST 를 병렬 워커로 들고 도는 빌드 메모리 최대 소비 단계 중 하나.
+  //   끄면 번들이 커지지만(데모엔 무방) 빌드 피크 메모리·시간이 크게 줄어듦.
+  //   ⚠️ 빌드 외부화로 전환하면 이 옵션은 되돌릴 것.
+  webpack: (config) => {
+    config.optimization.minimize = false;
+    return config;
+  },
   // typedRoutes: 라우트 표면이 안정화되는 Phase 2 에서 재도입.
 };
 
