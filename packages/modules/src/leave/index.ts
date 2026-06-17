@@ -1,7 +1,7 @@
 export { bootstrapCompanyLeaveTypes } from "./bootstrap";
 export { listTeamLeaveCalendar, type CalendarLeaveItem } from "./calendar";
-export { listLeaveTypes, getLeaveBalances, grantLeave, adjustLeave, listCompanyLeaveBalances, processLeaveExpiry, getAnnualLeaveLedger, listMonthlyAnnualUsage, listLeaveGrantHistory } from "./balance";
-export type { LeaveGrantHistoryRow } from "./balance";
+export { listLeaveTypes, getLeaveBalances, grantLeave, adjustLeave, listCompanyLeaveBalances, processLeaveExpiry, getAnnualLeaveLedger, listMonthlyAnnualUsage, listLeaveGrantHistory, listLeaveAdjustmentHistory } from "./balance";
+export type { LeaveGrantHistoryRow, LeaveAdjustmentHistoryRow, LeaveAdjustmentKind } from "./balance";
 export { listPendingLeaveRequests, listMyLeaveRequests, listEmployeeLeaveHistory, requestLeave, approveLeave, rejectLeave, cancelLeave, finalizeLeaveFromApprovedDocument, finalizeLeaveFromRejectedDocument, listCompanyLeaveRequests } from "./request";
 export { listLeavePolicies, createLeavePolicy, createDefaultLeavePolicy, updateLeavePolicy, deleteLeavePolicy, listPolicyAssignments, assignLeavePolicy, removeLeavePolicy, getMyAnnualPolicyApprover } from "./policy";
 export { runAnnualLeaveGrant, type AutoGrantResult } from "./auto-grant";

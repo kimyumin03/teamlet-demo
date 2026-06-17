@@ -1,8 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requestLeave, approveLeave, rejectLeave, cancelLeave, grantLeave, adjustLeave, processLeaveExpiry, listLeaveGrantHistory } from "@teamlet/modules/leave";
-import type { LeaveScheduleEntry, LeaveGrantHistoryRow } from "@teamlet/modules/leave";
+import { requestLeave, approveLeave, rejectLeave, cancelLeave, grantLeave, adjustLeave, processLeaveExpiry, listLeaveGrantHistory, listLeaveAdjustmentHistory } from "@teamlet/modules/leave";
+import type { LeaveScheduleEntry, LeaveGrantHistoryRow, LeaveAdjustmentHistoryRow } from "@teamlet/modules/leave";
 import { listCompanyHolidays } from "@teamlet/modules/tenancy";
 import { createNotification } from "@teamlet/modules/notification";
 import { toApiResponse, type ApiResponse } from "@teamlet/shared";
@@ -101,6 +101,8 @@ export async function grantLeaveAction(input: {
   leaveTypeId: string;
   days: number;
   reason?: string;
+  usableFrom?: string | null;
+  usableUntil?: string | null;
 }): Promise<ApiResponse<void>> {
   const actorId = await requireEmployee();
   return toApiResponse(
@@ -110,6 +112,8 @@ export async function grantLeaveAction(input: {
       days: input.days,
       category: "ANNUAL",
       reason: input.reason,
+      usableFrom: input.usableFrom,
+      usableUntil: input.usableUntil,
     }),
   );
 }
@@ -138,6 +142,16 @@ export async function listLeaveGrantHistoryAction(filters?: {
 }): Promise<ApiResponse<LeaveGrantHistoryRow[]>> {
   const actorId = await requireEmployee();
   return toApiResponse(await listLeaveGrantHistory(actorId, filters));
+}
+
+export async function listLeaveAdjustmentHistoryAction(filters?: {
+  employeeId?: string;
+  leaveTypeId?: string;
+  year?: number;
+  group?: "annual" | "settlement";
+}): Promise<ApiResponse<LeaveAdjustmentHistoryRow[]>> {
+  const actorId = await requireEmployee();
+  return toApiResponse(await listLeaveAdjustmentHistory(actorId, filters));
 }
 
 export async function processLeaveExpiryAction(

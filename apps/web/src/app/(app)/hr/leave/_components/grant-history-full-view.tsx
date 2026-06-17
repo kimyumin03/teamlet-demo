@@ -17,6 +17,16 @@ function fmtDateTime(d: Date | string) {
   const m = String(dt.getMinutes()).padStart(2, "0");
   return `${fmtDate(dt)} ${h >= 12 ? "오후" : "오전"} ${h % 12 || 12}:${m}`;
 }
+function fmtUsable(from: Date | string | null, until: Date | string | null): string {
+  if (!from && !until) return "언제든 사용 가능";
+  return `${from ? fmtDate(from) : "제한 없음"} ~ ${until ? fmtDate(until) : "제한 없음"}`;
+}
+function isExpiredPeriod(until: Date | string | null): boolean {
+  if (!until) return false;
+  const u = new Date(until);
+  u.setHours(23, 59, 59, 999);
+  return u.getTime() < Date.now();
+}
 
 type ViewMode = "by-grant" | "by-employee";
 type Employee = { id: string; name: string; departmentName?: string | null };
@@ -314,12 +324,16 @@ export function GrantHistoryFullView({
                   <td className="px-3 py-2.5 font-medium text-foreground">{r.employeeName}</td>
                   <td className="px-3 py-2.5 text-foreground">{r.leaveTypeName}</td>
                   <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
-                    언제든 사용 가능
+                    {fmtUsable(r.usableFrom, r.usableUntil)}
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className="rounded-full border border-border px-2 py-0.5 text-[10.5px] font-semibold text-foreground-muted">
-                      {r.days > 0 ? "미사용" : "조정"}
-                    </span>
+                    {r.days < 0 ? (
+                      <span className="rounded-full border border-border px-2 py-0.5 text-[10.5px] font-semibold text-foreground-muted">조정</span>
+                    ) : isExpiredPeriod(r.usableUntil) ? (
+                      <span className="rounded-full border border-destructive-600/30 px-2 py-0.5 text-[10.5px] font-semibold text-destructive-600">기간 만료</span>
+                    ) : (
+                      <span className="rounded-full border border-border px-2 py-0.5 text-[10.5px] font-semibold text-foreground-muted">사용 가능</span>
+                    )}
                   </td>
                   <td className={`px-3 py-2.5 text-right font-mono font-semibold ${r.days < 0 ? "text-destructive-600" : "text-foreground"}`}>
                     {r.days > 0 ? "+" : ""}{r.days}일

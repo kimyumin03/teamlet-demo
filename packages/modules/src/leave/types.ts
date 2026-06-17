@@ -22,6 +22,9 @@ export type GrantLeaveInput = {
   category: LeaveTxCategory;
   reason?: string;
   note?: string;
+  /** 사용 가능 기간 제한(YYYY-MM-DD) — 설정 시 해당 기간에만 신청 가능. 미설정=언제든. */
+  usableFrom?: string | null;
+  usableUntil?: string | null;
 };
 
 /** 날짜별 상세 일정 1줄 (flexv2 #10~13 — 다일 휴가 날짜마다 단위 개별 지정) */

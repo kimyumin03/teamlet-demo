@@ -21,6 +21,12 @@ const ADJUST_TITLES: Record<AdjustKind, string> = {
   incumbent: "재직자 정산용 조정",
   resigned: "퇴직자 정산용 조정",
 };
+/** reason 머리태그 — 조정 내역 화면이 종류를 분류하도록 항상 prefix(모듈 parseAdjustmentReason 과 정확히 일치). */
+const ADJUST_REASON_TAGS: Record<AdjustKind, string> = {
+  annual: "[연차 조정]",
+  incumbent: "[재직자 정산]",
+  resigned: "[퇴직자 정산]",
+};
 
 export function AdjustLeaveDropdown({
   employees,
@@ -79,12 +85,16 @@ export function AdjustLeaveDropdown({
     if (!employeeId || !leaveTypeId || !days) return;
     setError(null);
     const signed = direction === "deduct" ? -Math.abs(Number(days)) : Math.abs(Number(days));
+    const userReason = reason.trim();
+    const taggedReason = userReason
+      ? `${ADJUST_REASON_TAGS[adjustKind]} ${userReason}`
+      : ADJUST_REASON_TAGS[adjustKind];
     startTransition(async () => {
       const res = await adjustLeaveAction({
         employeeId,
         leaveTypeId,
         days: signed,
-        reason: reason.trim() || `[${ADJUST_TITLES[adjustKind]}]${reason ? " " + reason : ""}`,
+        reason: taggedReason,
       });
       if (res.ok) {
         setModalOpen(false);
@@ -141,25 +151,23 @@ export function AdjustLeaveDropdown({
             </div>
             <button
               type="button"
-              onClick={() => { setMenuOpen(false); }}
+              onClick={() => { setMenuOpen(false); router.push("/hr/leave?view=adjust-history&group=annual"); }}
               style={{
                 width: "100%", textAlign: "left", padding: "8px 14px",
                 fontSize: 13, background: "none", border: "none",
-                cursor: "pointer", color: "var(--fg-muted)",
+                cursor: "pointer", color: "var(--fg)",
               }}
-              title="준비 중"
             >
               연차 조정 내역
             </button>
             <button
               type="button"
-              onClick={() => { setMenuOpen(false); }}
+              onClick={() => { setMenuOpen(false); router.push("/hr/leave?view=adjust-history&group=settlement"); }}
               style={{
                 width: "100%", textAlign: "left", padding: "8px 14px",
                 fontSize: 13, background: "none", border: "none",
-                cursor: "pointer", color: "var(--fg-muted)",
+                cursor: "pointer", color: "var(--fg)",
               }}
-              title="준비 중"
             >
               재직·퇴직자 잔여 조정 내역
             </button>

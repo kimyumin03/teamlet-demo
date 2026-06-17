@@ -30,6 +30,9 @@ export function GrantLeaveDropdown({
   const [leaveTypeId, setLeaveTypeId] = useState("");
   const [days, setDays] = useState<number | "">(1);
   const [reason, setReason] = useState("");
+  const [limitPeriod, setLimitPeriod] = useState(false);
+  const [usableFrom, setUsableFrom] = useState("");
+  const [usableUntil, setUsableUntil] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -50,6 +53,9 @@ export function GrantLeaveDropdown({
     setLeaveTypeId("");
     setDays(1);
     setReason("");
+    setLimitPeriod(false);
+    setUsableFrom("");
+    setUsableUntil("");
     setError(null);
   }
 
@@ -61,6 +67,10 @@ export function GrantLeaveDropdown({
 
   function handleSubmit() {
     if (!employeeId || !leaveTypeId || !days) return;
+    if (limitPeriod && usableFrom && usableUntil && usableFrom > usableUntil) {
+      setError("사용 가능 기간의 시작일이 종료일보다 늦어요");
+      return;
+    }
     setError(null);
     startTransition(async () => {
       const res = await grantLeaveAction({
@@ -68,6 +78,8 @@ export function GrantLeaveDropdown({
         leaveTypeId,
         days: Number(days),
         reason: reason.trim() || undefined,
+        usableFrom: limitPeriod && usableFrom ? usableFrom : null,
+        usableUntil: limitPeriod && usableUntil ? usableUntil : null,
       });
       if (res.ok) {
         setModalOpen(false);
@@ -189,6 +201,44 @@ export function GrantLeaveDropdown({
                 onChange={(e) => setReason(e.target.value)}
                 disabled={isPending}
               />
+            </div>
+
+            {/* 사용 가능 기간 제한 — 설정 시 해당 기간에만 신청 가능 */}
+            <div className="flex flex-col gap-1.5">
+              <label className="flex items-center gap-2 text-xs font-medium text-foreground-muted">
+                <input
+                  type="checkbox"
+                  className="h-3.5 w-3.5 rounded border-border"
+                  checked={limitPeriod}
+                  onChange={(e) => setLimitPeriod(e.target.checked)}
+                  disabled={isPending}
+                />
+                사용 가능 기간 제한 <span className="text-foreground-subtle">(선택)</span>
+              </label>
+              {limitPeriod && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    className="rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground outline-none focus:border-foreground-subtle"
+                    value={usableFrom}
+                    onChange={(e) => setUsableFrom(e.target.value)}
+                    disabled={isPending}
+                  />
+                  <span className="text-foreground-muted">~</span>
+                  <input
+                    type="date"
+                    className="rounded-[8px] border border-border bg-background-primary px-3 py-2 text-[13px] text-foreground outline-none focus:border-foreground-subtle"
+                    value={usableUntil}
+                    onChange={(e) => setUsableUntil(e.target.value)}
+                    disabled={isPending}
+                  />
+                </div>
+              )}
+              {limitPeriod && (
+                <p className="text-[11.5px] text-foreground-subtle">
+                  설정한 기간에만 이 휴가를 신청할 수 있어요. 비워 둔 쪽은 제한 없음으로 처리돼요.
+                </p>
+              )}
             </div>
 
             {error && <p className="text-[12px] text-destructive-600">{error}</p>}

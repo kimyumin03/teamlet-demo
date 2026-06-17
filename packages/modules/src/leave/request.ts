@@ -225,6 +225,35 @@ export async function requestLeave(
     }
   }
 
+  // 사용 가능 기간 제한 — 부여 시 usableFrom/usableUntil 이 설정된 맞춤 휴가는 그 기간에만 신청 가능.
+  // 윈도우를 가진 부여가 하나라도 있으면, 요청 기간이 어떤 윈도우(또는 무제한 부여)에 완전히 포함돼야 함.
+  // 날짜 비교는 기존 startStr/endStr 와 동일하게 toISOString().slice(0,10) 캐논으로 통일(TZ 안전).
+  const windowedGrants = await prisma.leaveTransaction.findMany({
+    where: {
+      employeeId, leaveTypeId, txType: "GRANT",
+      OR: [{ usableFrom: { not: null } }, { usableUntil: { not: null } }],
+    },
+    select: { usableFrom: true, usableUntil: true },
+  });
+  if (windowedGrants.length > 0) {
+    const reqStart = startDate.toISOString().slice(0, 10);
+    const reqEnd = endDate.toISOString().slice(0, 10);
+    const hasUnrestricted = (await prisma.leaveTransaction.count({
+      where: { employeeId, leaveTypeId, txType: "GRANT", usableFrom: null, usableUntil: null },
+    })) > 0;
+    const covered = hasUnrestricted || windowedGrants.some((g) => {
+      const from = g.usableFrom ? g.usableFrom.toISOString().slice(0, 10) : null;
+      const until = g.usableUntil ? g.usableUntil.toISOString().slice(0, 10) : null;
+      return (!from || reqStart >= from) && (!until || reqEnd <= until);
+    });
+    if (!covered) {
+      const w = windowedGrants[0]!;
+      const from = w.usableFrom ? w.usableFrom.toISOString().slice(0, 10) : "제한 없음";
+      const until = w.usableUntil ? w.usableUntil.toISOString().slice(0, 10) : "제한 없음";
+      return err(errors.validation(`${leaveType.name}은(는) ${from} ~ ${until} 기간에만 사용할 수 있어요`));
+    }
+  }
+
   const year = startDate.getFullYear();
   const balance = await prisma.leaveBalance.findUnique({
     where: { employeeId_leaveTypeId_year: { employeeId, leaveTypeId, year } },

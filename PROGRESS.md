@@ -3,6 +3,12 @@
 > 세션 시작 시 이 파일을 먼저 읽고, 작업이 끝나면 **다음에 할 일** 섹션을 업데이트하세요.
 > 상세 스펙은 `CLAUDE.md` + `/docs` 참조.
 
+> 🍃 **2026-06-17 (2) 휴가 도메인 마무리 — 조정 내역 화면 + 사용가능기간 파이프라인 (타입클린, 런타임 미검증)**
+> - **배경**: 사용자 "휴가 도메인 마무리". PROGRESS가 실제 코드보다 뒤처져 Explore 감사로 실측 갭 재확인. **확정**: Task G(소멸·이월 엔진)는 이미 `processLeaveExpiry`가 annualExpiryMode·carryoverMaxDays·grace·grantMode·멱등마커 전부 반영(H6 커밋도 "추가작업 불필요"로 종결) → **잔여 아님**. 엑셀 export/import API(`/api/hr/leave/export/grants`·`import/usage`)도 **존재**(감사 과대플래그). 진짜 잔여 = 조정내역 stub 2건 + usableFrom/Until 데드필드.
+> - **① 연차 조정 내역 화면 (관리자 UI "준비 중" stub 2건 해소)**: `adjust-leave-dropdown`의 비활성 메뉴(연차 조정내역 / 재직·퇴직자 잔여 조정내역)를 실제 화면으로 연결. 조정 종류(연차/재직정산/퇴직정산)를 **라이브 Neon 마이그레이션 없이** 보존하려 `adjustLeave` reason에 머리태그(`[연차 조정]`/`[재직자 정산]`/`[퇴직자 정산]`)를 **항상 prefix**(기존 `reason.trim() || 태그` 버그=사유 입력 시 태그 누락, 수정). 모듈 `listLeaveAdjustmentHistory`(txType=ADJUST만, 태그 파싱→kind 분류, group=annual/settlement 필터) + 액션 + `adjust-history-full-view.tsx`(grant-history 패턴 미러: 구분/연도/휴가종류 칩 + 테이블) + `hr/leave/page.tsx` `view==="adjust-history"` 분기.
+> - **② 사용 가능 기간 파이프라인 (usableFrom/usableUntil 데드필드 → 동작)**: 스키마(LeaveTransaction)엔 있으나 코드 참조 0건이던 필드를 캡처→저장→표시→검증까지 연결. 맞춤휴가 부여 모달(`grant-leave-dropdown`)에 "사용 가능 기간 제한" 토글+날짜 2개 → `grantLeaveAction`→`grantLeave`가 LeaveTransaction에 저장. `LeaveGrantHistoryRow`+`listLeaveGrantHistory`에 usableFrom/Until 추가 → 부여내역 대상자별 뷰의 하드코딩("언제든 사용 가능"/"미사용") 제거, 실데이터+기간만료 배지. `requestLeave`에 **윈도우 검증**(윈도우 가진 부여 존재 시 요청기간이 어떤 윈도우/무제한부여에 완전포함돼야 함, 날짜는 toISOString().slice(0,10) 캐논 비교). ⚠️ lot 단위 잔여회계까지는 아님 — 단일부여 케이스 정확·다중에도 안전(과허용 없음).
+> - **검증**: modules+web `tsc --noEmit` 둘 다 **exit 0**. ⚠️ **런타임 미검증** — Docker Desktop 미기동(로컬 Postgres/Redis 없음)으로 dev 서버 못 띄움. 라이브 Neon은 데모DB라 dev 연결 회피. 10파일(9수정+1신규 `adjust-history-full-view.tsx`). 스키마 변경 없음(db push 불필요). 미커밋.
+
 > 🩹 **2026-06-17 목업 데모 이름 정합 + 로그아웃 리셋 버그 수정 + axhub 재배포 (실측·동작 확인)**
 > - **증상**: 목업(DEMO-0000) 로그인 시 이름이 사이드바=김관리 ≠ 프로필=한지민, 그리고 로그아웃해도 초기화 안 됨.
 > - **이름 불일치**: `demo/reset.ts`(로그아웃 재시드)가 Employee를 "한지민"으로 새로 만드는데 User upsert는 `update:{}`라 User.name="김관리"가 영구히 안 고쳐짐 → 세션이름(User.name) ≠ 프로필이름(Employee.name). → reset.ts를 김관리로 정합 + `update:{name:"김관리"}` 자가보정 (커밋 `c49cf5a`). **사용자 결정: 이름=김관리 통일, 로그아웃 초기화=유지.**

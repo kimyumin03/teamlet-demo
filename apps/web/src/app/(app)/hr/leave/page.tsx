@@ -8,6 +8,7 @@ import {
   listMonthlyAnnualUsage,
   listCompanyLeavePromotions,
   listLeaveGrantHistory,
+  listLeaveAdjustmentHistory,
 } from "@teamlet/modules/leave";
 import { listEmployees } from "@teamlet/modules/employee";
 import { listDepartments } from "@teamlet/modules/department";
@@ -19,6 +20,7 @@ import { RequestsTable } from "./_components/requests-table";
 import { MonthlyAnnualTable } from "./_components/monthly-annual-table";
 import { PromotionTable } from "./_components/promotion-table";
 import { GrantHistoryFullView } from "./_components/grant-history-full-view";
+import { AdjustHistoryFullView } from "./_components/adjust-history-full-view";
 
 export const dynamic = "force-dynamic";
 
@@ -33,13 +35,13 @@ type TabId = (typeof TABS)[number]["id"];
 export default async function HrLeavePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; year?: string; view?: string }>;
+  searchParams: Promise<{ tab?: string; year?: string; view?: string; group?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (!session.user.employeeId) redirect("/join-company");
 
-  const { tab, year: yearParam, view } = await searchParams;
+  const { tab, year: yearParam, view, group } = await searchParams;
 
   // 맞춤 휴가 부여 내역 전체 화면
   if (view === "grant-history") {
@@ -64,6 +66,28 @@ export default async function HrLeavePage({
       />
     );
   }
+
+  // 연차 조정 내역 전체 화면
+  if (view === "adjust-history") {
+    const employeeId = session.user.employeeId;
+    const currentYear = new Date().getFullYear();
+    const grp = group === "settlement" ? "settlement" : group === "annual" ? "annual" : undefined;
+    const [historyResult, typesResult] = await Promise.all([
+      listLeaveAdjustmentHistory(employeeId, { year: currentYear, ...(grp ? { group: grp } : {}) }),
+      listLeaveTypes(employeeId),
+    ]);
+    const initialRows = historyResult.ok ? historyResult.data : [];
+    const leaveTypes = typesResult.ok ? typesResult.data : [];
+    return (
+      <AdjustHistoryFullView
+        initialRows={initialRows}
+        leaveTypes={leaveTypes}
+        currentYear={currentYear}
+        initialGroup={grp ?? "all"}
+      />
+    );
+  }
+
   const activeTab: TabId =
     tab === "requests" ? "requests"
     : tab === "monthly" ? "monthly"

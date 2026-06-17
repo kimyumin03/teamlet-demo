@@ -188,8 +188,10 @@ export async function grantLeave(
     return catchDomainErr(e);
   }
 
-  const { employeeId, leaveTypeId, days, category, reason, note } = input;
+  const { employeeId, leaveTypeId, days, category, reason, note, usableFrom, usableUntil } = input;
   const year = new Date().getFullYear();
+  // 사용 가능 기간(YYYY-MM-DD) → @db.Date. 빈값/미설정은 null(언제든 사용 가능).
+  const toDate = (s?: string | null) => (s ? new Date(`${s}T00:00:00.000Z`) : null);
 
   await prisma.$transaction([
     prisma.leaveTransaction.create({
@@ -202,6 +204,8 @@ export async function grantLeave(
         reason: reason ?? "관리자 부여",
         note,
         actorId,
+        usableFrom: toDate(usableFrom),
+        usableUntil: toDate(usableUntil),
       },
     }),
     prisma.leaveBalance.upsert({
@@ -485,6 +489,9 @@ export type LeaveGrantHistoryRow = {
   days: number;
   reason: string;
   actorName: string | null;
+  /** 사용 가능 기간 — 부여 시 제한했으면 해당 범위, 아니면 null(언제든 사용 가능) */
+  usableFrom: Date | null;
+  usableUntil: Date | null;
 };
 
 /** 부여·조정 내역 — LeaveTransaction(GRANT/ADJUST)을 회사 단위로 최근순 조회(최대 300건). */
@@ -529,8 +536,102 @@ export async function listLeaveGrantHistory(
       days: Number(t.days),
       reason: t.reason,
       actorName: t.actor?.name ?? null,
+      usableFrom: t.usableFrom ?? null,
+      usableUntil: t.usableUntil ?? null,
     })),
   );
+}
+
+/** 조정 종류 — adjustLeave 의 reason 머리태그로 보존(라이브 DB 마이그레이션 회피).
+ *  연차 조정=수동 부여/차감, 재직자/퇴직자 정산=연차수당 지급용. 태그 없는 과거분=other. */
+export type LeaveAdjustmentKind = "annual" | "incumbent" | "resigned" | "other";
+
+/** reason 머리태그(예: "[재직자 정산] 입사누락분") → kind + 태그 제거한 표시용 사유. */
+const ADJUSTMENT_REASON_TAGS: { tag: string; kind: LeaveAdjustmentKind }[] = [
+  { tag: "[연차 조정]", kind: "annual" },
+  { tag: "[재직자 정산]", kind: "incumbent" },
+  { tag: "[퇴직자 정산]", kind: "resigned" },
+];
+function parseAdjustmentReason(reason: string): { kind: LeaveAdjustmentKind; clean: string } {
+  for (const { tag, kind } of ADJUSTMENT_REASON_TAGS) {
+    if (reason.startsWith(tag)) return { kind, clean: reason.slice(tag.length).trim() };
+  }
+  return { kind: "other", clean: reason };
+}
+
+export type LeaveAdjustmentHistoryRow = {
+  id: string;
+  occurredAt: Date;
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string | null;
+  departmentName: string | null;
+  leaveTypeName: string;
+  leaveTypeKey: string;
+  kind: LeaveAdjustmentKind;
+  days: number;
+  reason: string; // 표시용(머리태그 제거)
+  actorName: string | null;
+};
+
+/** 연차 조정 내역 — 수동 조정(txType=ADJUST)만 회사 단위 최근순 조회(최대 300건).
+ *  group: "annual"=연차 조정+기타 / "settlement"=재직·퇴직자 정산 / 미지정=전체.
+ *  EXPIRE(자동 소멸)·GRANT(부여)는 부여 내역(listLeaveGrantHistory) 소관이라 제외. */
+export async function listLeaveAdjustmentHistory(
+  actorEmployeeId: string,
+  filters?: { employeeId?: string; leaveTypeId?: string; year?: number; group?: "annual" | "settlement" },
+): Promise<Result<LeaveAdjustmentHistoryRow[]>> {
+  const actor = await loadActor(actorEmployeeId);
+  if (!actor) return err(errors.notFound("회사 컨텍스트를 찾을 수 없어요"));
+  const perms = await getEffectivePermissions(actorEmployeeId);
+  if (!perms.has(BALANCE_MANAGE)) return err(errors.forbidden("조정 내역을 볼 권한이 없어요"));
+
+  const year = filters?.year;
+  const txs = await prisma.leaveTransaction.findMany({
+    where: {
+      employee: { companyId: actor.companyId },
+      txType: "ADJUST",
+      ...(filters?.employeeId ? { employeeId: filters.employeeId } : {}),
+      ...(filters?.leaveTypeId ? { leaveTypeId: filters.leaveTypeId } : {}),
+      ...(year
+        ? { occurredAt: { gte: new Date(`${year}-01-01`), lt: new Date(`${year + 1}-01-01`) } }
+        : {}),
+    },
+    include: {
+      employee: { select: { name: true, employeeNumber: true, department: { select: { name: true } } } },
+      leaveType: { select: { name: true, key: true } },
+      actor: { select: { name: true } },
+    },
+    orderBy: { occurredAt: "desc" },
+    take: 300,
+  });
+
+  let rows: LeaveAdjustmentHistoryRow[] = txs.map((t) => {
+    const { kind, clean } = parseAdjustmentReason(t.reason);
+    return {
+      id: t.id,
+      occurredAt: t.occurredAt,
+      employeeId: t.employeeId,
+      employeeName: t.employee.name,
+      employeeNumber: t.employee.employeeNumber ?? null,
+      departmentName: t.employee.department?.name ?? null,
+      leaveTypeName: t.leaveType.name,
+      leaveTypeKey: t.leaveType.key,
+      kind,
+      days: Number(t.days),
+      reason: clean,
+      actorName: t.actor?.name ?? null,
+    };
+  });
+
+  // 정산=재직/퇴직만, 연차=연차조정+태그없는 과거분(숨김 방지)
+  if (filters?.group === "settlement") {
+    rows = rows.filter((r) => r.kind === "incumbent" || r.kind === "resigned");
+  } else if (filters?.group === "annual") {
+    rows = rows.filter((r) => r.kind === "annual" || r.kind === "other");
+  }
+
+  return ok(rows);
 }
 
 /** 연차 상세 탭 — 연도별 월별 원장 집계.
