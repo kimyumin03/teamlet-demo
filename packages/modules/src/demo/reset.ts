@@ -68,8 +68,9 @@ async function purgeCompany(cid: string): Promise<void> {
 async function seedMockupCompany(adminPwHash: string): Promise<void> {
   const demoUser = await prisma.user.upsert({
     where: { email: DEMO_EMAIL },
-    create: { email: DEMO_EMAIL, name: "한지민", passwordHash: adminPwHash, emailVerified: true },
-    update: {},
+    create: { email: DEMO_EMAIL, name: "김관리", passwordHash: adminPwHash, emailVerified: true },
+    // 과거 시드에서 User.name 이 다른 값으로 남아 있을 수 있어 매 리셋마다 김관리로 보정
+    update: { name: "김관리" },
     select: { id: true },
   });
 
@@ -114,7 +115,7 @@ async function seedMockupCompany(adminPwHash: string): Promise<void> {
     { name: "조민서", hireDate: new Date("2023-08-01T00:00:00.000Z"), deptId: mktDept.id,    posId: memberPos.id },
     { name: "송유진", hireDate: new Date("2020-03-02T00:00:00.000Z"), deptId: hrDept.id,     posId: leadPos.id   },
     { name: "오채원", hireDate: new Date("2022-05-16T00:00:00.000Z"), deptId: hrDept.id,     posId: memberPos.id },
-    { name: "한지민", hireDate: new Date("2020-07-01T00:00:00.000Z"), deptId: finDept.id,    posId: leadPos.id   }, // ← demo@teamlet.io
+    { name: "김관리", hireDate: new Date("2020-07-01T00:00:00.000Z"), deptId: finDept.id,    posId: leadPos.id   }, // ← demo@teamlet.io
     { name: "임도현", hireDate: new Date("2023-04-03T00:00:00.000Z"), deptId: finDept.id,    posId: memberPos.id },
     { name: "권승우", hireDate: new Date("2021-10-01T00:00:00.000Z"), deptId: devDept.id,    posId: seniorPos.id },
   ];
@@ -135,7 +136,7 @@ async function seedMockupCompany(adminPwHash: string): Promise<void> {
     ),
   );
 
-  const adminEmp = createdEmps[12]!; // 한지민 (index 12)
+  const adminEmp = createdEmps[12]!; // 김관리 (index 12)
 
   await prisma.userCompanyMembership.create({
     data: {
