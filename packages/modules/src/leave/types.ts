@@ -7,7 +7,12 @@ export type LeaveBalanceSummary = {
   grantedDays: number;
   usedDays: number;
   adjustedDays: number;
+  /** 보유 잔여 = granted - used + adjusted (승인 완료 기준) */
   remainingDays: number;
+  /** 승인 대기 중인 신청 일수 합 */
+  pendingDays: number;
+  /** 신청 가능 잔여 = remaining - pending (신청 검증과 동일 공식) */
+  availableDays: number;
 };
 
 export type GrantLeaveInput = {
@@ -122,6 +127,8 @@ export type CompanyLeaveBalanceRow = {
     usedDays: number;
     adjustedDays: number;
     remainingDays: number;
+    pendingDays: number;
+    availableDays: number;
   }[];
 };
 

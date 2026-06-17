@@ -17,6 +17,32 @@ function calcTenureYears(hireDate: Date): number {
   return Math.max(0, years);
 }
 
+/**
+ * 승인 대기(PENDING) 휴가 일수 합 — 직원×유형별. key = `${employeeId}:${leaveTypeId}`.
+ * 표시 잔여(availableDays)와 신청 검증(requestLeave)이 **동일 공식**을 쓰도록 하는 단일 소스.
+ * 집계 기준: status=PENDING + 해당 연도(startDate 기준).
+ */
+export async function sumPendingDaysByType(
+  employeeIds: string[],
+  year: number,
+): Promise<Map<string, number>> {
+  if (employeeIds.length === 0) return new Map();
+  const grouped = await prisma.leaveRequest.groupBy({
+    by: ["employeeId", "leaveTypeId"],
+    where: {
+      employeeId: { in: employeeIds },
+      status: "PENDING",
+      startDate: { gte: new Date(`${year}-01-01`), lt: new Date(`${year + 1}-01-01`) },
+    },
+    _sum: { days: true },
+  });
+  const map = new Map<string, number>();
+  for (const g of grouped) {
+    map.set(`${g.employeeId}:${g.leaveTypeId}`, Number(g._sum.days ?? 0));
+  }
+  return map;
+}
+
 export async function listLeaveTypes(
   employeeId: string,
 ): Promise<Result<LeaveTypeItem[]>> {
@@ -126,6 +152,8 @@ export async function getLeaveBalances(
     include: { leaveType: { select: { name: true, key: true, isActive: true } } },
   });
 
+  const pendingMap = await sumPendingDaysByType([employeeId], year);
+
   return ok(
     balances
       .filter((b) => b.leaveType.isActive)
@@ -133,6 +161,8 @@ export async function getLeaveBalances(
         const granted = Number(b.grantedDays);
         const used = Number(b.usedDays);
         const adjusted = Number(b.adjustedDays);
+        const remaining = granted - used + adjusted;
+        const pending = pendingMap.get(`${employeeId}:${b.leaveTypeId}`) ?? 0;
         return {
           leaveTypeId: b.leaveTypeId,
           leaveTypeName: b.leaveType.name,
@@ -140,7 +170,9 @@ export async function getLeaveBalances(
           grantedDays: granted,
           usedDays: used,
           adjustedDays: adjusted,
-          remainingDays: granted - used + adjusted,
+          remainingDays: remaining,
+          pendingDays: pending,
+          availableDays: remaining - pending,
         };
       }),
   );
@@ -216,6 +248,8 @@ export async function listCompanyLeaveBalances(
     orderBy: { name: "asc" },
   });
 
+  const pendingMap = await sumPendingDaysByType(employees.map((e) => e.id), year);
+
   return ok(
     employees.map((emp) => ({
       employeeId: emp.id,
@@ -230,6 +264,8 @@ export async function listCompanyLeaveBalances(
         const granted = bal ? Number(bal.grantedDays) : 0;
         const used = bal ? Number(bal.usedDays) : 0;
         const adjusted = bal ? Number(bal.adjustedDays) : 0;
+        const remaining = granted - used + adjusted;
+        const pending = pendingMap.get(`${emp.id}:${lt.id}`) ?? 0;
         return {
           leaveTypeId: lt.id,
           leaveTypeKey: lt.key,
@@ -237,7 +273,9 @@ export async function listCompanyLeaveBalances(
           grantedDays: granted,
           usedDays: used,
           adjustedDays: adjusted,
-          remainingDays: granted - used + adjusted,
+          remainingDays: remaining,
+          pendingDays: pending,
+          availableDays: remaining - pending,
         };
       }),
     })),

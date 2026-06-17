@@ -1,6 +1,6 @@
 import { prisma } from "@teamlet/db";
 import { ok, err, errors, type Result } from "@teamlet/shared";
-import { finalizeLeaveFromApprovedDocument, finalizeLeaveFromRejectedDocument } from "../leave/request";
+import { applyLeaveApprovalTx, notifyLeaveApproved, applyLeaveRejectionTx, notifyLeaveRejected, type LeaveNotif } from "../leave/request";
 import { finalizeLeavePlanFromDocument } from "../leave/promotion";
 import { createNotification } from "../notification/index";
 
@@ -73,6 +73,7 @@ export async function approveDocument(
   }
 
   let docApproved = false;
+  let leaveNotif: LeaveNotif | null = null;
   await prisma.$transaction(async (tx) => {
     await tx.approvalLine.update({
       where: { id: lineId },
@@ -93,12 +94,17 @@ export async function approveDocument(
         data: { status: "APPROVED" },
       });
       docApproved = true;
+      // 휴가 신청 최종 승인 → 잔여 차감까지 같은 트랜잭션에서 원자적으로 처리(H7).
+      // 크래시/실패 시 문서=승인·휴가=미반영 불일치를 원천 차단.
+      if (line.document.kind === "LEAVE_REQUEST") {
+        leaveNotif = await applyLeaveApprovalTx(tx, line.documentId);
+      }
     }
   });
 
-  if (docApproved && line.document.kind === "LEAVE_REQUEST") {
-    await finalizeLeaveFromApprovedDocument(line.documentId);
-  }
+  // 휴가 승인 알림 (트랜잭션 밖 — 실패해도 승인은 보존)
+  if (leaveNotif) await notifyLeaveApproved(leaveNotif);
+  // 연차 사용계획(LEAVE_PLAN)은 잔여 영향이 없어 기존 경로 유지
   if (docApproved && line.document.kind === "LEAVE_PLAN") {
     await finalizeLeavePlanFromDocument(line.documentId, true);
   }
@@ -167,23 +173,20 @@ export async function rejectDocument(
     return err(errors.validation("이미 종료된 문서예요"));
   }
 
-  await prisma.$transaction([
-    prisma.approvalLine.update({
-      where: { id: lineId },
-      data: { status: "REJECTED" },
-    }),
-    prisma.approvalAction.create({
+  let leaveRejNotif: LeaveNotif | null = null;
+  await prisma.$transaction(async (tx) => {
+    await tx.approvalLine.update({ where: { id: lineId }, data: { status: "REJECTED" } });
+    await tx.approvalAction.create({
       data: { documentId: line.documentId, lineId, actorId, action: "REJECT", comment },
-    }),
-    prisma.formDocument.update({
-      where: { id: line.documentId },
-      data: { status: "REJECTED" },
-    }),
-  ]);
+    });
+    await tx.formDocument.update({ where: { id: line.documentId }, data: { status: "REJECTED" } });
+    // 휴가 신청 반려 → 신청 상태 반영을 같은 트랜잭션에서 원자적으로(H7)
+    if (line.document.kind === "LEAVE_REQUEST") {
+      leaveRejNotif = await applyLeaveRejectionTx(tx, line.documentId);
+    }
+  });
 
-  if (line.document.kind === "LEAVE_REQUEST") {
-    await finalizeLeaveFromRejectedDocument(line.documentId);
-  }
+  if (leaveRejNotif) await notifyLeaveRejected(leaveRejNotif);
   if (line.document.kind === "LEAVE_PLAN") {
     await finalizeLeavePlanFromDocument(line.documentId, false);
   }
