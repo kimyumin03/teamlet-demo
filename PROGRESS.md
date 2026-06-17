@@ -3,6 +3,13 @@
 > 세션 시작 시 이 파일을 먼저 읽고, 작업이 끝나면 **다음에 할 일** 섹션을 업데이트하세요.
 > 상세 스펙은 `CLAUDE.md` + `/docs` 참조.
 
+> 🩹 **2026-06-17 목업 데모 이름 정합 + 로그아웃 리셋 버그 수정 + axhub 재배포 (실측·동작 확인)**
+> - **증상**: 목업(DEMO-0000) 로그인 시 이름이 사이드바=김관리 ≠ 프로필=한지민, 그리고 로그아웃해도 초기화 안 됨.
+> - **이름 불일치**: `demo/reset.ts`(로그아웃 재시드)가 Employee를 "한지민"으로 새로 만드는데 User upsert는 `update:{}`라 User.name="김관리"가 영구히 안 고쳐짐 → 세션이름(User.name) ≠ 프로필이름(Employee.name). → reset.ts를 김관리로 정합 + `update:{name:"김관리"}` 자가보정 (커밋 `c49cf5a`). **사용자 결정: 이름=김관리 통일, 로그아웃 초기화=유지.**
+> - **초기화 실패 (핵심 버그)**: 체험 중 만든 **공지(announcements)** 등이 작성자(Employee)를 RESTRICT FK로 잡는데 `purgeCompany`가 employee 삭제 전에 안 지움 → `announcements_authorId_fkey violates RESTRICT`로 `$transaction` 전체 롤백, `try/catch`가 조용히 삼킴(런타임 로그 `[demo-reset] 원복 실패`로만 노출). → purgeCompany를 **회사범위 전 테이블 + 모든 Employee-RESTRICT FK**(announcement(+comment)·jobPosting(+candidate/stage)·companyDocument·certificateIssue·formDocument(+line/action/cc) 등) + 내부 RESTRICT(leaveTransaction→leaveRequest, formDocument→formTemplate)를 FK-안전 순서로 선삭제하도록 전면 보강 (커밋 `88ace94`, web typecheck 통과).
+> - **axhub 재배포 (prebuilt 사이클 ×2)**: `docker build`→컨테이너 내 tar→`axhub-deploy`의 prebuilt.tar.gz 교체→push→`axhub deploy create`. **함정 3건**: ① main `axhub.yaml`의 `name`이 실제 앱 slug와 달라(`teamlet-hr`) deploy-prep이 `app_not_found→first-deploy`로 오판 → name을 `teamlet-app`으로 정합(`32caa82`). ② pre-push 훅(typecheck)이 fresh worktree(node_modules 없음)서 false-fail → `axhub-deploy` push를 **main worktree에서** 실행해 main을 typecheck시켜 통과. ③ deploy-prep `github_connected:false`는 부정확 — 실제 git 연결됨(`apps git status`: repo=teamlet-demo, branch=axhub-deploy).
+> - **결과**: 프로덕션 배포 `51eef3bf` **succeeded**. 런타임 로그 검증 — 배포(05:41) 이후 `[demo-reset] 원복 실패` **0건**, 사용자 직접 동작 확인(정상 초기화). origin/main·axhub-deploy 동기화 완료. (선택 잔여: `db/seed/reseed-mockup.ts`의 동일 purge도 보강 가능 — 수동 유틸, 라이브 무관.)
+
 > 🚀 **2026-06-10 axhub Docker 배포 정합 (실측 검증 완료)**
 > - **GitHub 연결 해법**: OAuth 콜백(state_invalid) 우회 → `axhub github accounts list`로 installation_id 확보 후 `axhub deploy git configure --installation-id <id> --repo <r> --branch main --state <connect로 즉시 발급> --execute`. 브라우저 세션 불필요.
 > - **Docker 빌드 3대 버그 해결** (전부 로컬 `docker build` + 컨테이너 기동 실측):

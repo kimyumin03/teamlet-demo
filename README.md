@@ -1,289 +1,185 @@
 # Teamlet
 
-한국형 HR SaaS — 구성원 관리 · 휴가 · 전자결재를 하나로.
+> **풀스펙 한국형 HR SaaS** — 구성원 · 조직 · 휴가 · 전자결재 · 채용 · 문서를 하나로.
+> 목표는 **Flex 대체**: 간소화가 아니라 풀스펙·고완성도의 SaaS 대체 수준.
 
-> 기획/분석/설계 문서: [`/docs`](./docs)  
-> Claude Code 작업 지침: [`CLAUDE.md`](./CLAUDE.md)  
-> 세션별 진행 상황: [`PROGRESS.md`](./PROGRESS.md)
+<p>
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-15-black">
+  <img alt="React" src="https://img.shields.io/badge/React-19-149ECA">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178C6">
+  <img alt="Prisma" src="https://img.shields.io/badge/Prisma-PostgreSQL-2D3748">
+  <img alt="Tailwind" src="https://img.shields.io/badge/Tailwind-v4-38BDF8">
+</p>
 
-## 스택
+한국 **근로기준법**(연차 부여 §60 · 사용 촉진 §61 · 법정휴가)을 정확히 반영한 멀티테넌트 인사관리 플랫폼입니다. **시점 기반 인사 이력**, **RBAC + Scope 권한**, **통합 전자결재**, **⌘K 명령 팔레트**를 갖췄습니다.
+
+🔗 **라이브 데모**: <https://teamlet-app.jocodingax.axhub.ai> · 계정은 [데모 계정](#-데모-계정) 참고
+📄 기획·분석·설계: [`/docs`](./docs) · 작업 지침: [`CLAUDE.md`](./CLAUDE.md) · 진행 기록: [`PROGRESS.md`](./PROGRESS.md)
+
+---
+
+## ✨ 주요 기능
+
+### 🔐 인증 · 멀티테넌시
+- 이메일 **2-step 로그인** + Google OAuth + **TOTP 2FA**
+- `User`(인증) ↔ `Company` **다대다 멤버십** — 회사별 신분 = `Employee`
+- 회사 등록 신청 → **플랫폼 관리자 콘솔**(`/admin`, 2단계 비밀키 인증)에서 승인
+- 회사코드 가입 신청 → HR 승인 플로우
+
+### 🛡 권한 (RBAC + Scope)
+- 역할 기반 권한 + **범위**(전체 / 부서 / 직속 / 본인) + **동적 역할**(조직장)
+- 권한 매트릭스 운영 UI, 실사용 24개 권한 카탈로그, `EffectivePermission` 캐시
+- 모든 mutation 진입점에 `assertPermission` 가드 강제
+
+### 👥 구성원 · 조직 · 인사이력
+- 구성원 디렉토리(부서 사이드바 · 재직상태 탭 · 테이블) + 상세(3탭 · 확장 프로필)
+- **조직도 시각화**, CSV 일괄 등록/내보내기 (`BulkOperation` 경유)
+- **시점 기반 인사 발령 이력** — `UPDATE` 금지, 변경은 항상 새 `Appointment` row
+
+### 🌴 휴가 (근로기준법 정밀 반영)
+- 법정 휴가 **자동 등록**(연차 · 보상 · 출산전후 · 난임 등) + 맞춤 휴가 동적 설정
+- **연차 자동부여 엔진** — 1년 미만 월 1일 누적(§60②), 1년+ 법정 테이블, 소멸·이월 정책
+- 휴가 신청 모달(듀얼 캘린더 · 반차/시간차 · 날짜별 상세 일정) → **전자결재 연동**
+- **연차 사용 촉진(§61)** 엔진 + worker cron — 회계일/입사일 기준 법정 소멸일 자동 계산
+- 관리자 휴가 관리 4탭(보유현황 · 사용내역 · 월별연차 · 촉진) + **엑셀 다운/업로드**
+- 법정공휴일 **자동 등록** (공공데이터 특일정보 API)
+
+### 📋 전자결재 (워크플로우)
+- 통합 `FormDocument.document_kind` — 휴가 · 정보변경 · 공지 · 할일을 **하나의 결재 인프라**로
+- **순차 결재선** + 결재 정책 자동 배정(특정인 / 부서장 / 조직장)
+- 참조자(CC) + 알림, 결재함 3탭(결재 대기 / 내가 요청 / 완료·참조)
+
+### 🧩 그 외
+- **채용** — 공고 + 후보자 칸반 + 전형 단계 + 메모
+- **문서·증명서** — 회사 문서 보관소 + 재직/경력 증명서 발급·인쇄
+- **알림** — 인앱 알림 + SSE 실시간 구독 + 알림 센터
+- **검색** — ⌘K 커맨드 팔레트(구성원 검색 + 권한별 페이지 네비)
+- **홈** — 피드 · 회사 소식 · 인정/피드백 · 팀 휴가 캘린더
+- **데모 모드** — `DEMO-0000` 온보딩 체험(빈 회사 직접 설정, 로그아웃 시 자동 초기화) / `DEMO-0001` 풍부한 데이터
+
+---
+
+## 🛠 기술 스택
 
 | 레이어 | 기술 |
 |---|---|
 | 프레임워크 | Next.js 15 (App Router · RSC · Server Actions · Turbopack) |
-| 언어 | TypeScript strict |
-| 스타일 | Tailwind v4 · Cool Slate 디자인 시스템 |
-| DB ORM | Prisma + Kysely · PostgreSQL 16 |
-| 인증 | Auth.js v5 (Credentials + Google OAuth) |
-| 큐·캐시 | BullMQ + Redis |
+| 언어 | TypeScript (strict) · React 19 |
+| 스타일 | Tailwind v4 · **Cool Slate** 디자인 토큰 · Pretendard · Lucide |
+| DB / ORM | PostgreSQL · Prisma (+ Kysely) · pg_trgm / pg_bigm 한국어 검색 |
+| 인증 | Auth.js v5 (Credentials + Google OAuth + TOTP) |
+| 큐 · 캐시 | BullMQ + Redis (알림 · 연차 자동부여/소멸/촉진 cron) |
 | 스토리지 | S3 / MinIO |
 | 모노레포 | Turborepo + pnpm workspaces |
 
-## 구조
+---
+
+## 🏗 아키텍처
 
 ```
-apps/web         Next.js 메인 앱
-apps/worker      BullMQ 백그라운드 워커
-packages/db      Prisma 스키마 + 시드 + Kysely 타입
-packages/modules 도메인 비즈니스 로직
-packages/ui      디자인 시스템
-packages/shared  공통 타입 / Zod 스키마
-docker/          로컬 인프라 (Postgres + Redis + MinIO)
+apps/
+  web/         Next.js 메인 앱 (RSC + Server Actions)
+  worker/      BullMQ 백그라운드 워커 (알림·연차 cron)
+packages/
+  db/          Prisma 스키마 + 마이그레이션 + 시드 + Kysely 타입
+  modules/     도메인 비즈니스 로직 (auth/tenancy/employee/leave/workflow/...)
+  ui/          디자인 시스템 (Cool Slate 토큰 + shadcn 베이스 + HR 패턴)
+  shared/      공통 타입 / Zod 스키마 / 유틸 (날짜·한국비즈니스·IP)
+  config/      공유 tsconfig / eslint
+docker/        로컬 인프라 (Postgres + Redis + MinIO)
+docs/          기획·분석·설계 SSOT (00~09 + 감사보고서)
 ```
 
-## 빠른 시작
+### 핵심 설계 결정
+- **시점 기반 이력** — 모든 인사 변경 = 새 row + `Appointment`. `UPDATE`로 직책/부서 덮어쓰기 금지.
+- **멀티 테넌시** — `User`(인증) ↔ `Company` 다대다, `Employee` = 회사별 신분. 모든 쿼리에 `companyId` 필터.
+- **통합 워크플로우** — 휴가·공지·할일·정보변경을 `FormDocument` + `ApprovalPolicy`로 단일화.
+- **에러 처리** — never throw raw. 도메인 함수는 `Result<T, E>`, API 응답은 `{ ok, data } | { ok: false, error }`.
+- **감사 로그** — 도메인 mutation은 항상 `auditLog.record()`.
+
+---
+
+## 🎨 디자인 — Cool Slate
+
+Flex의 초록→청록 그라데이션을 배제한 **단색 Cool Slate** 팔레트. Primary = Slate 900, Accent = Cool Blue 600.
+
+1. **UX/UI 사용자 중심** — 기능보다 사용 경험 우선
+2. **Flex 카피 금지** — 패턴은 차용, 시각·텍스트는 우리 것
+3. **풀스펙** — 간소화 ❌, SaaS 대체 수준
+4. **범용성** — 대부분의 한국 기업이 쓸 수 있게
+5. **컬러 토큰만** — 임의 hex / 그라데이션 금지 (`bg-primary`, `text-foreground` 등 `@theme` 토큰)
+
+---
+
+## 🚀 빠른 시작 (로컬 개발)
 
 ```bash
 pnpm install
 pnpm docker:up        # Postgres + Redis + MinIO
 pnpm db:push          # 스키마 적용
-pnpm db:seed          # 권한 카탈로그 + 데모 계정 생성
-pnpm dev              # http://localhost:3001 (포트 3001 고정)
+pnpm db:seed          # 권한 카탈로그 + 법정휴가/공휴일 + 데모 계정
+pnpm dev              # http://localhost:3001 (포트 고정)
 ```
 
-**데모 계정** — 이메일 + 비밀번호 로그인 (2-step)
+> 환경 변수는 `apps/web/.env.local` — [`.env.example`](./.env.example) 참고.
+> 빌드는 **Turbopack** 사용(`--turbopack`). 워크스페이스 상대 import는 확장자 없이.
 
-| 계정 | 역할 | 비고 |
+---
+
+## ☁️ 배포 (axhub)
+
+라이브 앱은 [axhub](https://axhub.ai) 플랫폼에 Docker로 배포돼 있습니다. axhub 빌더의 메모리 제약(OOM)을 우회하기 위해 **사전 빌드 산출물 배포** 방식을 씁니다:
+
+1. 로컬에서 `docker build` → Next.js standalone 산출물 생성
+2. 산출물을 `prebuilt.tar.gz`로 묶어 **`axhub-deploy` 브랜치**에 커밋 (COPY-only Dockerfile = 압축해제 후 실행만)
+3. `axhub deploy create` → axhub 빌더는 빌드 없이 패키징만 수행
+
+DB는 외부 5432 차단 우회를 위해 **Neon serverless 드라이버**(443/WebSocket)로 연결합니다. 자세한 절차는 [`PROGRESS.md`](./PROGRESS.md) 참고.
+
+---
+
+## 🔑 데모 계정
+
+> ⚠️ 데모 전용 자격증명입니다. 이메일 + 비밀번호 2-step 로그인.
+
+| 계정 | 비밀번호 | 역할 | 회사 |
+|---|---|---|---|
+| `demo@teamlet.io` | `Demo1234!` | 최고 관리자 (온보딩 체험) | `DEMO-0000` |
+| `admin@teamlet.test` | `Test1234!` | 최고 관리자 | `DEMO-0001` |
+| `hr@teamlet.test` | `Test1234!` | HR 담당 | `DEMO-0001` |
+| `emp@teamlet.test` | `Test1234!` | 일반 사원 | `DEMO-0001` |
+| `platform@teamlet.test` | `Test1234!` + 비밀키 `teamlet-admin-2024` | 플랫폼 관리자 (`/admin`) | — |
+
+- **DEMO-0000** — 빈 신규 회사(구성원·조직만). 휴가종류·정책·공휴일·결재는 체험자가 버튼으로 직접 설정하며 온보딩 체험. **로그아웃 시 자동 초기화**.
+- **DEMO-0001** — 구성원·휴가·결재·공지가 채워진 **기능 시연용** 데이터.
+- 라이브 앱은 axhub private 앱(SSO 게이트)이라 외부 접속 시 axhub 로그인을 먼저 거칩니다.
+
+---
+
+## 🗺 로드맵
+
+| Phase | 영역 | 상태 |
 |---|---|---|
-| `demo@teamlet.io` | 최고 관리자 (온보딩 체험) | 비밀번호: `Demo1234!` · 회사 `DEMO-0000` |
-| `admin@teamlet.test` | 최고 관리자 | 비밀번호: `Test1234!` · 회사 `DEMO-0001` |
-| `hr@teamlet.test` | HR 담당 | 비밀번호: `Test1234!` |
-| `emp@teamlet.test` | 일반 사원 | 비밀번호: `Test1234!` |
-| `platform@teamlet.test` | 플랫폼 관리자 | 비밀번호: `Test1234!` + 비밀키: `teamlet-admin-2024` |
+| P1 | Foundation — 인증 · 가입 · 권한 | ✅ |
+| P2 | Core HR — 구성원 · 조직 · 발령 이력 | ✅ |
+| P3 | 휴가 — 신청 · 정책 · 자동부여 · 촉진 | ✅ |
+| P4 | 워크플로우 + 검색 | ✅ |
+| P5 | 채용 | ✅ |
+| P6 | 문서 · 증명서 · 보안 | ✅ |
+| P7 | 확장 프로필 · 보안 강화(2FA · 세션) | 🟡 |
+| P8 | 알림 · AxHub 연동 · 근태 모듈 | 🟡 |
 
-> **데모 회사**: `DEMO-0000`(온보딩 체험 — 구성원·조직만, 나머지는 체험자가 버튼으로 설정) · `DEMO-0001`(개발 테스트 — 풍부한 데이터)  
-> **환경 변수**: `apps/web/.env.local` 필요. `.env.example` 참고.
-
-## 도메인 구조
-
-| 도메인 | 경로 | 주요 기능 |
-|---|---|---|
-| 인증/가입 | `/login` `/signup` `/join-company` `/register-company` | 이메일 전용 로그인, 회사코드 가입, 회사 등록 신청 |
-| 홈 | `/home` | 결재 대기 · 휴가 잔여 · 팀 캘린더 |
-| 구성원 | `/members` | 디렉토리 · 상세 · 조직도 · CSV |
-| 휴가 | `/leave` | 신청 · 승인 · 잔여 현황 |
-| 전자결재 | `/workflow` | 결재함 · 양식 · 순차 결재 |
-| 채용 | `/recruitment` | 공고 · 후보자 칸반 |
-| 문서 | `/documents` | 문서 보관 · 증명서 발급 |
-| HR 관리 | `/hr/leave` | 전사 휴가 현황 · 맞춤 부여 |
-| 설정 | `/settings/*` | 프로필 · 역할 · 권한 · 정책 |
-| 플랫폼 관리 | `/admin` | 회사 신청 승인 · 사용자 관리 (비밀키 2단계 인증) |
-
-## 구현 현황
-
-> ⚠️ 타입체크 통과 기준. 런타임 검증은 시나리오 테스트로 진행 중.
-
-### 지금 쓸 수 있어요
-
-| 기능 | 비고 |
-|---|---|
-| 이메일 로그인 | 2FA(TOTP) 설정 포함 |
-| 회사 등록 신청 → 플랫폼 관리자 승인 | 데모 모드: `TEAMLET_DEMO_AUTO_APPROVE=true` 시 즉시 승인 |
-| 플랫폼 운영 콘솔 (`/admin`) | 회사 신청 승인·반려, 회사·사용자 목록 |
-| 구성원 디렉토리 · 상세 · 검색 | 부서 사이드바, 상태 탭, 테이블 뷰 |
-| 인사 발령 이력 | 등록 시 HIRE 자동 생성 |
-| 휴가 신청 · 승인 · 반려 · 취소 | 결재 인프라 연동 |
-| 전자결재 결재함 · 순차 결재선 | 휴가 외 범용 양식 지원 |
-| 역할 · 권한 매트릭스 | RBAC + 범위(전사/부서) |
-| 채용 공고 · 후보자 칸반 | |
-| 개인·회사 설정 | 보안 정책, 2FA QR 등록 |
-| 홈 대시보드 | 결재 대기 · 휴가 잔여 |
-
-### 다음에 할 일
-
-> 2026-05-29 전체 코드 감사 기준. 상세·증거는 **`docs/07_감사보고서_2026-05-29.md`** 참조.
-> 원칙: **토대(보안·배포·정합성) → flex-parity 기능 → 차별화**. 깨진 토대 위에 기능 쌓지 않기.
-
-> ✅ **2026-06-01 해소**: C6(증명서 인쇄)·C7(결재정책 자동배정)·H3(CC cross-tenant)·H5(공지 작성 권한)·H8(CSV HIRE 발령). H9(락아웃)는 이미 해소 확인. — 전부 타입클린/런타임 미검증.
-
-**0순위 — 남은 CRITICAL (토대 마무리)**
-
-| 항목 | 내용 |
-|---|---|
-| C5 Worker | `apps/worker` BullMQ 잡 프로세서 0개 — 연차 자동부여·소멸 스케줄 등록 |
-
-**1순위 — 남은 HIGH (보안·정합성, §2 참조)**
-
-| 항목 | 내용 |
-|---|---|
-| IP 제한·강제 2FA | UI/DB만 존재, 런타임 강제 전무 → 미들웨어 적용 or "준비중" 표기 |
-| 휴가 잔여 계산 통일 (H6) | 표시(PENDING 미차감) ≠ 신청검증(PENDING 차감) |
-| finalize 트랜잭션 (H7) | finalize가 워크플로우 트랜잭션 외부 호출 → 크래시 시 정합성 깨짐 |
-
-**2순위 — flex-parity 신규 기능 (명세 §7-A 구조적 결손)**
-
-| 항목 | 내용 |
-|---|---|
-| 근태(Attendance) 모듈 | 명세 곳곳의 근무시간(32:14/40h)·근무중 타이머 — 모듈 자체 없음 |
-| 연차 사용 촉진 | 4-칸반(대기/진행/완료/종료) — 근로기준법 필수, C3 소멸엔진과 연결 |
-| 워크플로우 인라인 결재 | 리스트에서 승인/반려 + 결재선 spine 시각화 |
-| 설정 3종 실구현 | 보안(세션관리)·알림(채널 영속화)·회사정보(로고 ✅ 업로드 연결됨) |
-| 파일 업로드 | 🟡 MinIO 인프라 + 문서함·로고 연결됨(타입클린·런타임 미검증). 남음: 프로필·증명서PDF·이력서 |
-
-**3순위 — 차별화(120%) & 품질**
-
-| 항목 | 내용 |
-|---|---|
-| 테스트 인프라 | vitest — 휴가 잔여·소멸·결재 트랜잭션 회귀 (현재 0건) |
-| AxHub 구성원 sync | `axhubExternalId` upsert + `syncLockedFields` 우회 금지, Worker 스케줄 |
-| 다크모드·5 accent | 토큰만 존재 → 테마 스위처 |
-| 모바일 반응형 | 사이드바→햄버거, 레일→하단탭 |
-
-## 설계 원칙
-
-- **Result 패턴**: 도메인 함수 → `Result<T>` (`ok(data)` / `err(errors.xxx())`)
-- **권한 가드**: 모든 mutation에서 `assertPermission` — RBAC + Scope
-- **멀티 테넌시**: `UserRole`은 `employeeId` 기준 (회사별 신분)
-- **Anti-Pattern**: `updateEmployee` 직접 호출 금지 — 항상 `Appointment` 경유
-- **데모 모드**: `TEAMLET_DEMO_AUTO_APPROVE=false` — 플랫폼 관리자가 수동 검토
+> 활발히 개발 중인 MVP입니다. 도메인 로직은 타입체크 통과 기준이며, 런타임 검증은 시나리오 테스트로 진행 중입니다. 상세 현황·감사 결과는 [`PROGRESS.md`](./PROGRESS.md)와 [`docs/07_감사보고서`](./docs)를 참고하세요.
 
 ---
 
-## 데일리 스크럼
+## 📚 문서
 
-### 6월 9일 화요일
-
-오늘은 목업 데모 페이지를 "온보딩 체험"용으로 구현하고, 그 과정에서 드러난 구성원·권한·휴가 정책 오류들을 검출·수정했습니다. 목업을 실제 신규 회사처럼 구성원·조직만 남기고 나머지는 체험자가 직접 버튼으로 설정하는 흐름으로 재편하면서, 기존 시드에 숨어있던 분류·계산·레이아웃 오류를 함께 잡았습니다.
-
-**[목업 페이지 구현]**
-☑ 목업(DEMO-0000) 온보딩 체험화 — DB는 구성원·조직·권한만, 휴가종류·정책·공휴일·연차부여·신청·결재 전부 비워 실제 신규 회사처럼 체험자가 버튼으로 설정·축적
-☑ 선택 재시드(`reseed-mockup`, FK 의존순서 삭제·DEMO-0001 보존) + "법정의무휴가 추가"·"기본 정책 만들기" 버튼 + 법령 가이드 패널("적합한 설정이에요")
-☑ 설정 페이지 DEMO 배너 · 로그인 체험 문구 통합
-
-**[구성원·권한 오류 검출]**
-☑ "전사 권한 보유" → "전체 권한 보유" 라벨 통일 — 역할 description·권한 경고문·기존 회사 DB까지 갱신
-☑ DEMO 배너로 탑바가 세로로 늘어나던 그리드 버그(`.main` rows 자식수 불일치) 수정 → 부서별 검색바 들쭉날쭉 해소
-☑ 페이지 헤더 이중 보더 제거 · 구성원 페이지 내부 스크롤 고정
-
-**[휴가 정책 정밀화 · 오류 검출]**
-☑ 법정/약정 8대 재분류 — 보상휴가(§57) **법정 편입**, 연차 비필수 오분류(`calcAnnualDays` 매년+1 버그) 수정, 병가·경조사 약정
-☑ 일부유급 **% → 유급 일수**(`partialPayDays`) — 출산 60/75일·난임 2일, 휴일차감·성별(배우자출산 남성)
-☑ **휴가 취소 승인 워크플로우**(`approveOnCancel`) — 승인 완료 휴가 취소 시 승인자 취소승인·반려 복귀·참조자 알림
-☑ 필수 휴가 삭제 차단 · 연차 §60 가산 검증
-
-☐ 다음: 목업 로그아웃 시 원상복구(체험 리셋) · 필수 휴가 설정 고정 · 연차 부여 엔진 정밀 점검
-
-### 6월 5일 금요일
-
-오늘은 디자인 리뉴얼 정합을 마친 토대 위에서 휴가 도메인 심화, 홈 화면 재구성, 전역 UI 통일을 한 번에 진행했습니다. 핵심은 "공용(공지·공휴일=회사 전체) vs 개인(인정·피드백·휴가=당사자)"을 명확히 나눈 것이고, 스크롤·검색·토큰을 앱 전체 기준으로 통일했습니다.
-
-**[휴가 도메인 심화]**
-☑ 연차 정책 모달 보강 — 자동 소멸 미리보기 테이블(법정/실제×월차/연차) + 툴팁 + 이탈 확인
-☑ 맞춤 휴가 시간차 단위(`LeaveType.hourUnitMinutes`) + 수정 시 이탈 확인
-☑ 관리자 **연차 조정**(부여/차감) + **부여·조정 내역** 모달 (`adjustLeave`/`listLeaveGrantHistory`)
-☑ **법정공휴일 연도별 자동 등록** — 공공데이터 특일정보 API 연동(fetch+sync+range). DB에 2023~2027 양사 채움
-☑ 설정 공휴일 — 연도별 표시 버그(state 미동기화) 수정 · 네비 하한 2023 · 자율휴일 폼 위로 · 캘린더 공휴일/주말 빨강
-
-**[홈 재구성 · 인정·피드백]**
-☑ 탭 재편(홈 피드/회사 소식/인정·피드백, 할 일 제거) + 공지 노출 규칙(피드 필독1+최신1/최신2, 회사소식 4개 페이지네이션)
-☑ 오늘의 소식 = 당일 이벤트만(하루 지나면 사라짐) · 댓글 기능 제거
-☑ **인정·피드백 실기능** — `Recognition` 모델 + 받은 메시지 탭 + 동료전달 모달 작성(TargetPicker 수신자)
-☑ 공지 읽음 추적(A안 `lastAnnouncementReadAt`) — 읽지 않은 공지 KPI/배지
-
-**[전역 UI 통일]**
-☑ destructive 시맨틱 토큰 추가(bare 클래스 전역 정상화) · 그라데이션 전멸 · admin zinc→slate
-☑ **스크롤 통일** — `.app`/설정 layout 고정 높이 → 검색·알림 탑바·사이드바 고정, 콘텐츠만 스크롤
-☑ 구성원 검색 피커(TargetPicker) 통일 — 조직 클릭=구성원 펼침, 신규합류/조직장 제거, a11y
-☑ ⌘K 검색 — 오늘의 소식 제거 + 권한별 페이지(일반=홈/휴가/문서증명서, 관리자=전체)
-☑ 사이드바 IA(구성원·워크플로우→인사 관리) · 구성원 아이콘 1인 · 문서 추가/삭제 권한 게이트
-
-☐ 다음: #5 맞춤휴가 동적폼 잔여 · #6 관리자 모달(엑셀) · 브라우저 시나리오 검증
-
-### 6월 4일 목요일
-
-오늘은 휴가 신청의 날짜별 상세 일정(schedule) 표시를 마무리하고, 코드 레벨 디자인 점검으로 토큰 오타·그리드 불일치 등 5건을 수정했습니다. 이어서 Flex 전 도메인을 제대로 재정립하기 위해 **flex 폴더 347장을 15배치 병렬 에이전트로 전수 전사**(verbatim 문구·선택창 옵션·이벤트 동작·디자인·"왜 존재하는가"까지)해 SSOT를 완성했고, 이를 토대로 디자인 수정방안과 재정립 핸드오프 패키지를 만들었습니다. 마지막으로 같은 실수 반복을 막는 하네스(커밋·푸시 훅, PR/이슈 템플릿, Anti-Pattern 감지)를 도입했습니다.
-
-**[HR 웹 기능 개발]**
-☑ 휴가 신청/사용 내역에 날짜별 단위(schedule) 표시 — `history-tab` · `requests-table` (#3 마무리)
-☑ 디자인 버그 5건 수정 — `var(--warning)→--warn` · `.hist-row` 4열 정렬 · `.bd-legend .remaining` · `.st.end` · `.hist-row .desc` 오버플로우
-☑ ⌘K 커맨드 팔레트 + RecipientPicker에 생일·기념일·신규합류 이벤트 카드(빈 상태) 적용
-
-**[Flex 전수 분석 · 재정립]**
-☑ flex 347장 전수 전사 → `docs/_transcribe/flex.md` (5,213줄, 15배치 병렬)
-☑ 디자인 수정방안 → `docs/_handoff/04_디자인_수정방안.md` (Flex→Cool Slate 변주 매핑 + 도메인별 갭 + 토큰 위반 행번호)
-☑ 재정립 핸드오프 패키지 산출 (SSOT 4종 + 우리 설계 + 현재 디자인 + 수정방안)
-
-**[하네스 엔지니어링]**
-☑ `.git/hooks/commit-msg`(Conventional Commits) · `pre-push`(typecheck) · `.github/` PR·이슈 템플릿
-☑ `.claude/settings.json` Anti-Pattern PostToolUse 감지 + `scripts/track-antipattern.ps1`(3회↑→hook 추가)
-☐ 다음: #4 연차 정책 모달 보강 → #5 맞춤휴가 동적폼 → #6 관리자 모달 · 브라우저 런타임 검증
-
-### 6월 2일 월요일
-
-**[HR 웹 기능 개발]**
-☑ 휴가 관리 4탭 완성 (월별 연차 사용 내역 + 연차 촉진)
-☑ 스마트 연차 촉진 엔진 + BullMQ 스케줄러 (법정 소멸일 계산, 매일 09:00) — Worker 빈껍데기 해소
-☑ Flex 휴가 캡처 전수 verbatim 전사 (flexv2 97장 + teamlet 37장 → `docs/_transcribe`)
-☑ 승인·참조자 공통 피커(RecipientPicker) — 맞춤휴가·연차정책·촉진설정 3곳 통일
-☑ 연차 촉진 응답 플로우 — 구성원 사용계획 작성 + 관리자 상세 패널 (전자결재 연동)
-☑ 휴가 신청 모달 듀얼 캘린더 + 결재자 문구 2분기 + 날짜별 상세 일정 편집(schedule)
-☐ 신청/사용 내역에 날짜별 단위 표시 (#3 마무리) · 디자인 깨짐 점검 · 연차 정책 모달 보강(#4)
-
-### 2026-05-28 목요일
-
-**[Teamlet]**
-☑ Claude 디자인 파일 기반 전체 UI 전면 교체 (design.css 브리지 + Tailwind CSS 변수 직접 적용)
-☑ 인증 6개 페이지 AuthCard 컴포넌트 기반 통일 (login 2-step 흐름, signup, 2fa, join-company, register-company, pending-approval)
-☑ 앱 레이아웃 · 사이드바 디자인 구조 교체 (.app/.main 그리드, .side/.nav-item)
-☑ 메인 5개 페이지 디자인 교체 (home, members, workflow, hr/leave, leave)
-☑ 설정 레이아웃 2-col 구조 + 알림 설정 페이지 신규 구현
-☑ HomeRail 오늘 자리비움 실데이터 연결 (listTeamLeaveCalendar)
-☑ teamlet 컴포넌트 라이브러리 추가 (AuthCard, KpiCard, DataTable, Tag 등)
-
----
-
-### 2026-05-29 금요일
-
-오늘은 디자인 전사 파일을 기반으로 현재 구현된 화면과 디자인 스펙 간 갭을 체계적으로 분석했습니다. 총 30개 화면 중 실제로 구현된 것과 껍데기만 있는 것을 코드 수준에서 직접 확인해 우선순위를 정리했고, 홈 페이지부터 차근차근 디자인에 맞춰나가는 방식으로 개발 방향을 설정했습니다. 오늘 작업의 핵심은 "무엇을 만들어야 하는가"를 명확히 정의하는 것이었고, 실제 구현은 홈 페이지 기능 보강부터 시작했습니다.
-
-**[Teamlet]**
-☑ 인증 방식 복구: 이메일 전용 → 이메일+비밀번호 2-step 로그인
-☑ 디자인 갭 분석: 30개 화면 전수 조사, 미구현 12개 · 부분 구현 3개 우선순위 확정
-☑ 홈 페이지 기능 보강: 오늘의 팀 현황 위젯, 생일·입사기념일·신규합류 이벤트 카드, 축하 보낼 동료 레일 위젯
-☑ 휴가·구성원 다음 개발 우선순위 설계
-
-**[Teamlet · 오후 — 전체 감사 + CRITICAL 수정]**
-오후에는 6개 도메인 병렬 코드 감사로 "구현됨 vs 검증됨 vs 껍데기"를 실제 코드 수준에서 가려냈습니다. PROGRESS의 "완료" 표기와 실제 상태 사이 격차를 `docs/07_감사보고서`에 정리하고, 최우선 CRITICAL 4건을 바로 수정했습니다.
-☑ 전체 감사 보고서 작성: CRITICAL 9건 + HIGH + 명세 갭 + 100→120% 로드맵 (`docs/07_감사보고서_2026-05-29.md`)
-☑ C1 멀티테넌트 IDOR 차단: 경력·학력·가족 12함수에 회사 격리 + scope 컨텍스트 (`employee/career.ts`)
-☑ C2 Docker 배포 복구: turbopack→webpack(`build:standalone`), `.dockerignore` 신규, 누락 패키지 복사 → **이미지 빌드 + 컨테이너 기동(307) 실측 검증**
-☑ C3 연차 소멸·이월 멱등성: `LeaveBalance.expiryProcessedAt` 마커로 year별 1회 보장 + adjustedDays→grantedDays 차감
-☑ C4 가입 신청 알림 복구: 권한(member.directory.manage) 기준 대상화 + 잘못된 필터/deepLink 교정
-☑ 부수: `MembershipStatus.REJECTED` 추가(반려기능 복구) + bulk.ts import → 모듈 타입체크 전체 클린, dev DB db push 적용
-※ C2 외 런타임 미검증(타입체크 통과). 남은 CRITICAL: C5(Worker)·C6(증명서)·C7(결재정책)
-
----
-
-### 2026-05-30 토요일 (예정)
-
-**[Teamlet]**
-☐ 홈 페이지 나머지: 소식 탭 · 할 일 탭 완성
-☐ 구성원 상세 디자인 기준 재정비 (Quick chips · 7아코디언 · 우측 레일)
-☐ 휴가 관리 빈탭 채우기 (사용 내역 · 촉진 칸반)
-☐ 설정 보안 (활성 세션 목록 · 강제 로그아웃)
-
----
-
-### 6월 1일 일요일
-
-[HR 웹 기능 개발]
-☑ 토대 마무리 (결재정책 자동배정·증명서 인쇄·CC 보안·공지 권한·CSV 발령)
-☑ 파일 업로드(MinIO) + 회사 문서함·로고 연결
-☑ Flex/docs09 휴가 도메인 통합 설계 (Opus) — 스키마 step0 완료
-☑ 맞춤 휴가 설정 완성 — useUnit·ccEmployeeIds·추가설정 저장 (Zod 스키마 신규 필드 포함)
-☑ 휴가 신청 모달 완성 — 단일/다일 날짜 구분, 증명 자료 업로드, 승인자 고정 표시
-☑ 연차 설정 (#3) — policy.ts 14개 신규 필드, 부여방식·소멸·사용단위·당겨쓰기 UI
-☑ 퇴직자 조정 + 연차 촉진 설정 (#4) — CompanyLeaveSettings 모듈/모달
-☑ 연차 자동부여 개선 — 전체 구성원 기본 정책 fallback, 법정 연차 계산
-☑ 결재 문서 증명 자료 링크 표시 (승인자 화면에서 첨부파일 확인 가능)
-
----
-
-### 6월 2일 월요일 (예정)
-
-[HR 웹 기능 개발]
-☐ 연차 정책 승인자 저장 런타임 검증 (Zod 스키마 수정 → 실제 DB 반영 확인)
-☐ 연차 자동부여 전체 구성원 적용 검증
-☐ 내 휴가 신청이력 탭 완성도 (상태별 필터 + 취소 버튼)
-☐ 휴가 관리(관리자) 4탭 — 보유현황 side sheet / 월별 연차 / 촉진 탭
-☐ 연차 사용계획 피드 (촉진 응답)
+| 문서 | 내용 |
+|---|---|
+| [`/docs/00`~`06`](./docs) | 기획 · 도메인 명세 · 디자인 시스템 |
+| [`/docs/07`](./docs) | 전체 코드 감사 보고서 |
+| [`/docs/08`,`09`](./docs) | 휴가 도메인 Flex 갭 분석 · 통합 설계 |
+| [`CLAUDE.md`](./CLAUDE.md) | 아키텍처 · 코딩 컨벤션 · Anti-Pattern |
+| [`PROGRESS.md`](./PROGRESS.md) | 세션별 진행 기록 |
+| [`PORTFOLIO.md`](./PORTFOLIO.md) | 프로젝트 포트폴리오 (기술적 도전 & 해결) |
