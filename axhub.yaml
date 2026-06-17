@@ -1,5 +1,5 @@
 version: axhub/v1
-name: teamlet-hr
+name: teamlet-app
 runtime:
   port: 3000
   health_path: /api/health
